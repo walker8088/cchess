@@ -1,0 +1,2 @@
+# cchesslib
+cchessslib是一个Python版的中国象棋库
