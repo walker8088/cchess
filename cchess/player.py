@@ -17,8 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from common import *
-from engine import *
+from ucci import *
 
 #-----------------------------------------------------#
 
@@ -34,14 +33,14 @@ class ChessPlayer(object):
     def get_next_move(self) :
         pass
                 
-'''
+
 #-----------------------------------------------------#
 
 class EngineChessPlayer(ChessPlayer) :
-    def __init__(self, master, engine_name) :
+    def __init__(self, master, engine_path) :
         super(EngineChessPlayer, self).__init__(master)
-        self.engine = UcciEngine(engine_name)
-        self.engine.load()
+        self.engine = UcciEngine()
+        self.engine.load(engine_path)
 
     def ready_to_move(self) :
         fen_str = self.board.get_fen()
@@ -55,7 +54,7 @@ class EngineChessPlayer(ChessPlayer) :
             
     def stop_game(self) :
         self.engine.stop_game()
-'''    
+    
 #-----------------------------------------------------#
 
 class UiChessPlayer(ChessPlayer) :

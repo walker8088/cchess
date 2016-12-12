@@ -17,23 +17,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import os
-import base64
-import struct, copy
+import os, sys
 
+sys.path.append('..')
 from cchess import *
                 
 #-----------------------------------------------------#
 if __name__ == '__main__':
     
-    loader = XQFLoader()
     file_name = sys.argv[1]
-    book = loader.load(file_name)
-    book.dump_info()
-    print book.init_fen
-    print book.annotation    
-    print 'verified', book.verify_moves()
-    moves = book.dump_chinese_moves()
-    for move_it in moves:
-        print move_it
+    game = read_from_xqf(file_name)
+    game.print_init_board()
+    game.print_chinese_moves()
     

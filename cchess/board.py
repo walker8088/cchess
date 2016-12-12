@@ -18,86 +18,138 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import sys
-from sets import Set
+import copy
 
-from common import *
-from chessman import *
-from utils import *
+from exception import *
+from piece import *
+from move import *
 
 #-----------------------------------------------------#
-class Chessboard(object):
-    def __init__(self, fen = None):        
-        self.clear()
-        self.from_fen(fen)
-            
-    def clear(self):
-        self._board = {}
-        self.move_side = None
-        self.round = 1
-        self.non_kill_moves = 0
-            
-    def chessman_of_pos(self, pos):
-        try:
-            return self._board[pos]
-        except:
-            return None
+FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
+
+#-----------------------------------------------------#
+text_board = [
+#u' 1  2   3   4   5   6   7   8   9',
+u'9 ┌─┬─┬─┬───┬─┬─┬─┐',
+u'  │  │  │  │＼│／│　│　│　│',
+u'8 ├─┼─┼─┼─※─┼─┼─┼─┤',
+u'  │　│　│　│／│＼│　│　│　│',
+u'7 ├─┼─┼─┼─┼─┼─┼─┼─┤',
+u'  │　│　│　│　│　│　│　│　│',
+u'6 ├─┼─┼─┼─┼─┼─┼─┼─┤',
+u'  │　│　│　│　│　│　│　│　│',
+u'5 ├─┴─┴─┴─┴─┴─┴─┴─┤',
+u'  │　                         　 │',
+u'4 ├─┬─┬─┬─┬─┬─┬─┬─┤',
+u'  │　│　│　│　│　│　│　│　│',
+u'3 ├─┼─┼─┼─┼─┼─┼─┼─┤',
+u'  │　│　│　│　│　│　│　│　│',
+u'2 ├─┼─┼─┼─┼─┼─┼─┼─┤',
+u'  │　│　│　│＼│／│　│　│　│',
+u'1 ├─┼─┼─┼─※─┼─┼─┼─┤',
+u'  │　│　│　│／│＼│　│　│　│',
+u'0 └─┴─┴─┴───┴─┴─┴─┘',
+u'  0   1   2   3   4   5   6   7   8'
+#u'  九 八  七  六  五  四  三  二  一'
+]
+
+def pos_to_text_board_pos(pos):
+    return Pos(2*pos.x+2, (9 - pos.y)*2)     
+
+    
+#-----------------------------------------------------#
+class Pos(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
         
-    def turn_side(self) :
+    def __str__(self):
+        return str(self.x) + ":" + str(self.y)
+        
+#-----------------------------------------------------#
+
+def move_to_str(move):
+    
+    (x, y), (x_, y_) = move
+    
+    move_str = ''
+    move_str += chr(ord('a') + x)
+    move_str += str(y)
+    move_str += chr(ord('a') + x_)
+    move_str += str(y_)
+    
+    return move_str
+
+def str_to_move(move_str):
+    return (Pos(ord(move_str[0]) - ord('a'),int(move_str[1])),Pos(ord(move_str[2]) - ord('a'), int(move_str[3])))
+    
+#-----------------------------------------------------#
+class BaseChessboard(object) :
+    def __init__(self, fen = None):
+	self.clear()
+        if fen: self.from_fen(fen)
+                
+    def clear(self):    
+        self._board = [[None for x in range(9)] for y in range(10)]
+        self.move_side = None 
+    
+    def copy(self):
+        return copy.deepcopy(self)
+        
+    def put_man(self, fench, pos):
+        self._board[pos.y][pos.x] = fench
+    
+    def get_man(self, pos):
+        return self._board[pos.y][pos.x]
+    
+    def is_valid_move(self, pos_from, pos_to):
+        '''
+        只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
+        '''
+        fench_from = self._board[pos_from.y][pos_from.x]
+        if not fench_from :
+            return False        
+            
+        _, from_side = fench_to_species(fench_from)
+        
+        #move_side 不是None值才会进行走子颜色检查，这样处理某些特殊的存储格式时会处理比较迅速
+        if self.move_side and (from_side != self.move_side) :
+            return False        
+            
+        fench_to = self._board[pos_to.y][pos_to.x]
+        if not fench_to :
+            return True 
+            
+        _, to_side = fench_to_species(fench_to)
+        
+        return (from_side != to_side) 
+    
+    def __move_man(self, pos_from, pos_to):
+        
+        fench = self._board[pos_from.y][pos_from.x]
+        self._board[pos_to.y][pos_to.x] = fench
+        self._board[pos_from.y][pos_from.x] = None
+        
+        return fench
+        
+    def move(self, pos_from, pos_to):
+        
+        if not self.is_valid_move(pos_from, pos_to):
+             return None 
+             
+        board = self.copy()
+        self.__move_man(pos_from, pos_to)
+        
+        return Move(board, pos_from, pos_to)
+    
+    def next_turn(self) :
         if self.move_side == None :
             return None
             
         self.move_side = ChessSide.turn_side(self.move_side)
-        
-        self.round += 1
-        
+       
         return self.move_side
     
-    def create_chessman(self, species, side, pos):     
-        self._board[pos] = Chessman(self, species, side, pos)
-    
-    def create_chessman_from_fench(self, fench, pos):     
-        species, side = fench_to_species(fench)
-        self._board[pos] = Chessman(self, species, side, pos)
-        
-    def remove_chessman(self, pos):     
-        try:
-            self._board.pop(pos)
-        except:
-            pass
-            
-    def to_fen(self):
-        fen = ''
-        count = 0
-        for y in range(9, -1, -1):
-            for x in range(9):
-                if (x, y) in self._board.keys():
-                    if count is not 0:
-                        fen += str(count)
-                        count = 0
-                    chessman = self._board[(x, y)]
-                    ch = species_to_fench(chessman.species, chessman.side)
-                    
-                    if ch is not '':
-                        fen += ch
-                else:
-                    count += 1
-                    
-            if count > 0:
-                fen += str(count)
-                count = 0
-                
-            if y > 0:
-                fen += '/'
-                
-        if self.move_side is ChessSide.BLACK:
-            fen += ' b'
-        else:
-            fen += ' w'
-            
-        fen += ' - - 0 %d' %(self.round)
-
-        return fen
-
     def from_fen(self, fen):
         
         num_set = Set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
@@ -116,24 +168,21 @@ class Chessboard(object):
         for i in range(0, len(fen)):
             ch = fen[i]
             
-            if ch == ' ':
-                break
+            if ch == ' ': break
             elif ch == '/':
                 y -= 1
                 x = 0
-                if y < 0:
-                    break
+                if y < 0: break
             elif ch in num_set:
                 x += int(ch)
-                if x > 8:
-                    x = 8
+                if x > 8: x = 8
             elif ch.lower() in ch_set:
                 if x <= 8:
-                    self.create_chessman_from_fench(ch, (x, y))                
+                    self.put_man(ch, Pos(x, y))                
                     x += 1
             else:
-                print "pase error"
-                
+                return False
+        
         fens = fen.split() 
         
         if (len(fens) >= 2) and (fens[1] == 'b') :
@@ -145,213 +194,101 @@ class Chessboard(object):
                 self.round = int(fens[5])
         else:
                 self.round = 1      
+                
+        return True 
         
-    def can_make_move(self, p_from, p_to, color_limit = True) :
-        
-        if (p_from[0] == p_to[0]) and (p_from[1] == p_to[1]):
-            print "no move"
-            return False
+    def to_fen(self):
+        fen = ''
+        count = 0
+        for y in range(9, -1, -1):
+            for x in range(9):
+                fench = self._board[y][x]
+                if fench:        
+                    if count is not 0:
+                        fen += str(count)
+                        count = 0
+                    fen += fench
+                else:
+                    count += 1
+                    
+            if count > 0:
+                fen += str(count)
+                count = 0
+                
+            if y > 0: fen += '/'
+                        
+        if self.move_side is ChessSide.BLACK:
+            fen += ' b'
+        elif self.move_side is ChessSide.RED :
+            fen += ' w'
+        else :
+            raise CChessException('Move Side Error' + str(self.move_side))
             
-        if p_from not in self._board.keys():
-            print "not in"
-            return False 
+        fen += ' - - 0 1'
         
-        chessman = self._board[p_from]
+        return fen
+
+    def dump_board(self):
+                
+        board_str = text_board[:]
+    
+        y = 0
+        for line in self._board:
+            x = 0
+            for ch in line:
+                if ch : 
+                        pos = pos_to_text_board_pos(Pos(x,y))
+                        new_text=board_str[pos.y][:pos.x] + fench_to_txt_name(ch) + board_str[pos.y][pos.x+1:]
+                        board_str[pos.y] = new_text
+                x += 1                         
+            y += 1
         
-        if (chessman.side != self.move_side)  and color_limit :
-            print chessman.side, "not move side ", self.move_side
-            return False
-            
+        return board_str
+        
+    def print_board(self):
+    
+        board_txt = self.dump_board()
+        print
+        for line in board_txt:
+                print line
+        print
+        
+#-----------------------------------------------------#
+
+class Chessboard(BaseChessboard):
+    def __init__(self, fen = None):        
+        super(Chessboard, self).__init__(fen)
+    
+    def is_valid_move(self, pos_from, pos_to):
+        if not super(Chessboard, self).is_valid_move(pos_from, pos_to):
+                return False
+        
+        '''
         if not chessman.can_move_to(p_to[0],  p_to[1]):
             print "can not move"
             return False
-          
+        '''  
         return True
         
-    def make_step_move(self, p_from, p_to, color_limit = True):
     
-        if not self.can_make_move(p_from, p_to, color_limit):
-            return False
-        
-        killed_man = self._do_move(p_from, p_to)
-        self.non_kill_moves = 0 if killed_man else (self.non_kill_moves + 1) 
-        
-        return True
-                
-    def make_log_step_move(self, p_from, p_to, color_limit = True):
-    
-        if not self.can_make_move(p_from, p_to, color_limit):
-            return None
-        
-        fen_before_move = self.to_fen()    
-        killed_man = self._do_move(p_from, p_to)
-        #fen_after_move = self.to_fen()
-        self.non_kill_moves = 0 if killed_man else (self.non_kill_moves + 1) 
-        
-        move_log = MoveLogItem(p_from, p_to, killed_man,  fen_before_move,  None,  self.non_kill_moves)
-        
-        return move_log
-    
-    def chinese_move_to_std_move(self, move_str):
-        
-        move_indexs = [u"前", u"中", u"后", u"一", u"二", u"三", u"四", u"五"]
-        
-        multi_man = False
-        multi_lines = False
-        
-        if move_str[0] in move_indexs:
-            
-            man_index = move_indexs.index(mov_str[0])
-            
-            if man_index > 1:
-                multi_lines = True
-                
-            multi_man = True
-            man_name = move_str[1]
-            
-        else :
-            
-            man_name = move_str[0]
-        
-        if man_name not in chessman_show_names[self.move_side]:
-            print "error",  move_str     
-        
-        man_kind = chessman_show_names[self.move_side].index(man_name)
-        if not multi_man:
-            #单子移动指示
-            man_x = h_level_index[self.move_side].index(man_name)
-            mans = __get_mans_at_vline(man_kind, self.move_side) 
-            
-            #无子可走
-            if len(mans) == 0:
-                return None
-            
-            #同一行选出来多个
-            if (len(mans) > 1) and (man_kind not in[ADVISOR, BISHOP]):
-                #只有士象是可以多个子尝试移动而不用标明前后的
-                return None
-            
-            for man in mans:
-                move = man.chinese_move_to_std_move(move_str[2:]) 
-                if move :
-                    return move
-            
-            return None
-            
-        else:
-            #多子选一移动指示
-            mans = __get_mans_of_kind(man_kind, self.move_side) 
-                
-    def std_move_to_chinese_move(self, p_from, p_to):
-        
-        man = self._board[p_from]
-        
-        return man.std_move_to_chinese_move(p_to)
-    
-    
-    def _do_move(self, p_from, p_to):
-
-        killed_man = None
-        if p_to in self._board.keys():
-            killed_man = self._board[p_to]
-            
-        chessman = self._board.pop(p_from)
-        
-        chessman.x, chessman.y = p_to
-        self._board[p_to] = chessman
-        
-        return killed_man
-        
-    def __undo_move(self, p_from, p_to, killed_man = None):
-        chessman = self._board[p_to]
-        
-        chessman.x, chessman.y = p_from
-        self._board[p_from] = chessman
-
-        if killed_man is not None:
-            self._board[p_to] = killed_man
-        else:
-            del self._board[p_to]
-    
-    def between_v_line(self, x, y1, y2):
-        
-        min_y = min(y1, y2)
-        max_y = max(y1, y2)
-        
-        #if (max_y - min_y) <= 1:
-        #    return 0
-        
-        count = 0
-        for m_y in range(min_y+1, max_y):
-            if (x, m_y) in self._board.keys():
-                count += 1
-                
-        return count    
-    
-    def between_h_line(self, y, x1, x2):
-        
-        min_x = min(x1, x2)
-        max_x = max(x1, x2)
-        
-        count = 0
-        for m_x in range(min_x+1, max_x):
-            if (m_x, y) in self._board.keys():
-                count  += 1
-        
-        return count
-    
-    def all_chessman_at_h_line(self, y):
-        #TODO
-        pass
-        
-    def all_chessman_at_v_line(self, x):
-        #TODO
-        pass
-    
-    def __get_mans_of_kind(self, species, side):
-        
-        mans = []
-        for key in self._board.keys():    
-            man = self._board[key]
-            if man.species == species and man.side == side:
-                mans.append(man)
-        
-        return mans 
-    
-    def __get_mans_at_vline(self, species, side, x):
-        
-        mans = __get_mans_of_kind(species, side)
-        
-        new_mans = []
-        for man in mans:    
-            if man.x == x:
-                new_mans.append(man)
-        
-        return new_mans 
   
 #-----------------------------------------------------#
-  
-def  moves_to_chinese_moves(fen, moves_str) :
-        board = Chessboard(fen)
+if __name__ == '__main__':
         
-        moves = moves_str.split()
-        chinese_moves = []
+        board = BaseChessboard(FULL_INIT_FEN)
+        board.print_board()
         
-        for item in moves :
-                if item[0] not in ["a", "b", "c", "d", "e", "f", "g", "h", "i"] :
-                        chinese_moves.append(item)
-                        continue
-                move_from, move_to = str_to_move(item)
-                if board.can_make_move(move_from, move_to,  color_limit = False) :
-                        chinese_move_str = board.std_move_to_chinese_move(move_from, move_to)
-                        chinese_moves.append(chinese_move_str)
-                        board.make_step_move(move_from, move_to,  color_limit = False)
-                        #board.turn_side()
-                else :                
-                        print  move_from, move_to
-                        break
-                        chinese_moves.append(item)
-                        continue
-                        
-        return " ".join(chinese_moves)       
-         
+        print board.copy().move(Pos(7,2),Pos(4,2)).to_chinese() == u'炮二平五'
+        print board.copy().move(Pos(1,2),Pos(1,1)).to_chinese() == u'炮八退一'
+        print board.copy().move(Pos(7,2),Pos(7,6)).to_chinese() == u'炮二进四'
+        print board.copy().move(Pos(7,7),Pos(4,7)).to_chinese() == u'炮８平５'
+        print board.copy().move(Pos(7,7),Pos(7,3)).to_chinese() == u'炮８进４'
+        print board.copy().move(Pos(6,3),Pos(6,4)).to_chinese() == u'兵三进一'
+        print board.copy().move(Pos(8,0),Pos(8,1)).to_chinese() == u'车一进一'
+        print board.copy().move(Pos(0,9),Pos(0,8)).to_chinese() == u'车１进１'
+        print board.copy().move(Pos(4,0),Pos(4,1)).to_chinese() == u'帅五进一'
+        print board.copy().move(Pos(4,9),Pos(4,8)).to_chinese() == u'将５进１'
+        print board.copy().move(Pos(2,0),Pos(4,2)).to_chinese() == u'相七进五'
+        print board.copy().move(Pos(5,0),Pos(4,1)).to_chinese() == u'仕四进五'
+        print board.copy().move(Pos(7,0),Pos(6,2)).to_chinese() == u'马二进三'
+                 

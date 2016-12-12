@@ -1,0 +1,42 @@
+[Game "Chinese Chess"]
+[Event ""]
+[Round ""]
+[Date "2010-04-10"]
+[Site "华山"]
+[RedTeam ""]
+[Red "齐鲁剑侠(无极)"]
+[BlackTeam ""]
+[Black "青城芙蓉(无极)"]
+[TimeControl "10-5-0"]
+[RedTime "368"]
+[BlackTime "516"]
+[Result "0-1"]
+[ECCO ""]
+[Opening ""]
+[Variation ""]
+[FEN "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"]
+  1. 炮二平五
+     马８进７
+  2. 兵三进一
+     车９平８
+  3. 马二进三
+     炮８平９
+  4. 马八进九
+     马２进３
+  5. 车九进一
+     炮２进２
+  6. 车九平四
+     炮２平３
+  7. 车一进一
+     炮３进５
+  8. 仕六进五
+     炮３退１
+  9. 炮八进五
+     车１平２
+ 10. 马九退七
+     车２进２
+ 11. 兵五进一
+     车２进６
+ 12. 马七进六
+     车８进６
+ 0-1

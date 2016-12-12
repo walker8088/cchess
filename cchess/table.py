@@ -20,10 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
 
-from pubsub import pub
-
-from common import *
-from engine import *
+from ucci import *
 
 #-----------------------------------------------------#
 
@@ -134,3 +131,4 @@ class ChessTable(object):
        
         #self.players[self.board.move_side].ready_to_move()
         
+#-----------------------------------------------------#        
