@@ -31,9 +31,7 @@ from exception import *
 #-----------------------------------------------------#
 def read_from_dhtml(html_page):
         res_dict = __parse_dhtml(html_page)
-        if not res_dict['bmoves'] :        
-                return None
-        game = read_from_txt(res_dict['bmoves'], res_dict['binit']) 
+        game = read_from_txt(res_dict['moves'], res_dict['init']) 
         return game
         
 #-----------------------------------------------------#                   
@@ -47,12 +45,12 @@ def read_from_txt(moves_txt, pos_txt = None):
         chessman_kinds = 'RNBAKABNRCCPPPPP'  
         
         if not pos_txt:
-            board = Chessboard(FULL_INIT_FEN)
+            board = BaseChessBoard(FULL_INIT_FEN)
         else:
             if len(pos_txt) != 64:
                  raise CChessException("bad pos_txt")
                  
-            board = Chessboard()
+            board = BaseChessBoard()
             for side in range(2):
                 for man_index in range(16):
                         pos_index = (side * 16 + man_index)*2 
@@ -61,10 +59,11 @@ def read_from_txt(moves_txt, pos_txt = None):
                                 continue
                         pos = decode_txt_pos(man_pos)  
                         fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
-                        board.put_man(fen_ch, pos)
+                        board.put_fench(fen_ch, pos)
         
         last_move = None
-        
+        if not moves_txt:
+            return Game(board)
         step_no = 0
         while step_no*4 < len(moves_txt) : 
                 steps = moves_txt[step_no*4:step_no*4+4]
@@ -75,7 +74,7 @@ def read_from_txt(moves_txt, pos_txt = None):
                 if board.is_valid_move(move_from, move_to) :
                         
                         if not last_move:
-                            _, man_side = fench_to_species(board.get_man(move_from))
+                            _, man_side = fench_to_species(board.get_fench(move_from))
                             board.move_side = man_side
                             game = Game(board)
                             last_move = game
@@ -86,7 +85,10 @@ def read_from_txt(moves_txt, pos_txt = None):
                         board.next_turn()
                 else :
                         raise CChessException("bad move at %d %s %s" % (step_no, move_from, move_to))
-                step_no += 1        
+                step_no += 1
+        if step_no == 0:
+                game = Game(board)
+                
         return game
                 
 #-----------------------------------------------------#
@@ -98,29 +100,41 @@ def __str_between(src, begin_str, end_str) :
         else :
                 return None
 
+def __str_between2(src, begin_str, end_str) :
+        first = src.find(begin_str) + len(begin_str)
+        last = src.find(end_str)
+        if last > first:
+                return src[first:last]
+        if last == -1:
+                return None
+                
+        src2 = src[last + len(end_str):]        
+        f2 = src2.find(begin_str) + len(begin_str)
+        l2 = src2.find(end_str)
+        if l2 > f2:
+                return src2[f2:l2]
+        else :
+                return None
+                
 def __parse_dhtml(html_page) :        
         result_dict = {}
-        soup = BeautifulSoup(html_page, 'lxml')
-        divs = soup.find_all('div')
-        text = unicode(divs[1].text).encode('utf-8')
-        
+        text = html_page.decode('GB18030')
         result_dict['event'] = __str_between(text, '[DhtmlXQ_event]', '[/DhtmlXQ_event]')
         if result_dict['event'] :
-                result_dict['event'] = result_dict['event'].decode('utf-8')
+                result_dict['event'] = result_dict['event']
         
         result_dict['title'] = __str_between(text, '[DhtmlXQ_title]', '[/DhtmlXQ_title]')
         if result_dict['title'] :
-                result_dict['title'] = result_dict['title'].decode('utf-8')
+                result_dict['title'] = result_dict['title']
         
         result_dict['result'] = __str_between(text, '[DhtmlXQ_result]', '[/DhtmlXQ_result]')
         if result_dict['result'] :
-                result_dict['result'] = result_dict['result'].decode('utf-8')
+                result_dict['result'] = result_dict['result']
            
-        result_dict['binit'] = __str_between(text, '[DhtmlXQ_binit]', '[/DhtmlXQ_binit]')
-        
-        tds = soup.find_all('td')
-        text = unicode(tds[4].text) .encode('utf-8')
-        result_dict['bmoves'] = __str_between(text, '[DhtmlXQ_movelist]', '[/DhtmlXQ_movelist]')
+        init = __str_between(text, '[DhtmlXQ_binit]', '[/DhtmlXQ_binit]')
+        result_dict['init'] = init.encode('utf-8') if init else None
+        moves = __str_between2(text, '[DhtmlXQ_movelist]', '[/DhtmlXQ_movelist]')
+        result_dict['moves'] = moves.encode('utf-8') if moves else None
                 
         return result_dict
         

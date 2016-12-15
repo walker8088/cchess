@@ -17,25 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from board import *
+from piece import *
 
-#-----------------------------------------------------#
-
-h_level_index = \
-(
-        (u"九",u"八",u"七",u"六",u"五",u"四",u"三",u"二",u"一"), 
-        (u"１",u"２",u"３",u"４",u"５",u"６",u"７",u"８",u"９") 
-)
-
-v_change_index = \
-(
-        (u"错", ""u"一", u"二", u"三", u"四", u"五", u"六", u"七", u"八", u"九"), 
-        (u"误", ""u"１", u"２", u"３", u"４", u"５", u"６", u"７", u"８", u"９")
-)
-
-#-----------------------------------------------------#
-
-    
 #-----------------------------------------------------#
 class Move(object):
 
@@ -94,7 +77,7 @@ class Move(object):
         
     def to_chinese(self):
         
-        fench = self.board.get_man(self.p_from)
+        fench = self.board.get_fench(self.p_from)
         man_species, man_side = fench_to_species(fench)
         
         diff = self.p_to.y - self.p_from.y
@@ -127,9 +110,9 @@ class Move(object):
         
     def __get_chinese_name(self, p_from):
         
-        fench = self.board.get_man(p_from)
+        fench = self.board.get_fench(p_from)
         man_species, man_side = fench_to_species(fench)
-        man_name = fench_to_name(fench) 
+        man_name = fench_to_chinese(fench) 
         
         #王，士，相命名规则
         if man_species in [ PieceT.KING,  PieceT.ADVISOR,  PieceT.BISHOP]:
@@ -155,6 +138,7 @@ class Move(object):
                 elif count == 2:
                         return pos_name2[man_side][pos_index] + man_name
                 elif count == 3:
+                        #TODO 查找另一个多子行
                         return pos_name3[man_side][pos_index] + man_name
                 elif count == 4:
                         return pos_name4[man_side][pos_index] + man_name
@@ -162,8 +146,16 @@ class Move(object):
                         return pos_name5[man_side][pos_index] + man_name
         
         return man_name + h_level_index[man_side][p_from.x]
+    
+    def to_iccs(self):
+        return chr(ord('a') + self.p_from.x) + str(self.p_from.y) + chr(ord('a') + self.p_to.x) + str(self.p_to.y)
+
+    @staticmethod   
+    def from_iccs(move_str):
+        return (Pos(ord(move_str[0]) - ord('a'),int(move_str[1])), Pos(ord(move_str[2]) - ord('a'), int(move_str[3])))
         
-    def from_chinese(self, chinese_str):
+    @staticmethod   
+    def from_chinese(board, move_str):
     
         move_indexs = [u"前", u"中", u"后", u"一", u"二", u"三", u"四", u"五"]
         
@@ -174,7 +166,7 @@ class Move(object):
             
             man_index = move_indexs.index(mov_str[0])
             
-            if man_index > 1:
+            if man_index > 2:
                 multi_lines = True
                 
             multi_man = True
@@ -191,7 +183,7 @@ class Move(object):
         if not multi_man:
             #单子移动指示
             man_x = h_level_index[self.move_side].index(man_name)
-            mans = __get_mans_at_vline(man_kind, self.move_side) 
+            mans = __get_fenchs_at_vline(man_kind, self.move_side) 
             
             #无子可走
             if len(mans) == 0:
@@ -211,11 +203,12 @@ class Move(object):
             
         else:
             #多子选一移动指示
-            mans = __get_mans_of_kind(man_kind, self.move_side) 
-                
+            mans = __get_fenchs_of_kind(man_kind, self.move_side) 
+        
+        return (p_from, p_to)       
 
 #-----------------------------------------------------#
 if __name__ == '__main__':    
-    board = BaseChessboard(FULL_INIT_FEN)
+    board = BaseChessBoard(FULL_INIT_FEN)
     m = Move(board, Pos(0,0), Pos(0,1) )
     print m.to_chinese() == u'车九进一'    

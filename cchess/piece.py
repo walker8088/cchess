@@ -95,22 +95,6 @@ fench_name_dict = {
    'p': u"卒"     
 }
 
-fench_txt_name_dict = {
-   'K': u"帅",
-   'k': u"将",
-   'A': u"仕",
-   'a': u"士",
-   'B': u"相", 
-   'b': u"象",
-   'N': u"马",
-   'n': u"碼",
-   'R': u"车",
-   'r': u"砗",
-   'C': u"炮", 
-   'c': u"砲",
-   'P': u"兵", 
-   'p': u"卒"     
-}
     
 species_fench_dict = {
     PieceT.KING:    ('K', 'k'),
@@ -123,12 +107,8 @@ species_fench_dict = {
 }
 
 #-----------------------------------------------------#
-
-def fench_to_name(fench) :
+def fench_to_chinese(fench) :
     return fench_name_dict[fench]
-
-def fench_to_txt_name(fench) :
-    return fench_txt_name_dict[fench]
     
 def fench_to_species(fen_ch):
     return fench_species_dict[fen_ch.lower()], ChessSide.BLACK if fen_ch.islower() else ChessSide.RED
@@ -153,17 +133,39 @@ def get_show_name(species, side) :
         
     
 #-----------------------------------------------------#
-
+class Pos(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __str__(self):
+        return str(self.x) + ":" + str(self.y)
+    
+    def __eq__(self, other): 
+        return (self.x == other.x) and (self.y == other.y)
+    
+    def __ne__(self, other): 
+        return (self.x != other.x) or (self.y != other.y)
+    
+    def __call__(self):
+        return (self.x, self.y)
+        
+#-----------------------------------------------------#
+        
 class Piece(object):
     
-    def __init__(self, board, species, side, pos):
+    def __init__(self, board, fench, pos):
         
         self.board = board
+        self.fench = fench
+        
+        species, side = fench_to_species(fench)  
         
         self.species = species
         self.side = side
         
-        self.x, self.y = pos
+        self.x = pos.x
+        self.y = pos.y
         
         self.__can_place_checks = {
              PieceT.KING   : self.__can_place_king, 
@@ -499,4 +501,9 @@ class Piece(object):
             new_y = self.y + diff
             
             return (self.x,  new_y)
+            
+#-----------------------------------------------------#    
+if __name__ == '__main__':
+    pass 
+    
     

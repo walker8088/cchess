@@ -243,7 +243,7 @@ def __read_steps(buff_decoder, version, keys, parent, board):
         move_from, move_to = _decode_pos2(step_info)
         annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
         
-        fench = board.get_man(move_from)
+        fench = board.get_fench(move_from)
         
         if not fench:
                 #raise CChessException("bad move at %s %s" % (str(move_from), str(move_to)))
@@ -268,7 +268,7 @@ def __read_steps(buff_decoder, version, keys, parent, board):
                 __read_steps(buff_decoder, version, keys, good_move, board)    
                 
         if has_var_step :
-                #print move_to_str(parent.next_move.move), 'has var'
+                #print Move.to_iccs(parent.next_move.move), 'has var'
                 __read_steps(buff_decoder, version, keys, parent, board_bak)
 
 #-----------------------------------------------------#
@@ -348,7 +348,7 @@ def read_from_xqf(full_file_name, read_annotation = True):
                 chess_mans = __init_chess_board(ucBoard, version, keys)	
                 step_base_buff = XQFBuffDecoder(__decode_buff(keys, contents[0x400:])) 
         
-        board = BaseChessboard()
+        board = BaseChessBoard()
         
         chessman_kinds = \
                 (
@@ -364,7 +364,7 @@ def read_from_xqf(full_file_name, read_annotation = True):
                                 continue
                         pos = _decode_pos(man_pos)  
                         fen_ch = chr(ord(chessman_kinds[man_index]) +side * 32)
-                        board.put_man(fen_ch, pos)
+                        board.put_fench(fen_ch, pos)
                         
         game_annotation = __read_init_info(step_base_buff, version, keys)
         

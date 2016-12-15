@@ -1,2 +1,60 @@
 # cchesslib
 cchessslib是一个Python版的中国象棋库
+
+这是一个快速的例子：
+
+1.移动和文字显示
+
+from cchess import *
+
+board = ChessBoard()
+board.from_fen(FULL_INIT_FEN)
+board.print_board()
+move = board.move(Pos(0,0),Pos(Pos(0,1)))
+print move.to_chinese()
+
+
+2.读取xqf格式棋谱文件,并显示棋谱内容
+
+from cchess import *
+
+game = read_from_xqf("1.xqf")
+game.print_init_board()
+game.print_chinese_moves()
+
+
+3.读取dhtml网页文件,并显示棋谱内容
+
+import request
+
+from cchess import *
+
+url='http://game.onegreen.net/chess/HTML/13490.html'
+
+req = requests.get(url)
+html = req.content
+game = read_from_dhtml(html)
+game.print_init_board()
+game.print_chinese_moves()
+
+4.加载引擎进行对弈
+
+from cchess import *
+
+table = ChessTable()  
+
+engine = UcciEngine()
+engine.load("test\\eleeye\\eleeye.exe")
+
+p1 = ChessPlayer(ChessSide.RED)
+p2 = ChessPlayer(ChessSide.BLACK)
+p1.attach_engine(engine)
+p2.attach_engine(engine)
+
+table.new_game(FULL_INIT_FEN, [p1,p2])
+table.start_game()
+while True:
+    table.run_game()
+game = table.get_game()
+game.print_chinese_moves()
+

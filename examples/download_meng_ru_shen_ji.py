@@ -48,7 +48,8 @@ games = games1 +games2
 games.sort(key=lambda x: x[0])
 
 bad_files = []
-db = TinyDB(u'梦入神机.jdb')
+#db = TinyDB(u'梦入神机.jdb')
+games_result = []
 for it in games[:] :
         game_info = {}
         html_page = open_url("http://www.dpxq.com" + it[1])
@@ -65,29 +66,28 @@ for it in games[:] :
         print it[0]
         
         if game.init_board.move_side != ChessSide.RED:
-                print "Erorr",game.init_board.move_side 
-                break
-        
-        
+                game.init_board.move_side = ChessSide.RED
+                #print "Erorr",game.init_board.move_side 
+                
         game_info['name']  = it[0][3:]
         game_info['fen']   = game.init_board.to_fen()
-        game_info['moves'] = ','.join(game.dump_std_moves()[0])
-        db.insert(game_info)
-        print
-        for line in board_txt:
-                print line
-        print   
+        moves = game.dump_std_moves()
+        game_info['move_len'] = len(moves[0]) if len(moves) > 0 else 0  #','.join(moves[0]) if len(moves) > 0 else ''
+        games_result.append(game_info)
+        game.print_init_board()
+        game.print_chinese_moves()
+        #db.insert(game_info)
         
-        moves = game.dump_std_moves()[0]
-        print moves
-        moves = game.dump_chinese_moves()[0]
-        for it in moves:
-                print it,
-        print         
+#db.close()
 
-db.close()
+games_result.sort(key = lambda x : x['move_len'])
 
 print "BAD FILES:",
 for it in  bad_files:
                 print it,
 print 'End.'                
+
+with open(u"梦入神机.epd", "wb") as f:
+        for it in games_result:
+                print it['move_len']
+                f.write("%s|%s\n" % (it['name'].encode('utf-8'), it['fen']))

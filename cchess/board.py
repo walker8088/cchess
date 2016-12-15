@@ -28,7 +28,7 @@ from move import *
 FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
 
 #-----------------------------------------------------#
-text_board = [
+_text_board = [
 #u' 1  2   3   4   5   6   7   8   9',
 u'9 ┌─┬─┬─┬───┬─┬─┬─┐',
 u'  │  │  │  │＼│／│　│　│　│',
@@ -53,38 +53,33 @@ u'  0   1   2   3   4   5   6   7   8'
 #u'  九 八  七  六  五  四  三  二  一'
 ]
 
-def pos_to_text_board_pos(pos):
+_fench_txt_name_dict = {
+   'K': u"帅",
+   'k': u"将",
+   'A': u"仕",
+   'a': u"士",
+   'B': u"相", 
+   'b': u"象",
+   'N': u"马",
+   'n': u"碼",
+   'R': u"车",
+   'r': u"砗",
+   'C': u"炮", 
+   'c': u"砲",
+   'P': u"兵", 
+   'p': u"卒"     
+
+   }
+#-----------------------------------------------------#
+
+def _pos_to_text_board_pos(pos):
     return Pos(2*pos.x+2, (9 - pos.y)*2)     
 
-    
+def _fench_to_txt_name(fench) :
+    return _fench_txt_name_dict[fench]
+     
 #-----------------------------------------------------#
-class Pos(object):
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        
-    def __str__(self):
-        return str(self.x) + ":" + str(self.y)
-        
-#-----------------------------------------------------#
-
-def move_to_str(move):
-    
-    (x, y), (x_, y_) = move
-    
-    move_str = ''
-    move_str += chr(ord('a') + x)
-    move_str += str(y)
-    move_str += chr(ord('a') + x_)
-    move_str += str(y_)
-    
-    return move_str
-
-def str_to_move(move_str):
-    return (Pos(ord(move_str[0]) - ord('a'),int(move_str[1])),Pos(ord(move_str[2]) - ord('a'), int(move_str[3])))
-    
-#-----------------------------------------------------#
-class BaseChessboard(object) :
+class BaseChessBoard(object) :
     def __init__(self, fen = None):
 	self.clear()
         if fen: self.from_fen(fen)
@@ -96,12 +91,20 @@ class BaseChessboard(object) :
     def copy(self):
         return copy.deepcopy(self)
         
-    def put_man(self, fench, pos):
+    def put_fench(self, fench, pos):
         self._board[pos.y][pos.x] = fench
     
-    def get_man(self, pos):
+    def get_fench(self, pos):
         return self._board[pos.y][pos.x]
     
+    def get_piece(self, pos): 
+        fench = self._board[pos.y][pos.x]
+        
+        if not fench:
+                return None
+        
+        return Piece(self, fench, pos)
+        
     def is_valid_move(self, pos_from, pos_to):
         '''
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
@@ -141,6 +144,15 @@ class BaseChessboard(object) :
         self.__move_man(pos_from, pos_to)
         
         return Move(board, pos_from, pos_to)
+        
+    def move_iccs(move_str):
+        move_from, move_to = Move.from_iccs(move_str)
+        return move(move_from, move_to)
+    
+    def move_chinese(move_str):
+        move_from, move_to = Move.from_chinese(self, move_str)
+        return move(move_from, move_to)
+    
     
     def next_turn(self) :
         if self.move_side == None :
@@ -178,13 +190,14 @@ class BaseChessboard(object) :
                 if x > 8: x = 8
             elif ch.lower() in ch_set:
                 if x <= 8:
-                    self.put_man(ch, Pos(x, y))                
+                    self.put_fench(ch, Pos(x, y))                
                     x += 1
             else:
                 return False
         
         fens = fen.split() 
         
+        self.move_side = None
         if (len(fens) >= 2) and (fens[1] == 'b') :
                  self.move_side = ChessSide.BLACK
         else:
@@ -222,6 +235,7 @@ class BaseChessboard(object) :
         elif self.move_side is ChessSide.RED :
             fen += ' w'
         else :
+            #return fen
             raise CChessException('Move Side Error' + str(self.move_side))
             
         fen += ' - - 0 1'
@@ -230,15 +244,15 @@ class BaseChessboard(object) :
 
     def dump_board(self):
                 
-        board_str = text_board[:]
+        board_str = _text_board[:]
     
         y = 0
         for line in self._board:
             x = 0
             for ch in line:
                 if ch : 
-                        pos = pos_to_text_board_pos(Pos(x,y))
-                        new_text=board_str[pos.y][:pos.x] + fench_to_txt_name(ch) + board_str[pos.y][pos.x+1:]
+                        pos = _pos_to_text_board_pos(Pos(x,y))
+                        new_text=board_str[pos.y][:pos.x] + _fench_to_txt_name(ch) + board_str[pos.y][pos.x+1:]
                         board_str[pos.y] = new_text
                 x += 1                         
             y += 1
@@ -255,12 +269,12 @@ class BaseChessboard(object) :
         
 #-----------------------------------------------------#
 
-class Chessboard(BaseChessboard):
+class ChessBoard(BaseChessBoard):
     def __init__(self, fen = None):        
-        super(Chessboard, self).__init__(fen)
+        super(ChessBoard, self).__init__(fen)
     
     def is_valid_move(self, pos_from, pos_to):
-        if not super(Chessboard, self).is_valid_move(pos_from, pos_to):
+        if not super(ChessBoard, self).is_valid_move(pos_from, pos_to):
                 return False
         
         '''
@@ -275,7 +289,7 @@ class Chessboard(BaseChessboard):
 #-----------------------------------------------------#
 if __name__ == '__main__':
         
-        board = BaseChessboard(FULL_INIT_FEN)
+        board = BaseChessBoard(FULL_INIT_FEN)
         board.print_board()
         
         print board.copy().move(Pos(7,2),Pos(4,2)).to_chinese() == u'炮二平五'

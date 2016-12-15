@@ -60,27 +60,6 @@ class UcciEngine(Thread):
         self.last_fen = None
         self.move_queue = Queue()
     
-    '''    
-    def on_game_inited(self, move_log) :
-        self.init_fen = move_log.fen_after_move
-        self.last_fen = move_log.fen_after_move
-        self.send_cmd("setoption newgame")
-        
-    def on_game_started(self, move_side) :
-        self.move_side = move_side
-        self.go_from(self.init_fen)
-       
-    def on_game_step_moved(self, move_log) :
-        self.move_side = move_log.next_move_side()
-        self.last_fen_str = move_log.fen_after_move
-        self.go_from(move_log.fen_for_engine())
-    
-    def on_game_step_moved_undo(self, steps, move_log, next_move_side) :
-        self.move_side = next_move_side
-        self.last_fen_str = move_log.fen_after_move
-        self.go_from(move_log.fen_for_engine())
-    '''
-    
     def run(self) :
         
         self.running = True
@@ -93,7 +72,7 @@ class UcciEngine(Thread):
         try:  
             output = self.engine_out_queque.get_nowait()
         except Empty:
-            return 
+            return False
     
         if output in ['bye','']: #stop pipe
             self.pipe.terminate()
@@ -180,15 +159,18 @@ class UcciEngine(Thread):
         elif self.enging_status == EngineStatus.READY:
             
             if resp_id == 'nobestmove':         
-                self.move_queue.put(("dead_move", {'fen' : self.last_fen}))
+                self.move_queue.put(("dead", {'fen' : self.last_fen}))
                 
             elif resp_id == 'bestmove':
-                if outputs_list[1].lower() == 'null':
-                    self.move_queue.put(("dead_move", {'fen' : self.last_fen}))
-                
+                if outputs_list[1] == 'null':
+                    self.move_queue.put(("dead", {'fen' : self.last_fen}))
+                elif outputs_list[-1] == 'draw':
+                    self.move_queue.put(("draw", {'fen' : self.last_fen}))
+                elif outputs_list[-1] == 'resign':
+                    self.move_queue.put(("resign", {'fen' : self.last_fen}))                    
                 else :  
                     move_str = output[9:13]
-                    pos_move = str_to_move(move_str)
+                    pos_move = Move.from_iccs(move_str)
                     
                     move_info = {}    
                     move_info["fen"] = self.last_fen
@@ -211,7 +193,7 @@ class UcciEngine(Thread):
                     
                     move_steps = []
                     for step_str in info_list[5:] :
-                        move= str_to_move(step_str)
+                        move= Move.from_iccs(step_str)
                         move_steps.append(move)    
                     move_info["move"] = move_steps    
                     
@@ -234,15 +216,15 @@ if __name__ == '__main__':
     
     engine = UcciEngine()
     engine.load("test\\eleeye\\eleeye.exe")
-    '''
+    
     for id in engine.ids:
         print id
     for op in engine.options:
         print op
-    '''    
+    
     dead = False
     while not dead:    
-        engine.go_from(board.to_fen())
+        engine.go_from(board.to_fen(), 10)
         while True:
             engine.handle_msg_once()
             if engine.move_queue.empty():
@@ -251,18 +233,23 @@ if __name__ == '__main__':
             output = engine.move_queue.get()
             if output[0] == 'best_move':
                 p_from, p_to = output[1]["move"]
-                if not board.is_valid_move(p_from, p_to):
-                        print "move error", p_from, p_to
-                        dead = True
-                        break
-                print board.move(p_from, p_to).to_chinese()
-                board.print_board()
+                print board.move(p_from, p_to).to_chinese(),
+                #board.print_board()
                 last_side = board.move_side
                 board.next_turn()
                 break
-            elif output[0] == 'dead_move':
+            elif output[0] == 'dead':
                 print win_dict[last_side]
                 dead = True
-                break           
+                break
+            elif output[0] == 'draw':
+                print u'引擎议和'
+                dead = True
+                break
+            elif output[0] == 'resign':
+                print u'引擎认输', win_dict[last_side]
+                dead = True
+                break
+                
     engine.quit()
     time.sleep(0.5)    

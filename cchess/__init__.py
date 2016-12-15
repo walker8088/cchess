@@ -21,8 +21,6 @@ from piece import *
 from board import *
 from game import  *
 from move import  *
-from table import *
-from player import *
 from ucci  import *
 from reader_xqf import read_from_xqf
 from reader_cbf import read_from_cbf
