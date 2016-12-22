@@ -59,6 +59,7 @@ class GameTable():
         
 	self.selected = None
         self.last_moved = None
+        self.last_checked = False
         #self.done = None
         
         self.surface = load_image('board.png')
@@ -97,18 +98,37 @@ class GameTable():
                 
     def try_move(self, move_from, move_to):
         if self.board.is_valid_move(move_from, move_to):
+                check_count = self.board.is_checked_move(move_from, move_to)
+                if check_count:
+                        if self.last_checked:
+                            print u"必须应将。"
+                        else:
+                            print u"不能送将。"
+                        return (False,None)         
                 self.show_move(move_from, move_to)
                 move = self.board.move(move_from, move_to)
                 print move.to_chinese()
+                        
                 self.last_moved = Pos(move_to.x, move_to.y)
                 self.selected = None
                 self.board.next_turn()
+                if self.board.is_checkmate():
+                    print u"将死！"
+                    return (True, self.board.move_side)    
+                self.last_checked  = self.board.is_checked()
+                if self.last_checked:   
+                    print u"将军！"        
+                if move.is_king_killed():
+                    print u"杀死！"
+                    return (True, self.board.move_side)   
+                    
                 engine = self.engine[self.board.move_side]
                 if engine:
-                        engine.go_from(self.board.to_fen())
-                return True
+                    engine.go_from(self.board.to_fen())
+                return (True,None)
         else:
-                return False
+                print u"走法错误."
+                return (False,None)
                 
     def draw(self):
         
@@ -202,8 +222,11 @@ class GameTable():
                 #print output
                 if output[0] == 'best_move':
                     p_from, p_to = output[1]["move"]
-                    if not self.try_move(p_from, p_to):
-                        print "engine output error"
+                    has_moved,dead_side = self.try_move(p_from, p_to)
+                    if dead_side != None:
+                            return (False, dead_side) 
+                    if not has_moved:
+                        print "engine output error", p_from, p_to 
                 elif output[0] == 'dead':
                     #print self.board.move_side
                     print win_dict[self.board.move_side]   
@@ -226,18 +249,25 @@ class GameTable():
                         
                     key = screen_to_pos(Pos(sx, sy))
                     
-                    #move check
-                    has_moved = False
-                    if self.selected:
-                        move_from = self.selected
-                        move_to = key
-                        has_moved = self.try_move(move_from, move_to)
-                    #pickup check
-                    if not has_moved:
-                        piece = self.board.get_piece(key)
-                        if piece and piece.side == self.board.move_side:
+                    piece = self.board.get_piece(key)
+                    if piece and piece.side == self.board.move_side:
                             self.selected = key
                             self.last_moved = None
+                    else:    
+                            #move check
+                            has_moved = False
+                            if self.selected and (key != self.selected):
+                                move_from = self.selected
+                                move_to = key
+                                has_moved,dead_side = self.try_move(move_from, move_to)
+                                if dead_side != None:
+                                    return (False, dead_side)    
+                    ##pickup check
+                    #if not has_moved:
+                    #    piece = self.board.get_piece(key)
+                    #    if piece and piece.side == self.board.move_side:
+                    #        self.selected = key
+                    #        self.last_moved = None
                                 
 	self.draw()   
 	
@@ -304,13 +334,16 @@ if __name__ == '__main__':
                 quit, dead_side = table.run_once()
                 if quit :
                         done = True
-                if dead_side == ChessSide.BLACK:
+                if dead_side == None:
+                        pass
+                elif dead_side == ChessSide.BLACK:
                         keeper.done(index)
                         print u'挑战成功！再接再励！'
                         done = True
-                elif dead_side == ChessSide.RED:
-                        done = True
-                        print u'挑战失败！重新再来！'
+                else :
+                        if dead_side == ChessSide.RED:
+                            done = True
+                            print u'挑战失败！重新再来！'
             if quit :
                 break
                     

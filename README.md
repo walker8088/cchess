@@ -10,7 +10,7 @@ from cchess import *
 board = ChessBoard()
 board.from_fen(FULL_INIT_FEN)
 board.print_board()
-move = board.move(Pos(0,0),Pos(Pos(0,1)))
+move = board.move(Pos(0,0),(Pos(0,1)))
 print move.to_chinese()
 
 
@@ -38,23 +38,5 @@ game.print_init_board()
 game.print_chinese_moves()
 
 4.加载引擎进行对弈
-
-from cchess import *
-
-table = ChessTable()  
-
-engine = UcciEngine()
-engine.load("test\\eleeye\\eleeye.exe")
-
-p1 = ChessPlayer(ChessSide.RED)
-p2 = ChessPlayer(ChessSide.BLACK)
-p1.attach_engine(engine)
-p2.attach_engine(engine)
-
-table.new_game(FULL_INIT_FEN, [p1,p2])
-table.start_game()
-while True:
-    table.run_game()
-game = table.get_game()
-game.print_chinese_moves()
-
+  参见examples/ui_game.py
+  

@@ -92,8 +92,13 @@ class BaseChessBoard(object) :
         return copy.deepcopy(self)
         
     def put_fench(self, fench, pos):
+        if self._board[pos.y][pos.x] != None:
+            return False    
+        
         self._board[pos.y][pos.x] = fench
-    
+        
+        return True
+        
     def get_fench(self, pos):
         return self._board[pos.y][pos.x]
     
@@ -103,12 +108,21 @@ class BaseChessBoard(object) :
         if not fench:
                 return None
         
-        return Piece(self, fench, pos)
+        return Piece.create(self, fench, pos)
+        
+    def is_valid_move_t(self, move_t):
+        pos_from, pos_to = move_t
+        return self.is_valid_move(pos_from, pos_to)
         
     def is_valid_move(self, pos_from, pos_to):
+        
         '''
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
         '''
+        
+        if not (0 <= pos_to.x <= 8): return False
+        if not (0 <= pos_to.y <= 9): return False
+        
         fench_from = self._board[pos_from.y][pos_from.x]
         if not fench_from :
             return False        
@@ -127,7 +141,7 @@ class BaseChessBoard(object) :
         
         return (from_side != to_side) 
     
-    def __move_man(self, pos_from, pos_to):
+    def _move_piece(self, pos_from, pos_to):
         
         fench = self._board[pos_from.y][pos_from.x]
         self._board[pos_to.y][pos_to.x] = fench
@@ -141,7 +155,7 @@ class BaseChessBoard(object) :
              return None 
              
         board = self.copy()
-        self.__move_man(pos_from, pos_to)
+        self._move_piece(pos_from, pos_to)
         
         return Move(board, pos_from, pos_to)
         
@@ -153,15 +167,14 @@ class BaseChessBoard(object) :
         move_from, move_to = Move.from_chinese(self, move_str)
         return move(move_from, move_to)
     
-    
     def next_turn(self) :
         if self.move_side == None :
             return None
             
-        self.move_side = ChessSide.turn_side(self.move_side)
+        self.move_side = ChessSide.next_side(self.move_side)
        
         return self.move_side
-    
+        
     def from_fen(self, fen):
         
         num_set = Set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
@@ -209,6 +222,20 @@ class BaseChessBoard(object) :
                 self.round = 1      
                 
         return True 
+    
+    def count_x_line_in(self, y, x_from, x_to):
+        return reduce(lambda count, fench: count+1 if fench else count, self.x_line_in(y, x_from, x_to), 0)
+    
+    def count_y_line_in(self, x, y_from, y_to):
+        return reduce(lambda count, fench: count+1 if fench else count, self.y_line_in(x, y_from, y_to), 0)
+        
+    def x_line_in(self, y, x_from, x_to):
+        step = 1 if x_to > x_from else -1
+        return [ self._board[y][x] for x in range(x_from+step, x_to, step) ]
+    
+    def y_line_in(self, x, y_from, y_to):
+        step = 1 if y_to > y_from else -1
+        return [ self._board[y][x] for y in range(y_from+step, y_to, step) ]
         
     def to_fen(self):
         fen = ''
@@ -273,24 +300,92 @@ class ChessBoard(BaseChessBoard):
     def __init__(self, fen = None):        
         super(ChessBoard, self).__init__(fen)
     
+    def put_fench(self, fench, pos):
+        self._board[pos.y][pos.x] = fench
+        
     def is_valid_move(self, pos_from, pos_to):
         if not super(ChessBoard, self).is_valid_move(pos_from, pos_to):
                 return False
         
-        '''
-        if not chessman.can_move_to(p_to[0],  p_to[1]):
-            print "can not move"
+        piece = self.get_piece(pos_from)
+        if not piece.is_valid_move(pos_to):
             return False
-        '''  
+        return True
+         
+    def is_checked_move(self, pos_from, pos_to):
+        board = self.copy()
+        board._move_piece(pos_from, pos_to)
+        return board.is_checked()
+        
+    def is_checked(self):
+        king = self.get_king(self.move_side)
+        king.create_moves()
+        if not king : return 0
+        killers = self.get_side_pieces(ChessSide.next_side(self.move_side))
+        '''
+        for piece in killers:
+                if piece.is_valid_move(Pos(king.x, king.y)):
+                        #print piece.x, piece.y, piece.fench
+                        return 1
+        return 0
+        '''        
+        return reduce(lambda count, piece : count+1 if piece.is_valid_move(Pos(king.x, king.y)) else count, killers, 0)                
+        
+    def is_checkmate(self):
+        defenders = self.get_side_pieces(self.move_side)
+        for piece in defenders :
+            for move_it in piece.create_moves():
+                if self.is_valid_move_t(move_it):
+                        if not self.is_checked_move(move_it[0], move_it[1]):
+                                return False
         return True
         
+    def get_king(self, side):
+        limit_y = ((0,1,2), (7,8,9))
+        for x in (3,4,5):
+                for y in limit_y[side]:
+                        fench = self._board[y][x]
+                        if not fench :
+                                continue
+                        if fench.lower() == 'k':
+                                return  Piece.create(self, fench, Pos(x,y))
+        return None
     
-  
+    def get_side_pieces(self, side):
+        pieces = [] 
+        for x in range(9):
+                for y in range(10):
+                        fench = self._board[y][x]
+                        if not fench :
+                                continue
+                        _, p_side = fench_to_species(fench)
+                        if p_side == side :        
+                                pieces.append(Piece.create(self, fench, Pos(x,y)))
+        return pieces
+        
+        
 #-----------------------------------------------------#
 if __name__ == '__main__':
         
-        board = BaseChessBoard(FULL_INIT_FEN)
+        board = ChessBoard(FULL_INIT_FEN)
         board.print_board()
+        
+        k = board.get_king(ChessSide.RED)
+        print (k.x, k.y) == (4,0)
+        k = board.get_king(ChessSide.BLACK)
+        print (k.x, k.y) == (4,9)
+        
+        print board.x_line_in(0, 0, 8)
+        print board.x_line_in(0, 8, 0)
+        #print board.x_line_in(9, 0, 10)
+        print board.y_line_in(4, -1, 10)
+        print board.y_line_in(4, 10, -1)
+        
+        print board.count_x_line_in(0, 0, 8) == 7
+        print board.count_y_line_in(4,0,9) == 2
+        print board.count_y_line_in(4,1,8) == 2
+        
+        print board.is_checked()
         
         print board.copy().move(Pos(7,2),Pos(4,2)).to_chinese() == u'炮二平五'
         print board.copy().move(Pos(1,2),Pos(1,1)).to_chinese() == u'炮八退一'

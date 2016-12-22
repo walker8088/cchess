@@ -27,9 +27,15 @@ class Move(object):
         self.board = board.copy()
         self.p_from = p_from
         self.p_to = p_to
+        self.captured = self.board.get_fench(p_to)
         
         self.next_move = None
         self.right_move = None
+    
+    def is_king_killed(self):
+        if self.captured and self.captured.lower() == 'k': 
+            return True        
+        return False
         
     def append_next_move(self, chess_move):
         chess_move.parent = self
