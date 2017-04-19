@@ -111,7 +111,7 @@ class UcciEngine(Thread):
         
         self.send_cmd("quit")
         time.sleep(0.2)
-            
+        
     def go_from(self, fen, search_depth = 8):
         
         #pass all out msg first
@@ -130,7 +130,19 @@ class UcciEngine(Thread):
         
         self.send_cmd('go depth  %d' % (search_depth))
         time.sleep(0.2)
-         
+        
+    def stop_thinking(self):
+        self.send_cmd('stop')
+        while True:
+                try:  
+                    output = self.engine_out_queque.get_nowait()
+                except Empty:
+                    continue
+                outputs_list = output.split()
+                resp_id = outputs_list[0]
+                if resp_id in ['bestmove', 'nobestmove']:         
+                        return
+        
     def send_cmd(self, cmd_str) :
         
         #print ">>>", cmd_str
@@ -159,10 +171,12 @@ class UcciEngine(Thread):
         elif self.enging_status == EngineStatus.READY:
             
             if resp_id == 'nobestmove':         
+                print output
                 self.move_queue.put(("dead", {'fen' : self.last_fen}))
                 
             elif resp_id == 'bestmove':
                 if outputs_list[1] == 'null':
+                    print output
                     self.move_queue.put(("dead", {'fen' : self.last_fen}))
                 elif outputs_list[-1] == 'draw':
                     self.move_queue.put(("draw", {'fen' : self.last_fen}))
@@ -198,6 +212,17 @@ class UcciEngine(Thread):
                     move_info["move"] = move_steps    
                     
                     self.move_queue.put(("info_move", move_info))
+    
+    def go_best_iccs_move(self, move_str):
+    
+        pos_move = Move.from_iccs(move_str)
+                    
+        move_info = {}    
+        move_info["fen"] = self.last_fen
+        move_info["move"] = pos_move    
+    
+        self.move_queue.put(("best_move",move_info))
+    
                     
 #-----------------------------------------------------#
 

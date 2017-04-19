@@ -102,9 +102,12 @@ class GameTable():
 
         self.engine = [None, None]
 
-    def new_game(self, title, fen):
+    def new_game(self, title, fen, best_moves):
 
         self.board.from_fen(fen)
+        self.best_moves = best_moves.split(",")
+        self.best_index = 0
+        
         self.selected = None
         self.last_moved = None
         self.move_history = []
@@ -140,10 +143,20 @@ class GameTable():
         
         self.last_moved = Pos(move_to.x, move_to.y)
         self.selected = None
-        
+
+        if self.best_index >= 0:
+           print move.to_iccs(),self.best_moves[self.best_index]
+           if move.to_iccs() == self.best_moves[self.best_index] :
+                self.best_index += 1
+                print 'matched', self.best_index                
+           else:
+                self.best_index = -1
+        if self.best_index >= len(self.best_moves):
+            self.best_index = -1
+            
         engine = self.engine[self.board.move_side]
         if engine:
-                engine.stop_thinking()
+            engine.stop_thinking()
         self.board.next_turn()
         
         move.for_ucci(self.board.move_side, self.move_history)
@@ -163,8 +176,12 @@ class GameTable():
 
         engine = self.engine[self.board.move_side]
         if engine:
-                print move.to_ucci_fen()
-                engine.go_from(move.to_ucci_fen())
+                #print move.to_ucci_fen()
+                if self.best_index >= 0:  
+                    print "engine best go",self.best_moves[self.best_index]    
+                    engine.go_best_iccs_move(self.best_moves[self.best_index])
+                else:
+                    engine.go_from(move.to_ucci_fen())
 
         return (True, None)
 
@@ -369,31 +386,31 @@ class GameKeeper():
 
         self.games_done = []
 
-        self.file_epd = self.file + '.epd'
+        self.flile_eglib = self.file + '.eglib'
 
-        self.file_epg = self.file + '.epg'
+        self.flile_eplib = self.file + '.eplib'
 
     def load(self):
 
-        lines = open(self.file_epd, 'rb').readlines()
+        lines = open(self.flile_eglib, 'rb').readlines()
 
         for line in lines:
 
             its = line.split('|')
 
-            self.games.append((its[0].decode('utf-8'), its[1]))
+            self.games.append((its[0].decode('utf-8'), its[1], its[2].strip()))
 
-        if not os.path.isfile(self.file + '.epg'):
+        if not os.path.isfile(self.file + '.eplib'):
 
-            open(self.file_epg, 'wb').write('0' * len(self.games))
+            open(self.flile_eplib, 'wb').write('0' * len(self.games))
 
-        self.games_done = array('c', open(self.file_epg, 'rb').readlines()[0])
+        self.games_done = array('c', open(self.flile_eplib, 'rb').readlines()[0])
 
     def done(self, index):
 
         self.games_done[index] = '1'
 
-        open(self.file_epg, 'wb').write(self.games_done.tostring())
+        open(self.flile_eplib, 'wb').write(self.games_done.tostring())
 
     def next(self, index):
 
@@ -424,8 +441,8 @@ if __name__ == '__main__':
 
     #keeper = GameKeeper(u'梦入神机')
 
-    #keeper = GameKeeper(u'适情雅趣550')
-    keeper = GameKeeper(u'适情雅趣360')
+    keeper = GameKeeper(u'适情雅趣550')
+    #keeper = GameKeeper(u'适情雅趣360')
 
     keeper.load()
 

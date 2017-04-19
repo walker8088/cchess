@@ -28,7 +28,8 @@ class Move(object):
         self.p_from = p_from
         self.p_to = p_to
         self.captured = self.board.get_fench(p_to)
-        
+        self.board_done = board.copy()
+        self.board_done._move_piece(p_from, p_to)
         self.next_move = None
         self.right_move = None
     
@@ -152,7 +153,29 @@ class Move(object):
                         return pos_name5[man_side][pos_index] + man_name
         
         return man_name + h_level_index[man_side][p_from.x]
-    
+        
+    def for_ucci(self, move_side, history):
+        if self.captured:
+                self.board_done.move_side = move_side
+                self.ucci_fen = self.board_done.to_fen()
+                self.ucci_moves = []
+        else:   
+                if not history:
+                        self.ucci_fen = self.board.to_fen()
+                        self.ucci_moves = [self.to_iccs()]
+                else:
+                        last_move = history[-1]
+                        self.ucci_fen = last_move.ucci_fen
+                        self.ucci_moves = last_move.ucci_moves[:]
+                        self.ucci_moves.append(self.to_iccs())
+                        
+    def to_ucci_fen(self):
+        if not self.ucci_moves :
+                return self.ucci_fen
+        
+        move_str = ' '.join(self.ucci_moves) 
+        return ' '.join([self.ucci_fen, 'moves', move_str])
+        
     def to_iccs(self):
         return chr(ord('a') + self.p_from.x) + str(self.p_from.y) + chr(ord('a') + self.p_to.x) + str(self.p_to.y)
 

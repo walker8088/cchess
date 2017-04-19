@@ -32,13 +32,13 @@ def load_board(root_path):
                 if ext != '.xqf':
                         continue
                 file_name = os.path.join(root_path, file)
-                #print file_name
                 game = read_from_xqf(file_name)
-               
                 game.init_board.move_side = ChessSide.RED
-                fen = game.init_board.to_fen()
-                print file[:-4],fen
+                fen = game.init_board.to_short_fen()
+                #fen = ' '.join(init_fen.split()[0:2])
+                print file[:-4], game.info["Result"], fen
                 game_info['name'] = file[:-4]
+                game_info['result'] = game.info["Result"]
                 game_info['fen'] = fen
                 game_info['moves'] = game.dump_std_moves()
                 #f.write("%s|%s\n" % (file[:-4].encode('utf-8'), fen))
@@ -53,9 +53,32 @@ def load_board(root_path):
         
         games.sort(key=lambda x: x['len'])
         return games
+        
+#collection_name = u'适情雅趣360.eglib'
+#collection_dir = u'..\\games\\残局谱\\适情雅趣360局'
+collection_name = u'适情雅趣550.eglib'
+collection_dir = u'..\\games\\残局谱\\适情雅趣550局\\先胜局'        
+#collection_name = u'弈海烟波.eglib'
+#collection_dir = u'..\\games\\残局谱\\\弈海烟波'
+#collection_name = u'非连杀小局.eglib'
+#collection_dir = u'..\\games\\残局谱\\\非连杀小局'
+#collection_name = u'烂柯神机.eglib'
+#collection_dir = u'..\\games\\残局谱\\\烂柯神机'
+#collection_name = u'少子百局谱.eglib'
+#collection_dir = u'..\\games\\残局谱\\\少子百局谱'
+#collection_name = u'泥马渡康王.eglib'
+#collection_dir = u'..\\games\\残局谱\\\泥马渡康王'
+
+with open(collection_name, 'wb') as f:
+        for game in load_board(collection_dir):
+                #if u"红胜" not in game['name']:
+                #        continue
+                if "1-0" not in game['result']:
+                        continue
                 
-with open(u'适情雅趣360.epp', 'wb') as f:
-        for game in load_board(u'..\\games\\残局谱\\适情雅趣360局'):
-                f.write("%s|%s\n" % (game['name'].encode('utf-8'), game['fen']))
+                moves = game['moves']
+                moves.sort(key=lambda x: len(x))        
+                for move in moves:
+                        f.write("%s|%s|%s\n" % (game['name'].encode('utf-8'), game['fen'], ','.join(move)))
 
             

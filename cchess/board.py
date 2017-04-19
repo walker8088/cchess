@@ -86,8 +86,8 @@ class BaseChessBoard(object) :
                 
     def clear(self):    
         self._board = [[None for x in range(9)] for y in range(10)]
-        self.move_side = None 
-    
+        self.move_side = ChessSide.RED 
+        
     def copy(self):
         return copy.deepcopy(self)
         
@@ -155,8 +155,9 @@ class BaseChessBoard(object) :
              return None 
              
         board = self.copy()
+        fench = self.get_fench(pos_to)
         self._move_piece(pos_from, pos_to)
-        
+                
         return Move(board, pos_from, pos_to)
         
     def move_iccs(move_str):
@@ -236,8 +237,11 @@ class BaseChessBoard(object) :
     def y_line_in(self, x, y_from, y_to):
         step = 1 if y_to > y_from else -1
         return [ self._board[y][x] for y in range(y_from+step, y_to, step) ]
-        
+    
     def to_fen(self):
+        return self.to_short_fen() + ' - - 0 1'
+        
+    def to_short_fen(self):
         fen = ''
         count = 0
         for y in range(9, -1, -1):
@@ -262,10 +266,7 @@ class BaseChessBoard(object) :
         elif self.move_side is ChessSide.RED :
             fen += ' w'
         else :
-            #return fen
             raise CChessException('Move Side Error' + str(self.move_side))
-            
-        fen += ' - - 0 1'
         
         return fen
 
