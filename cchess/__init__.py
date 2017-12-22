@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''
 Copyright (C) 2014  walker li <walker8088@gmail.com>
 
@@ -17,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from piece import *
-from board import *
-from game import  *
-from move import  *
-from ucci  import *
-from reader_xqf import read_from_xqf
-from reader_cbf import read_from_cbf
-from reader_pgn import read_from_pgn
-from reader_dhtml import read_from_dhtml 
-from exception import *
+from .piece import *
+from .board import *
+from .game import *
+from .move import *
+from .ucci import *
+from .reader_xqf import read_from_xqf
+from .reader_cbf import read_from_cbf
+from .reader_pgn import read_from_pgn
+from .reader_txt import read_from_txt
+from .exception import *

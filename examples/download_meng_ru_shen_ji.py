@@ -29,8 +29,9 @@ def parse_games(html):
         if td.a == None or len(td.a.text) == 0:
             continue
         title = unicode(td.a.text)
-        if title.encode('utf-8')[
-                0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+        if title.encode('utf-8')[0] in [
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        ]:
             # print title, td.a['href']
             games.append([title, td.a['href']])
     return games
@@ -76,7 +77,8 @@ for it in games[:]:
     game_info['fen'] = game.init_board.to_short_fen()
     moves = game.dump_std_moves()
     game_info['moves'] = moves
-    game_info['move_len'] = len(moves[0]) if len(moves) > 0 else 0  # ','.join(moves[0]) if len(moves) > 0 else ''
+    game_info['move_len'] = len(moves[0]) if len(
+        moves) > 0 else 0  # ','.join(moves[0]) if len(moves) > 0 else ''
     games_result.append(game_info)
     game.print_init_board()
     game.print_chinese_moves()
@@ -95,7 +97,7 @@ if len(bad_files) > 0:
 with open(u"梦入神机.eglib", "wb") as f:
     for it in games_result:
         if it['move_len']:
-            f.write("%s|%s|%s\n" % (it['name'].encode('utf-8'), it['fen'],','.join(it['moves'][0])))
+            f.write("%s|%s|%s\n" % (it['name'].encode('utf-8'), it['fen'],
+                                    ','.join(it['moves'][0])))
         else:
             f.write("%s|%s\n" % (it['name'].encode('utf-8'), it['fen']))
-        

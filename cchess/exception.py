@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''
 Copyright (C) 2014  walker li <walker8088@gmail.com>
 
@@ -17,12 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+
 class CChessException():
-        def __init__(self, reason):
-                self.reason = reason
-        
+    def __init__(self, reason):
+        self.reason = reason
+
+
 #-----------------------------------------------------#
-if __name__ == '__main__':        
-       pass
-        
-    
+if __name__ == '__main__':
+    pass

@@ -1,5 +1,5 @@
-# cchesslib
-cchessslib是一个Python版的中国象棋库
+# cchess
+cchesss是一个Python版的中国象棋库
 
 这是一个快速的例子：
 
@@ -38,5 +38,5 @@ game.print_init_board()
 game.print_chinese_moves()
 
 4.加载引擎进行对弈
-  参见examples/ui_game.py
+  参见examples/end_game.py
   
