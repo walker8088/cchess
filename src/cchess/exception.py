@@ -16,13 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .piece import *
-from .board import *
-from .game import *
-from .move import *
-from .ucci import *
-from .reader_xqf import read_from_xqf
-from .reader_cbf import read_from_cbf
-from .reader_pgn import read_from_pgn
-from .reader_txt import read_from_txt
-from .exception import *
+class CChessException():
+    def __init__(self, reason):
+        self.reason = reason
+

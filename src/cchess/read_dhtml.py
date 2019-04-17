@@ -37,7 +37,7 @@ def read_from_dhtml(html_page):
 #-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):
     def decode_txt_pos(pos):
-        return Pos(int(pos[0]), 9 - int(pos[1]))
+        return (int(pos[0]), 9 - int(pos[1]))
 
     #车马相士帅士相马车炮炮兵兵兵兵兵
     #车马象士将士象马车炮炮卒卒卒卒卒

@@ -54,59 +54,20 @@ _text_board = [
     #u'  九 八  七  六  五  四  三  二  一'
 ]
 
-_fench_txt_name_dict = {
-    'K': u"帅",
-    'k': u"将",
-    'A': u"仕",
-    'a': u"士",
-    'B': u"相",
-    'b': u"象",
-    'N': u"马",
-    'n': u"碼",
-    'R': u"车",
-    'r': u"砗",
-    'C': u"炮",
-    'c': u"砲",
-    'P': u"兵",
-    'p': u"卒"
-}
-
-swap_dict = {
-    'K': 'k',
-    'k': 'K',
-    'A': 'a',
-    'a': 'A',
-    'B': 'b',
-    'b': 'B',
-    'N': 'n',
-    'n': 'N',
-    'R': 'r',
-    'r': 'R',
-    'C': 'c',
-    'c': 'C',
-    'P': 'p',
-    'p': 'P',
-    None:None
-}
-
 #-----------------------------------------------------#
-
+     
 def _pos_to_text_board_pos(pos):
-    return Pos(2 * pos.x + 2, (9 - pos.y) * 2)
+    return (2 * pos[0] + 2, (9 - pos[1]) * 2)
 
-
-def _fench_to_txt_name(fench):
-    return _fench_txt_name_dict[fench]
 
 #-----------------------------------------------------#
 class BaseChessBoard(object):
-    def __init__(self, fen=None):
-        self.clear()
-        if fen: self.from_fen(fen)
+    def __init__(self, fen = ''):
+        self.from_fen(fen)
 
     def clear(self):
         self._board = [[None for x in range(9)] for y in range(10)]
-        self.move_side = ChessSide.RED
+        self.move_side = ChessSide.NO_SIDE
 
     def copy(self):
         return copy.deepcopy(self)
@@ -115,54 +76,46 @@ class BaseChessBoard(object):
         board = [[self._board[y][8-x] for x in range(9)] for y in range(10)]
         self._board = board
         
-    def swap(self):
-        board = [[swap_dict[self._board[y][x]] for x in range(9)] for y in range(10)]
-        self._board = board
-        if self.move_side != None:
-            self.move_side = ChessSide.next_side(self.move_side)
+    def swap(self): 
+        
+        def swap_fench(fench):
+            if fench == None: return None
+            return fench.upper() if fench.islower() else fench.lower()
+              
+        self._board = [[swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)]
+        self.move_side = ChessSide.next_side(self.move_side)
         
     def put_fench(self, fench, pos):
-        if self._board[pos.y][pos.x] != None:
-            return False
-
-        self._board[pos.y][pos.x] = fench
-
-        return True
+        self._board[pos[1]][pos[0]] = fench
 
     def get_fench(self, pos):
-        return self._board[pos.y][pos.x]
+        return self._board[pos[1]][pos[0]]
 
     def get_piece(self, pos):
-        fench = self._board[pos.y][pos.x]
-
-        if not fench:
-            return None
-
-        return Piece.create(self, fench, pos)
+        return Piece.create(self, self.get_fench(pos), pos)
 
     def is_valid_move_t(self, move_t):
-        pos_from, pos_to = move_t
-        return self.is_valid_move(pos_from, pos_to)
+        return self.is_valid_move(move_t[0], move_t[1])
 
     def is_valid_move(self, pos_from, pos_to):
         '''
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
         '''
 
-        if not (0 <= pos_to.x <= 8): return False
-        if not (0 <= pos_to.y <= 9): return False
+        if not (0 <= pos_to[0] <= 8): return False
+        if not (0 <= pos_to[1] <= 9): return False
 
-        fench_from = self._board[pos_from.y][pos_from.x]
+        fench_from = self._board[pos_from[1]][pos_from[0]]
         if not fench_from:
             return False
 
         _, from_side = fench_to_species(fench_from)
 
         #move_side 不是None值才会进行走子颜色检查，这样处理某些特殊的存储格式时会处理比较迅速
-        if self.move_side and (from_side != self.move_side):
+        if (self.move_side != ChessSide.NO_SIDE) and (from_side != self.move_side):
             return False
 
-        fench_to = self._board[pos_to.y][pos_to.x]
+        fench_to = self._board[pos_to[1]][pos_to[0]]
         if not fench_to:
             return True
 
@@ -172,9 +125,9 @@ class BaseChessBoard(object):
 
     def _move_piece(self, pos_from, pos_to):
 
-        fench = self._board[pos_from.y][pos_from.x]
-        self._board[pos_to.y][pos_to.x] = fench
-        self._board[pos_from.y][pos_from.x] = None
+        fench = self._board[pos_from[1]][pos_from[0]]
+        self._board[pos_to[1]][pos_to[0]] = fench
+        self._board[pos_from[1]][pos_from[0]] = None
 
         return fench
 
@@ -189,20 +142,16 @@ class BaseChessBoard(object):
 
         return Move(board, pos_from, pos_to)
 
-    def move_iccs(move_str):
+    def move_iccs(self, move_str):
         move_from, move_to = Move.from_iccs(move_str)
-        return move(move_from, move_to)
+        return self.move(move_from, move_to)
 
-    def move_chinese(move_str):
+    def move_chinese(self, move_str):
         move_from, move_to = Move.from_chinese(self, move_str)
-        return move(move_from, move_to)
+        return self.move(move_from, move_to)
 
     def next_turn(self):
-        if self.move_side == None:
-            return None
-
         self.move_side = ChessSide.next_side(self.move_side)
-
         return self.move_side
 
     def from_fen(self, fen):
@@ -212,8 +161,8 @@ class BaseChessBoard(object):
 
         self.clear()
 
-        if not fen or fen == '':
-            return
+        if fen == '':
+            return True
 
         fen = fen.strip()
 
@@ -233,23 +182,18 @@ class BaseChessBoard(object):
                 if x > 8: x = 8
             elif ch.lower() in ch_set:
                 if x <= 8:
-                    self.put_fench(ch, Pos(x, y))
+                    self.put_fench(ch, (x, y))
                     x += 1
             else:
                 return False
 
         fens = fen.split()
 
-        self.move_side = None
+        self.move_side = ChessSide.NO_SIDE
         if (len(fens) >= 2) and (fens[1] == 'b'):
             self.move_side = ChessSide.BLACK
         else:
             self.move_side = ChessSide.RED
-
-        if len(fens) >= 6:
-            self.round = int(fens[5])
-        else:
-            self.round = 1
 
         return True
 
@@ -292,13 +236,8 @@ class BaseChessBoard(object):
 
             if y > 0: fen += '/'
 
-        if self.move_side is ChessSide.BLACK:
-            fen += ' b'
-        elif self.move_side is ChessSide.RED:
-            fen += ' w'
-        else:
-            raise CChessException('Move Side Error' + str(self.move_side))
-
+        fen += ' b' if self.move_side == ChessSide.BLACK else ' w'
+        
         return fen
 
     def dump_board(self):
@@ -310,10 +249,10 @@ class BaseChessBoard(object):
             x = 0
             for ch in line:
                 if ch:
-                    pos = _pos_to_text_board_pos(Pos(x, y))
-                    new_text = board_str[pos.y][:pos.x] + _fench_to_txt_name(
-                        ch) + board_str[pos.y][pos.x + 1:]
-                    board_str[pos.y] = new_text
+                    pos = _pos_to_text_board_pos((x, y))
+                    new_text = board_str[pos[1]][:pos[0]] + _fench_to_txt_name(
+                        ch) + board_str[pos[1]][pos[0] + 1:]
+                    board_str[pos[1]] = new_text
                 x += 1
             y += 1
 
@@ -330,23 +269,28 @@ class BaseChessBoard(object):
 
 #-----------------------------------------------------#
 
-
 class ChessBoard(BaseChessBoard):
-    def __init__(self, fen=None):
-        super(ChessBoard, self).__init__(fen)
-
-    def put_fench(self, fench, pos):
-        self._board[pos.y][pos.x] = fench
+    def __init__(self, fen=''):
+        super().__init__(fen)
 
     def is_valid_move(self, pos_from, pos_to):
-        if not super(ChessBoard, self).is_valid_move(pos_from, pos_to):
+        if not super().is_valid_move(pos_from, pos_to):
             return False
 
         piece = self.get_piece(pos_from)
-        if not piece.is_valid_move(pos_to):
-            return False
-        return True
-
+        return piece.is_valid_move(pos_to)
+        
+    def create_moves(self):
+        for piece in self.get_side_pieces(self.move_side):
+            for move in piece.create_moves():
+                yield move
+                
+    def create_piece_moves(self, pos):
+        piece = self.get_piece(pos)
+        if piece :
+            for move in piece.create_moves():
+                yield move
+                
     def is_checked_move(self, pos_from, pos_to):
         board = self.copy()
         board._move_piece(pos_from, pos_to)
@@ -354,21 +298,11 @@ class ChessBoard(BaseChessBoard):
 
     def is_checked(self):
         king = self.get_king(self.move_side)
-        king.create_moves()
-        if not king: return 0
         killers = self.get_side_pieces(ChessSide.next_side(self.move_side))
-        '''
-        for piece in killers:
-                if piece.is_valid_move(Pos(king.x, king.y)):
-                        #print piece.x, piece.y, piece.fench
-                        return 1
-        return 0
-        '''
-        return reduce(lambda count, piece : count+1 if piece.is_valid_move(Pos(king.x, king.y)) else count, killers, 0)
+        return reduce(lambda count, piece : count+1 if piece.is_valid_move((king.x, king.y)) else count, killers, 0)
 
     def is_checkmate(self):
-        defenders = self.get_side_pieces(self.move_side)
-        for piece in defenders:
+        for piece in self.get_side_pieces(self.move_side):
             for move_it in piece.create_moves():
                 if self.is_valid_move_t(move_it):
                     if not self.is_checked_move(move_it[0], move_it[1]):
@@ -376,18 +310,17 @@ class ChessBoard(BaseChessBoard):
         return True
 
     def get_king(self, side):
-        limit_y = ((0, 1, 2), (7, 8, 9))
+        limit_y = ((),(0, 1, 2), (7, 8, 9))
         for x in (3, 4, 5):
             for y in limit_y[side]:
                 fench = self._board[y][x]
                 if not fench:
                     continue
                 if fench.lower() == 'k':
-                    return Piece.create(self, fench, Pos(x, y))
+                    return Piece.create(self, fench, (x, y))
         return None
 
     def get_side_pieces(self, side):
-        pieces = []
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
@@ -395,45 +328,21 @@ class ChessBoard(BaseChessBoard):
                     continue
                 _, p_side = fench_to_species(fench)
                 if p_side == side:
-                    pieces.append(Piece.create(self, fench, Pos(x, y)))
-        return pieces
-
-
-#-----------------------------------------------------#
-if __name__ == '__main__':
-
-    board = ChessBoard(FULL_INIT_FEN)
-    board.print_board()
-    board.swap()
-    board.swap()
-    
-    k = board.get_king(ChessSide.RED)
-    print((k.x, k.y) == (4, 0))
-    k = board.get_king(ChessSide.BLACK)
-    print((k.x, k.y) == (4, 9))
-
-    print(board.x_line_in(0, 0, 8))
-    print(board.x_line_in(0, 8, 0))
-    #print board.x_line_in(9, 0, 10)
-    print(board.y_line_in(4, -1, 10))
-    print(board.y_line_in(4, 10, -1))
-
-    print(board.count_x_line_in(0, 0, 8) == 7)
-    print(board.count_y_line_in(4, 0, 9) == 2)
-    print(board.count_y_line_in(4, 1, 8) == 2)
-
-    print(board.is_checked())
-
-    print(board.copy().move(Pos(7, 2), Pos(4, 2)).to_chinese() == u'炮二平五')
-    print(board.copy().move(Pos(1, 2), Pos(1, 1)).to_chinese() == u'炮八退一')
-    print(board.copy().move(Pos(7, 2), Pos(7, 6)).to_chinese() == u'炮二进四')
-    print(board.copy().move(Pos(7, 7), Pos(4, 7)).to_chinese() == u'炮８平５')
-    print(board.copy().move(Pos(7, 7), Pos(7, 3)).to_chinese() == u'炮８进４')
-    print(board.copy().move(Pos(6, 3), Pos(6, 4)).to_chinese() == u'兵三进一')
-    print(board.copy().move(Pos(8, 0), Pos(8, 1)).to_chinese() == u'车一进一')
-    print(board.copy().move(Pos(0, 9), Pos(0, 8)).to_chinese() == u'车１进１')
-    print(board.copy().move(Pos(4, 0), Pos(4, 1)).to_chinese() == u'帅五进一')
-    print(board.copy().move(Pos(4, 9), Pos(4, 8)).to_chinese() == u'将５进１')
-    print(board.copy().move(Pos(2, 0), Pos(4, 2)).to_chinese() == u'相七进五')
-    print(board.copy().move(Pos(5, 0), Pos(4, 1)).to_chinese() == u'仕四进五')
-    print(board.copy().move(Pos(7, 0), Pos(6, 2)).to_chinese() == u'马二进三')
+                    yield Piece.create(self, fench, (x, y))
+     
+    def get_fenchs_x(self, x, fench):
+        #return filter( if(self._board[y][x])  for y in range(10))
+        poss = []
+        for y in range(10):
+           if self._board[y][x] == fench:
+               poss.append((y,x))
+        return poss
+        
+    def get_fenchs(self, fench):
+        poss = []
+        for x in range(9):
+            for y in range(10):
+                if self._board[y][x] == fench:
+                   poss.append((y,x))
+        return poss
+            

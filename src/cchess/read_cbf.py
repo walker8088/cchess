@@ -29,8 +29,8 @@ from .exception import *
 
 def read_from_cbf(file_name):
     def decode_move(move_str):
-        p_from = Pos(int(move_str[0]), 9 - int(move_str[1]))
-        p_to = Pos(int(move_str[3]), 9 - int(move_str[4]))
+        p_from = (int(move_str[0]), 9 - int(move_str[1]))
+        p_to = (int(move_str[3]), 9 - int(move_str[4]))
 
         return (p_from, p_to)
 
@@ -63,11 +63,3 @@ def read_from_cbf(file_name):
                                                             move_to))
         step_no += 1
     return game
-
-
-#-----------------------------------------------------#
-
-if __name__ == '__main__':
-    game = read_from_cbf('test\\test.cbf')
-    game.print_init_board()
-    game.print_chinese_moves()

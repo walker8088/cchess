@@ -28,7 +28,6 @@ from .move import *
 
 #-----------------------------------------------------#
 
-
 #Engine status
 class EngineStatus(IntEnum):
     BOOTING = 1,
@@ -44,7 +43,6 @@ class EngineStatus(IntEnum):
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 #-----------------------------------------------------#
-
 
 class UcciEngine(Thread):
     def __init__(self, name=''):
@@ -118,7 +116,7 @@ class UcciEngine(Thread):
 
     def go_from(self, fen, search_depth=8):
 
-        #pass all out msg first
+        #pass all output msg first
         while True:
             try:
                 output = self.engine_out_queque.get_nowait()
@@ -128,9 +126,6 @@ class UcciEngine(Thread):
         self.send_cmd('position fen ' + fen)
 
         self.last_fen = fen
-
-        #if ban_move :
-        #        self.send_cmd('banmoves ' + ban_move)
 
         self.send_cmd('go depth  %d' % (search_depth))
         time.sleep(0.2)
@@ -149,7 +144,7 @@ class UcciEngine(Thread):
 
     def send_cmd(self, cmd_str):
 
-        #print ">>>", cmd_str
+        #print(">>>", cmd_str)
 
         try:
             cmd_bytes = (cmd_str + "\n").encode('utf-8')
@@ -176,12 +171,11 @@ class UcciEngine(Thread):
         elif self.enging_status == EngineStatus.READY:
 
             if resp_id == 'nobestmove':
-                print(output)
                 self.move_queue.put(("dead", {'fen': self.last_fen}))
 
             elif resp_id == 'bestmove':
+                print(output)
                 if outputs_list[1] == 'null':
-                    print(output)
                     self.move_queue.put(("dead", {'fen': self.last_fen}))
                 elif outputs_list[-1] == 'draw':
                     self.move_queue.put(("draw", {'fen': self.last_fen}))

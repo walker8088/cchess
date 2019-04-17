@@ -16,12 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-""" Vispy setup script.
+"""setup script.
 
 Steps to do a new release:
 
 Preparations:
-  * Test on Windows, Linux, Mac
+  * Test on Windows, Linux
   * Make release notes
   * Update API documentation and other docs that need updating.
 
@@ -43,8 +43,11 @@ Generate and upload package (preferably on Windows)
 """
 
 import os
+from pathlib import Path 
 from os import path as op
 from warnings import warn
+
+from setuptools import find_packages
 
 try:
     # use setuptools namespace, allows for "develop"
@@ -61,7 +64,7 @@ description = 'ChineseChess in Python'
 __version__ = None
 __doc__ = ''
 docStatus = 0  # Not started, in progress, done
-initFile = os.path.join(os.path.dirname(__file__), 'vispy', '__init__.py')
+initFile = Path(os.path.dirname(__file__), 'src', 'cchess', '__init__.py')
 for line in open(initFile).readlines():
     if (line.startswith('version_info') or line.startswith('__version__')):
         exec(line.strip())
@@ -78,10 +81,9 @@ for line in open(initFile).readlines():
 def package_tree(pkgroot):
     path = os.path.dirname(__file__)
     subdirs = [os.path.relpath(i[0], path).replace(os.path.sep, '.')
-               for i in os.walk(os.path.join(path, pkgroot))
+               for i in os.walk(Path(path, pkgroot))
                if '__init__.py' in i[2]]
     return subdirs
-
 
 setup(
     name=name,
@@ -94,15 +96,18 @@ setup(
     keywords="ChineseChess",
     description=description,
     long_description=__doc__,
-    platforms='any',
+    platforms='Windows, Linux',
     provides=['walker'],
+    tests_require=[
+        'pytest',
+    ],
     install_requires=[''],
-    extras_require={
-        
+    extras_require={   
     },
-    packages=package_tree('cchess'),
-    package_dir={
-        'cchess': 'cchess'},
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    #package_dir={
+    #    'cchess': 'cchess'},
     package_data={
                   },
     zip_safe=False,
@@ -116,7 +121,6 @@ setup(
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.5',
     ],
 )

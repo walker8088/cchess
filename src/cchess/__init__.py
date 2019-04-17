@@ -15,13 +15,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+from .piece import *
+from .board import *
+from .game import *
+from .move import *
+from .ucci import *
+from .read_xqf import read_from_xqf
+from .read_cbf import read_from_cbf
+from .read_pgn import read_from_pgn
+from .read_txt import read_from_txt
+from .exception import *
 
-
-class CChessException():
-    def __init__(self, reason):
-        self.reason = reason
-
-
-#-----------------------------------------------------#
-if __name__ == '__main__':
-    pass
+__version__ = '0.2'

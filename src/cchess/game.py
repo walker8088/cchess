@@ -126,11 +126,3 @@ class Game(object):
         for key in self.info:
             print(key, self.info[key])
 
-
-#-----------------------------------------------------#
-if __name__ == '__main__':
-    from reader_xqf import *
-    game = read_from_xqf('test\\ucci_test1.xqf')
-    game.init_board.move_side = ChessSide.RED
-    game.print_init_board()
-    game.print_chinese_moves()

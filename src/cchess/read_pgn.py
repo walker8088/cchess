@@ -109,8 +109,3 @@ def __get_steps(lines, next_step=1):
         steps = items[1].strip().split(" ")
         print(steps)
 
-
-#-----------------------------------------------------#
-
-if __name__ == '__main__':
-    pass

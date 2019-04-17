@@ -23,16 +23,16 @@ from .board import *
 from .game import *
 
 #-----------------------------------------------------#
-result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
+result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
 
 
 def _decode_pos(man_pos):
-    return Pos(int(man_pos // 10), man_pos % 10)
+    return (int(man_pos // 10), man_pos % 10)
 
 
 def _decode_pos2(man_pos):
-    return (Pos(int(man_pos[0] // 10), man_pos[0] % 10), 
-            Pos(int(man_pos[1] // 10), man_pos[1] % 10))
+    return ((int(man_pos[0] // 10), man_pos[0] % 10), 
+            (int(man_pos[1] // 10), man_pos[1] % 10))
 
 
 #-----------------------------------------------------#
@@ -389,41 +389,4 @@ def read_from_xqf(full_file_name, read_annotation=True):
     __read_steps(step_base_buff, version, keys, game, board)
 
     return game
-
-
-#-----------------------------------------------------#
-if __name__ == '__main__':
-    '''
-    game = read_from_xqf(u"test\\FiveGoatsTest.xqf")
-    game.dump_info()
-    print 'verified', game.verify_moves()
-    #moves = game.dump_moves()
-    #print len(moves)
-    '''
-    game = read_from_xqf(u"test\\EmptyTest.xqf")
-    game.dump_info()
-    '''
-    game = read_from_xqf(u"test\\BadMoveTest1.xqf")
-    game.dump_info()
-    print game.init_fen
-    print 'verified', game.verify_moves()
     
-    game = read_from_xqf(u"test\\BadMoveTest2.xqf")
-    game.dump_info()
-    print game.init_fen
-    print game.annotation    
-    print 'verified', game.verify_moves()
-    '''
-
-    #game = read_from_xqf(u"test\\BadMoveTest3.xqf")
-    #game = read_from_xqf(u"test\\BadMoveTest4.xqf")
-    game = read_from_xqf(u"test\\WildHouse.xqf")
-    game.dump_info()
-    #moves = game.dump_moves()
-    #moves = game.dump_std_moves()
-    #print moves
-    game.print_init_board()
-    game.print_chinese_moves(3)
-    #print len(moves)
-    #print 'verified', game.verify_moves()
-    #print 'verified', game.verify_moves()

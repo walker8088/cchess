@@ -23,47 +23,44 @@ import time
 import pygame
 from pygame.locals import *
 
+from GUI import SlideBar, Button, InLineTextBox
+from GUI.locals import *
+
 sys.path.append('..\..')
 
 from cchess import *
 
 #-----------------------------------------------------#
-
 BORDER, SPACE = 15, 56
+pads = (5,5)
 BOARD_SIZE = (WIDTH, HEIGHT) = (530, 586)
+SCREEN_SIZE = (WIDTH+200, HEIGHT)
+
 RES_PATH = 'res'
 win_dict = {ChessSide.BLACK: u"红胜", ChessSide.RED: u"黑胜"}
 
 #-----------------------------------------------------#
-
-
 def load_image(file_name):
     return pygame.image.load(os.path.join(RES_PATH, file_name)).convert()
-
 
 def load_image_alpha(file_name):
     return pygame.image.load(os.path.join(RES_PATH, file_name)).convert_alpha()
 
-
 def load_sound(file_name):
     return pygame.mixer.Sound(os.path.join(RES_PATH, file_name))
 
-
 #-----------------------------------------------------#
-
-
 def screen_to_pos(pos):
     return Pos((pos.x - BORDER) // SPACE, 9 - (pos.y - BORDER) // SPACE)
-
 
 def pos_to_screen(pos):
     return Pos(BORDER + pos.x * SPACE, BORDER + (9 - pos.y) * SPACE)
 
-
 #-----------------------------------------------------#
 class GameTable():
     def __init__(self):
-        self.screen = pygame.display.set_mode(BOARD_SIZE, 0, 32)
+        
+        self.screen = pygame.display.set_mode(SCREEN_SIZE, 0, 32)
         #pygame.display.set_caption(u'中国象棋')  #.encode('utf-8'))
         self.selected = None
         self.last_moved = None
@@ -75,7 +72,16 @@ class GameTable():
         self.done_surface = load_image_alpha('done.png')
         self.over_surface = load_image_alpha('over.png')
         self.pieces_image = {}
-
+        
+        #self.back_btn = Button(self.back_btn_clicked, (WIDTH+100, 40), (180, 40), 'BACK') #, anchor=BOTTOMRIGHT)
+        self.back_btn = Button(self.back_btn_clicked, (WIDTH+100, 82), (180, 40), 'GoBack') #, anchor=BOTTOMRIGHT)
+        self.next_btn = Button(self.next_btn_clicked, (WIDTH+100, 124), (180, 40), 'NextGame') #, anchor=BOTTOMRIGHT)
+        self.prev_btn = Button(self.prev_btn_clicked, (WIDTH+100, 166), (180, 40), 'PrevGame') #, anchor=BOTTOMRIGHT)
+        self.restart_btn = Button(self.restart_btn_clicked, (WIDTH+100, 40), (180, 40), 'RestartGame') #, anchor=BOTTOMRIGHT)
+        self.info_box = InLineTextBox((WIDTH+10, 186), 220, RED, anchor=TOPLEFT, default_text='')
+        self.good_box = InLineTextBox((WIDTH+10, 206), 220, RED, anchor=TOPLEFT, default_text='')
+    
+    
         for name in ['r', 'n', 'c', 'k', 'a', 'b', 'p']:
             self.pieces_image[name] = load_image_alpha(name + '.png')
 
@@ -87,7 +93,23 @@ class GameTable():
         self.board = ChessBoard()
 
         self.engine = [None, None]
-
+    
+    def back_btn_clicked(self):
+           #sb.color = RED
+           print("back btn_clicked")
+           
+    def next_btn_clicked(self):
+           #sb.color = RED
+           print("next btn_clicked")
+    
+    def prev_btn_clicked(self):
+           #sb.color = RED
+           print("prev btn_clicked")
+    
+    def restart_btn_clicked(self):
+           #sb.color = RED
+           print("prev btn_clicked")
+        
     def new_game(self, title, fen, best_moves):
 
         self.board.from_fen(fen)
@@ -103,7 +125,8 @@ class GameTable():
         engine = self.engine[self.board.move_side]
         if engine:
             engine.go_from(self.board.to_fen())
-        pygame.display.set_caption(title.encode('utf-8'))
+        #pygame.display.set_caption(title.encode('utf-8'))
+        pygame.display.set_caption(title)
 
     def attach_engine(self, engine, side):
         self.engine[side] = engine
@@ -131,9 +154,11 @@ class GameTable():
 
         if self.best_index >= 0:
             if move.to_iccs() == self.best_moves[self.best_index]:
+                self.good_box.text = "Good"
                 print(u"GOOD")
                 self.best_index += 1
             else:
+                self.good_box.text = "Not Good"
                 self.best_index = -1
         if self.best_index >= len(self.best_moves):
             self.best_index = -1
@@ -147,14 +172,17 @@ class GameTable():
         self.move_history.append(move)
 
         if self.board.is_checkmate():
+            self.info_box.text = "Dead!"
             print(u"将死！")
             return (True, self.board.move_side)
 
         self.last_checked = self.board.is_checked()
         if self.last_checked:
+            self.info_box.text = "Checked!"
             print(u"将军！")
 
         if move.is_king_killed():
+            self.info_box.text = "Killed!"
             print(u"杀死！")
             return (True, self.board.move_side)
 
@@ -275,17 +303,32 @@ class GameTable():
         for event in pygame.event.get():
             if event.type == QUIT:
                 return (True, None)
-
+            
+            self.back_btn.update(event)
+            self.next_btn.update(event)
+            self.prev_btn.update(event)
+            self.restart_btn.update(event)
+            
             if event.type == MOUSEBUTTONDOWN:
                 #print(event.button)
                 mouse_left_down, _, mouse_right_down = pygame.mouse.get_pressed(
                 )
 
-                if mouse_right_down:
+                #if mouse_right_down: 
+                #    return (False, -1)
+                
+                sx, sy = mouse = pygame.mouse.get_pos()
+
+                if mouse in self.back_btn:
+                    self.back_btn.click()
+                elif mouse in self.next_btn:
+                    self.next_btn.click()
+                elif mouse in self.prev_btn:
+                    self.prev_btn.click()
+                elif mouse in self.restart_btn:
+                    #self.restart_btn.click()
                     return (False, -1)
-
-                sx, sy = pygame.mouse.get_pos()
-
+                    
                 if sx < BORDER or sx > (WIDTH - BORDER):
                     break
                 if sy < BORDER or sy > (HEIGHT - BORDER):
@@ -303,8 +346,7 @@ class GameTable():
                     if self.selected and (key != self.selected):
                         move_from = self.selected
                         move_to = key
-                        has_moved, dead_side = self.try_move(
-                            move_from, move_to)
+                        has_moved, dead_side = self.try_move(move_from, move_to)
 
                         if dead_side is not None:
                             self.kill_count = 1
@@ -318,16 +360,25 @@ class GameTable():
                         #    if piece and piece.side == self.board.move_side:
                         #        self.selected = key
                         #        self.last_moved = None
-
+            elif event.type == MOUSEBUTTONUP:
+                self.back_btn.release()
+                self.next_btn.release()
+                self.prev_btn.release()
+                self.restart_btn.release()
+                
         self.draw()
+        self.back_btn.render(self.screen)
+        self.next_btn.render(self.screen)
+        self.prev_btn.render(self.screen)
+        self.restart_btn.render(self.screen)
+        self.info_box.render(self.screen)
+        self.good_box.render(self.screen)
         pygame.display.flip()
 
         return (False, None)
 
 
 #-----------------------------------------------------#
-
-
 class GameKeeper():
     def __init__(self, file):
 
