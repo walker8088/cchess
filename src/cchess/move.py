@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .piece import *
 
+
 #-----------------------------------------------------#
 class Move(object):
     def __init__(self, board, p_from, p_to):
@@ -30,30 +31,30 @@ class Move(object):
         self.board_done._move_piece(p_from, p_to)
         self.next_move = None
         self.sibling_move = None
-    
+
     def mirror(self):
         self.board.mirror()
         self.p_from[0] = 8 - self.p_from[0]
         self.p_to[0] = 8 - self.p_to[0]
         self.board_done.mirror()
-        
+
         if self.next_move:
             self.next_move.mirror()
         if self.sibling_move:
             self.sibling_move.mirror()
-            
+
     def is_valid_move(self):
         return self.board.is_valid_move(self.p_from, self.p_to)
-        
+
     def is_king_killed(self):
         if self.captured and self.captured.lower() == 'k':
             return True
         return False
-    
-    @property    
+
+    @property
     def move_side(self):
         return self.board.move_side
-        
+
     def append_next_move(self, chess_move):
         chess_move.parent = self
         if not self.next_move:
@@ -90,7 +91,7 @@ class Move(object):
         move_str += str(self.p_to[1])
 
         return move_str
-    
+
     def to_chinese(self):
 
         fench = self.board.get_fench(self.p_from)
@@ -110,7 +111,7 @@ class Move(object):
             diff_str = "退"
 
         #王车炮兵规则
-        if fench.lower() in ('k','r','c','p'):
+        if fench.lower() in ('k', 'r', 'c', 'p'):
             if diff == 0:
                 dest_str = h_level_index[man_side][self.p_to[0]]
             elif diff > 0:
@@ -133,22 +134,22 @@ class Move(object):
         #王，士，相命名规则
         if fench.lower() in ('k', 'a', 'b'):
             return man_name + h_level_index[man_side][pos[0]]
-        
+
         #车,马,炮,兵命名规则
         #红黑顺序相反，俩数组减少计算工作量
-        pos_name2 = ((),('后', '前'), ('前', '后'))
-        pos_name3 = ((),('后', '中', '前'), ('前', '中', '后'))
-        pos_name4 = ((),('后', '三', '二', '前'), ('前', '２', '３', '后'))
-        pos_name5 = ((),('后', '四', '三', '二', '前'), ('前', '２', '３', '４','后'))
+        pos_name2 = ((), ('后', '前'), ('前', '后'))
+        pos_name3 = ((), ('后', '中', '前'), ('前', '中', '后'))
+        pos_name4 = ((), ('后', '三', '二', '前'), ('前', '２', '３', '后'))
+        pos_name5 = ((), ('后', '四', '三', '二', '前'), ('前', '２', '３', '４', '后'))
 
         count = 0
         pos_index = -1
         for y in range(10):
-                if self.board._board[y][pos[0]] == fench:
-                    if pos[1] == y:
-                        pos_index = count
-                    count += 1
-        
+            if self.board._board[y][pos[0]] == fench:
+                if pos[1] == y:
+                    pos_index = count
+                count += 1
+
         if count == 1:
             return man_name + h_level_index[man_side][pos[0]]
         elif count == 2:
@@ -176,7 +177,7 @@ class Move(object):
                 self.ucci_fen = self.board.to_fen()
                 self.ucci_moves = [self.to_iccs()]
             else:
-                #历史不为空,往后追加 
+                #历史不为空,往后追加
                 last_move = history[-1]
                 self.ucci_fen = last_move.ucci_fen
                 self.ucci_moves = last_move.ucci_moves[:]
@@ -195,67 +196,67 @@ class Move(object):
 
     @staticmethod
     def from_iccs(move_str):
-        return ((ord(move_str[0]) - ord('a'), int(move_str[1])), (
-            ord(move_str[2]) - ord('a'), int(move_str[3])))
-    
+        return ((ord(move_str[0]) - ord('a'), int(move_str[1])),
+                (ord(move_str[2]) - ord('a'), int(move_str[3])))
+
     @staticmethod
     def chinese_move_to_std_move(man_kind, move_side, p_from, move_str):
-        
+
         #移动规则检查
         if man_kind in ['a', 'b', 'n'] and move_str[0] == "平":
             return None
         if move_str[0] not in ['进', '退', '平']:
             return None
-            
+
         #王,车,炮,兵的移动规则
-        if man_kind in ['k', 'r', 'c', 'p']: 
+        if man_kind in ['k', 'r', 'c', 'p']:
             #平移
             if move_str[0] == "平":
-                new_x = h_level_index[move_side].index(move_str[1])            
-                return (new_x,  p_from[1])
-            else :
+                new_x = h_level_index[move_side].index(move_str[1])
+                return (new_x, p_from[1])
+            else:
                 #王，车，炮，兵的前进和后退
-                diff = v_change_index[move_side].index(move_str[1]) 
-                
+                diff = v_change_index[move_side].index(move_str[1])
+
                 if move_str[0] == "退":
                     diff = -diff
-                
+
                 if move_side == ChessSide.BLACK:
                     diff = -diff
-            
-                return (p_from[0],  p_from[1] + diff)
-        
-        #仕的移动规则        
-        elif man_kind== 'a':
+
+                return (p_from[0], p_from[1] + diff)
+
+        #仕的移动规则
+        elif man_kind == 'a':
             new_x = h_level_index[move_side].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
             if self.side == ChessSide.BLACK:
-                    diff_y = - diff_y
-            return (new_x,  p_from[1] - diff_y)
-            
-        #象的移动规则    
-        elif man_kind== 'b': 
-            new_x = h_level_index[move_side].index(move_str[1])                        
+                diff_y = -diff_y
+            return (new_x, p_from[1] - diff_y)
+
+        #象的移动规则
+        elif man_kind == 'b':
+            new_x = h_level_index[move_side].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
             if self.side == ChessSide.BLACK:
-                diff_y = - diff_y
-            return (new_x,  p_from[1] - diff_y)
-        
-        #马的移动规则    
-        elif man_kind== 'n': 
-                new_x = h_level_index[self.side].index(move_str[1])
-                diff_x = abs(p_from[0] - new_x)
-                
-                if move_str[0] == "进" :
-                    diff_y = [3, 2, 1][diff_x]
-                else:
-                    diff_y = [-3, -2, -1][diff_x]
-                    
-                if move_side == ChessSide.RED:
-                    diff_y = -diff_y
+                diff_y = -diff_y
+            return (new_x, p_from[1] - diff_y)
 
-                return (new_x,  p_from[1] - diff_y)
-        
+        #马的移动规则
+        elif man_kind == 'n':
+            new_x = h_level_index[self.side].index(move_str[1])
+            diff_x = abs(p_from[0] - new_x)
+
+            if move_str[0] == "进":
+                diff_y = [3, 2, 1][diff_x]
+            else:
+                diff_y = [-3, -2, -1][diff_x]
+
+            if move_side == ChessSide.RED:
+                diff_y = -diff_y
+
+            return (new_x, p_from[1] - diff_y)
+
     @staticmethod
     def from_chinese(board, move_str):
 
@@ -273,13 +274,13 @@ class Move(object):
 
         else:
             man_name = move_str[0]
-        
+
         fench = chinese_to_fench(man_name, board.move_side)
         if not fench:
             return None
-        
+
         man_kind, move_side = fench_to_species(fench)
-        
+
         if not multi_mans:
             #单子移动
             x = h_level_index[move_side].index(move_str[1])
@@ -294,19 +295,21 @@ class Move(object):
                 return None
 
             for pos in poss:
-                move = self.chinese_move_to_std_move(man_kind, move_side, pos, move_str[2:])
+                move = self.chinese_move_to_std_move(man_kind, move_side, pos,
+                                                     move_str[2:])
                 if move:
                     return (pos, move)
-                    
+
             return None
 
         else:
             #多选一移动
             if move_str[0] in ['前', '后']:
                 poss = board.get_fenchs(fench)
-                move_indexs = {"前":0, "后":-1}
+                move_indexs = {"前": 0, "后": -1}
                 pos = poss[move_indexs[move_str[0]]]
-                move = self.chinese_move_to_std_move(man_kind, move_side, pos, move_str[2:])
+                move = self.chinese_move_to_std_move(man_kind, move_side, pos,
+                                                     move_str[2:])
                 if move:
                     return (pos, move)
                 else:

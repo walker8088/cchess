@@ -55,14 +55,15 @@ _text_board = [
 ]
 
 #-----------------------------------------------------#
-     
+
+
 def _pos_to_text_board_pos(pos):
     return (2 * pos[0] + 2, (9 - pos[1]) * 2)
 
 
 #-----------------------------------------------------#
 class BaseChessBoard(object):
-    def __init__(self, fen = ''):
+    def __init__(self, fen=''):
         self.from_fen(fen)
 
     def clear(self):
@@ -71,20 +72,20 @@ class BaseChessBoard(object):
 
     def copy(self):
         return copy.deepcopy(self)
-    
+
     def mirror(self):
-        board = [[self._board[y][8-x] for x in range(9)] for y in range(10)]
+        board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
         self._board = board
-        
-    def swap(self): 
-        
+
+    def swap(self):
         def swap_fench(fench):
             if fench == None: return None
             return fench.upper() if fench.islower() else fench.lower()
-              
-        self._board = [[swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)]
+
+        self._board = [[swap_fench(self._board[y][x]) for x in range(9)]
+                       for y in range(10)]
         self.move_side = ChessSide.next_side(self.move_side)
-        
+
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
 
@@ -112,7 +113,8 @@ class BaseChessBoard(object):
         _, from_side = fench_to_species(fench_from)
 
         #move_side 不是None值才会进行走子颜色检查，这样处理某些特殊的存储格式时会处理比较迅速
-        if (self.move_side != ChessSide.NO_SIDE) and (from_side != self.move_side):
+        if (self.move_side != ChessSide.NO_SIDE) and (from_side !=
+                                                      self.move_side):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -237,7 +239,7 @@ class BaseChessBoard(object):
             if y > 0: fen += '/'
 
         fen += ' b' if self.move_side == ChessSide.BLACK else ' w'
-        
+
         return fen
 
     def dump_board(self):
@@ -269,6 +271,7 @@ class BaseChessBoard(object):
 
 #-----------------------------------------------------#
 
+
 class ChessBoard(BaseChessBoard):
     def __init__(self, fen=''):
         super().__init__(fen)
@@ -279,18 +282,18 @@ class ChessBoard(BaseChessBoard):
 
         piece = self.get_piece(pos_from)
         return piece.is_valid_move(pos_to)
-        
+
     def create_moves(self):
         for piece in self.get_side_pieces(self.move_side):
             for move in piece.create_moves():
                 yield move
-                
+
     def create_piece_moves(self, pos):
         piece = self.get_piece(pos)
-        if piece :
+        if piece:
             for move in piece.create_moves():
                 yield move
-                
+
     def is_checked_move(self, pos_from, pos_to):
         board = self.copy()
         board._move_piece(pos_from, pos_to)
@@ -299,7 +302,9 @@ class ChessBoard(BaseChessBoard):
     def is_checked(self):
         king = self.get_king(self.move_side)
         killers = self.get_side_pieces(ChessSide.next_side(self.move_side))
-        return reduce(lambda count, piece : count+1 if piece.is_valid_move((king.x, king.y)) else count, killers, 0)
+        return reduce(
+            lambda count, piece: count + 1
+            if piece.is_valid_move((king.x, king.y)) else count, killers, 0)
 
     def is_checkmate(self):
         for piece in self.get_side_pieces(self.move_side):
@@ -310,7 +315,7 @@ class ChessBoard(BaseChessBoard):
         return True
 
     def get_king(self, side):
-        limit_y = ((),(0, 1, 2), (7, 8, 9))
+        limit_y = ((), (0, 1, 2), (7, 8, 9))
         for x in (3, 4, 5):
             for y in limit_y[side]:
                 fench = self._board[y][x]
@@ -329,20 +334,19 @@ class ChessBoard(BaseChessBoard):
                 _, p_side = fench_to_species(fench)
                 if p_side == side:
                     yield Piece.create(self, fench, (x, y))
-     
+
     def get_fenchs_x(self, x, fench):
         #return filter( if(self._board[y][x])  for y in range(10))
         poss = []
         for y in range(10):
-           if self._board[y][x] == fench:
-               poss.append((y,x))
+            if self._board[y][x] == fench:
+                poss.append((y, x))
         return poss
-        
+
     def get_fenchs(self, fench):
         poss = []
         for x in range(9):
             for y in range(10):
                 if self._board[y][x] == fench:
-                   poss.append((y,x))
+                    poss.append((y, x))
         return poss
-            

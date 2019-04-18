@@ -23,28 +23,19 @@ from enum import *
 
 #-----------------------------------------------------#
 #todo 英文全角半角统一识别
-h_level_index = (
-  (),
-  ("九","八","七","六","五","四","三","二","一"),
-  ("１","２","３","４","５","６","７","８","９")
-)
+h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
+                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
-v_change_index = (
-  (), 
-  ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
-  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９")
-)
+v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
+                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
 #-----------------------------------------------------#
-advisor_pos = ((),
-    ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
-    ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)) 
-    )
+advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
+               ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)))
 
-bishop_pos = ((),
-    ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
-    ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)) 
-    )
+bishop_pos = ((), ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
+              ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)))
+
 
 #-----------------------------------------------------#
 class ChessSide(IntEnum):
@@ -54,9 +45,10 @@ class ChessSide(IntEnum):
 
     @staticmethod
     def next_side(side):
-        if side == ChessSide.NO_SIDE : return ChessSide.NO_SIDE
+        if side == ChessSide.NO_SIDE: return ChessSide.NO_SIDE
         return ChessSide.RED if side == ChessSide.BLACK else ChessSide.BLACK
-        
+
+
 #-----------------------------------------------------#
 '''
 class PieceT(IntEnum):
@@ -100,17 +92,17 @@ fench_name_dict = {
 
 #-----------------------------------------------------#
 name_fench_dict = {
-    "帅":'K',
-    "将":'k',
-    "仕":'A',
-    "士":'a',
-    "相":'B',
-    "象":'b',
-    "马":'n',
-    "车":'r',
-    "炮":'c',
-    "兵":'P',
-    "卒":'p'
+    "帅": 'K',
+    "将": 'k',
+    "仕": 'A',
+    "士": 'a',
+    "相": 'B',
+    "象": 'b',
+    "马": 'n',
+    "车": 'r',
+    "炮": 'c',
+    "兵": 'P',
+    "卒": 'p'
 }
 
 _fench_txt_name_dict = {
@@ -133,7 +125,8 @@ _fench_txt_name_dict = {
 
 def _fench_to_txt_name(fench):
     return _fench_txt_name_dict[fench]
-    
+
+
 #-----------------------------------------------------#
 '''
 species_fench_dict = {
@@ -146,21 +139,27 @@ species_fench_dict = {
     PieceT.PAWN: ('P', 'p')
 }
 '''
+
+
 #-----------------------------------------------------#
 def fench_to_chinese(fench):
     return fench_name_dict[fench]
 
+
 def chinese_to_fench(chinese, side):
     fench = name_fench_dict[chinese]
     return fench.lower() if side == ChessSide.BLACK else fench.upper()
-    
+
+
 def fench_to_species(fen_ch):
-    return fen_ch.lower(), ChessSide.BLACK if fen_ch.islower() else ChessSide.RED
+    return fen_ch.lower(), ChessSide.BLACK if fen_ch.islower(
+    ) else ChessSide.RED
+
 
 def species_to_fench(species, side):
     return species_fench_dict[species][side]
 
-    
+
 #-----------------------------------------------------#
 #KING, ADVISOR, BISHOP, KNIGHT, ROOK, CANNON, PAWN
 '''
@@ -177,13 +176,17 @@ chessman_show_name_dict = {
 def get_show_name(species, side):
     return chessman_show_name_dict[species][side]
 '''
+
+
 #-----------------------------------------------------#
 def abs_diff(x, y):
-     return (abs(x[0]-y[0]), abs(x[1]-y[1]))
+    return (abs(x[0] - y[0]), abs(x[1] - y[1]))
 
-def middle_p(x,y):
-    return ((x[0]+y[0])//2, (x[1]+y[1])//2) 
-    
+
+def middle_p(x, y):
+    return ((x[0] + y[0]) // 2, (x[1] + y[1]) // 2)
+
+
 #-----------------------------------------------------#
 class Piece(object):
     def __init__(self, board, fench, pos):
@@ -196,14 +199,14 @@ class Piece(object):
         self.x, self.y = pos
 
     def is_valid_pos(self, pos):
-        return True if (0 <= pos[0] < 9) and (0 <= pos[1] <=9) else False 
+        return True if (0 <= pos[0] < 9) and (0 <= pos[1] <= 9) else False
 
     def is_valid_move(self, pos):
         return True
 
     @staticmethod
     def create(board, fench, pos):
-        if fench == None: 
+        if fench == None:
             return None
         p_type = fench.lower()
         if p_type == 'k':
@@ -220,14 +223,15 @@ class Piece(object):
             return Knight(board, fench, pos)
         if p_type == 'p':
             return Pawn(board, fench, pos)
-     
+
+
 #-----------------------------------------------------#
 #王
 class King(Piece):
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
-            
+
         if pos[0] < 3 or pos[0] > 5:
             return False
 
@@ -243,13 +247,14 @@ class King(Piece):
 
         #face to face
         k2 = self.board.get_king(ChessSide.next_side(self.side))
-        if self.x == k2.x and (self.board.count_y_line_in(self.x, self.y, k2.y) == 0):
-           return True
+        if self.x == k2.x and (self.board.count_y_line_in(
+                self.x, self.y, k2.y) == 0):
+            return True
 
         if not self.is_valid_pos(pos):
             return False
 
-        diff = abs_diff(pos,(self.x, self.y))
+        diff = abs_diff(pos, (self.x, self.y))
 
         return True if ((diff[0] + diff[1]) == 1) else False
 
@@ -258,12 +263,12 @@ class King(Piece):
             (self.x + 1, self.y),
             (self.x - 1, self.y),
             (self.x, self.y + 1),
-            (self.x, self.y - 1), 
+            (self.x, self.y - 1),
         ]
-        
+
         k2 = self.board.get_king(ChessSide.next_side(self.side))
         poss.append((k2.x, k2.y))
-        
+
         curr_pos = (self.x, self.y)
         moves = [(curr_pos, to_pos) for to_pos in poss]
         return filter(self.board.is_valid_move_t, moves)
@@ -278,7 +283,7 @@ class Advisor(Piece):
         return True if pos in advisor_pos[self.side] else False
 
     def is_valid_move(self, pos):
-         
+
         if not self.is_valid_pos(pos):
             return False
 
@@ -288,12 +293,8 @@ class Advisor(Piece):
         return False
 
     def create_moves(self):
-        poss = [
-            (self.x + 1, self.y + 1),
-            (self.x + 1, self.y - 1),
-            (self.x - 1, self.y + 1),
-            (self.x - 1, self.y - 1)
-        ]
+        poss = [(self.x + 1, self.y + 1), (self.x + 1, self.y - 1),
+                (self.x - 1, self.y + 1), (self.x - 1, self.y - 1)]
         curr_pos = (self.x, self.y)
         moves = [(curr_pos, to_pos) for to_pos in poss]
         return filter(self.board.is_valid_move_t, moves)
@@ -305,7 +306,7 @@ class Bishop(Piece):
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
-        
+
         return True if pos in bishop_pos[self.side] else False
 
     def is_valid_move(self, pos):
@@ -315,7 +316,7 @@ class Bishop(Piece):
         #塞象眼检查
         if self.board.get_fench(middle_p((self.x, self.y), pos)) != None:
             return False
-        
+
         #象过河检查
         if (self.side == ChessSide.RED) and (pos[1] > 4):
             return False
@@ -325,12 +326,8 @@ class Bishop(Piece):
         return True
 
     def create_moves(self):
-        poss = [
-            (self.x + 2, self.y + 2),
-            (self.x + 2, self.y - 2),
-            (self.x - 2, self.y + 2),
-            (self.x - 2, self.y - 2)
-        ]
+        poss = [(self.x + 2, self.y + 2), (self.x + 2, self.y - 2),
+                (self.x - 2, self.y + 2), (self.x - 2, self.y - 2)]
         curr_pos = (self.x, self.y)
         moves = [(curr_pos, to_pos) for to_pos in poss]
         return filter(self.board.is_valid_move_t, moves)
@@ -343,13 +340,13 @@ class Knight(Piece):
         if (abs(self.x - pos[0]) == 2) and (abs(self.y - pos[1]) == 1):
             m_x = (self.x + pos[0]) // 2
             m_y = self.y
-            
+
             #别马腿检查
             if self.board.get_fench((m_x, m_y)) != None:
                 return False
             else:
                 return True
-                
+
         if (abs(self.x - pos[0]) == 1) and (abs(self.y - pos[1]) == 2):
             m_x = self.x
             m_y = (self.y + pos[1]) // 2
@@ -448,10 +445,10 @@ class Cannon(Piece):
 #兵/卒
 class Pawn(Piece):
     def is_valid_pos(self, pos):
-        
+
         if not super().is_valid_pos(pos):
             return False
-        
+
         if (self.side == ChessSide.RED) and pos[1] < 3:
             return False
 
@@ -462,9 +459,9 @@ class Pawn(Piece):
 
     def is_valid_move(self, pos):
 
-        not_crossed_river_step = ((),(0, 1), (0, -1))
-        crossed_river_step = ((),((-1, 0), (1, 0), (0, 1)), ((-1, 0), (1, 0), (0,
-                                                                         -1)))
+        not_crossed_river_step = ((), (0, 1), (0, -1))
+        crossed_river_step = ((), ((-1, 0), (1, 0), (0, 1)), ((-1, 0), (1, 0),
+                                                              (0, -1)))
 
         step = (pos[0] - self.x, pos[1] - self.y)
 

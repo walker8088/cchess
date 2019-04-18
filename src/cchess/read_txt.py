@@ -20,6 +20,7 @@ from .board import *
 from .game import *
 from .exception import *
 
+
 #-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):
     def decode_txt_pos(pos):
@@ -69,8 +70,8 @@ def read_from_txt(moves_txt, pos_txt=None):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException("bad move at %d %s %s" % (step_no, move_from,
-                                                            move_to))
+            raise CChessException(
+                "bad move at %d %s %s" % (step_no, move_from, move_to))
         step_no += 1
     if step_no == 0:
         game = Game(board)

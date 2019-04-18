@@ -53,18 +53,18 @@ class Game(object):
             j = 0
             for move in move_line:
                 if not move.is_valid_move():
-                    print( moves_to_chinese(self.init_fen, move_line[:j]))
+                    print(moves_to_chinese(self.init_fen, move_line[:j]))
                     #print j, move, move_line
                     return False
                 j += 1
         return True
-    
+
     def mirror(self):
         self.init_board.mirror()
         if self.next_move:
             self.next_move.mirror()
-    
-    def iter_moves(self, move = None):
+
+    def iter_moves(self, move=None):
         if move == None:
             move = self.next_move
         while move:
@@ -72,7 +72,7 @@ class Game(object):
             if move.sibling_move:
                 self.iter_moves(move.sibling_move)
             move = move.next_move
-            
+
     def dump_init_board(self):
         return self.init_board.dump_board()
 
@@ -112,10 +112,8 @@ class Game(object):
             i = 0
             for it in line:
                 if (i % 2) == 0:
-                    print(
-                        '%2d. ' % (i / 2 + 1), )
-                print(
-                    it, )
+                    print('%2d. ' % (i / 2 + 1), )
+                print(it, )
                 i += 1
                 if (i % (steps_per_line * 2)) == 0:
                     print()
@@ -125,4 +123,3 @@ class Game(object):
     def dump_info(self):
         for key in self.info:
             print(key, self.info[key])
-

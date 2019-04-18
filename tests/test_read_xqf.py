@@ -19,7 +19,9 @@ import os
 from pathlib import Path
 from cchess import *
 
-result_dict = {'红胜':RED_WIN, '黑胜':BLACK_WIN, '和棋': PEACE}
+result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
+
+
 def load_move_txt(txt_file):
     with open(txt_file, "rb") as f:
         lines = f.readlines()
@@ -27,11 +29,12 @@ def load_move_txt(txt_file):
     moves = [it.strip().decode('utf-8') for it in lines[1:-1]]
     result = result_dict[lines[-1].strip().decode('utf-8')]
     return (fen, moves, result)
-    
+
+
 class TestReaderXQF():
     def setup(self):
-        os.chdir(os.path.dirname(__file__))  
-    
+        os.chdir(os.path.dirname(__file__))
+
     def teardown(self):
         pass
 
@@ -39,21 +42,21 @@ class TestReaderXQF():
         game = read_from_xqf(Path("data", "WildHouse.xqf"))
         moves = game.dump_moves()
         #assert moves == ''
-        
+
     def test_k1(self):
         fen, moves, result = load_move_txt(Path("data", "test1_move.txt"))
         game = read_from_xqf(Path("data", "test1.xqf"))
         game.init_board.move_side = ChessSide.RED
         assert game.init_board.to_fen() == fen
         assert game.info['Result'] == result
-        
+
         #game.print_init_board()
         m = game.dump_chinese_moves()[0]
         assert len(m) == len(moves)
         for i in range(len(m)):
             assert m[i] == moves[i]
-        
-        
+
+
 #-----------------------------------------------------#
 if __name__ == '__main___':
     '''
@@ -90,7 +93,6 @@ if __name__ == '__main___':
     #print len(moves)
     #print 'verified', game.verify_moves()
     #print 'verified', game.verify_moves()
-
 
 #-----------------------------------------------------#
 if __name__ == '__main__':

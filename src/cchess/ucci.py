@@ -28,6 +28,7 @@ from .move import *
 
 #-----------------------------------------------------#
 
+
 #Engine status
 class EngineStatus(IntEnum):
     BOOTING = 1,
@@ -43,6 +44,7 @@ class EngineStatus(IntEnum):
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 #-----------------------------------------------------#
+
 
 class UcciEngine(Thread):
     def __init__(self, name=''):
@@ -221,5 +223,6 @@ class UcciEngine(Thread):
         move_info["move"] = pos_move
 
         self.move_queue.put(("best_move", move_info))
+
 
 #-----------------------------------------------------#

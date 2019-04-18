@@ -31,8 +31,8 @@ def _decode_pos(man_pos):
 
 
 def _decode_pos2(man_pos):
-    return ((int(man_pos[0] // 10), man_pos[0] % 10), 
-            (int(man_pos[1] // 10), man_pos[1] % 10))
+    return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
+                                                       man_pos[1] % 10))
 
 
 #-----------------------------------------------------#
@@ -389,4 +389,3 @@ def read_from_xqf(full_file_name, read_annotation=True):
     __read_steps(step_base_buff, version, keys, game, board)
 
     return game
-    

@@ -98,8 +98,14 @@ setup(
     long_description=__doc__,
     platforms='Windows, Linux',
     provides=['walker'],
+    setup_requires=[
+        'pytest-runner',
+    ],
     tests_require=[
         'pytest',
+        'pytest-cov',
+        'pytest-pep8',
+        'pytest-flakes',
     ],
     install_requires=[''],
     extras_require={   
@@ -117,7 +123,6 @@ setup(
         'Intended Audience :: Education',
         'Intended Audience :: Developers',
         'License :: GPL-3.0',
-        'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python',
