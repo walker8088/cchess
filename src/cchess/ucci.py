@@ -179,10 +179,10 @@ class UcciEngine(Thread):
                 print(output)
                 if outputs_list[1] == 'null':
                     self.move_queue.put(("dead", {'fen': self.last_fen}))
-                elif outputs_list[-1] == 'draw':
-                    self.move_queue.put(("draw", {'fen': self.last_fen}))
-                elif outputs_list[-1] == 'resign':
-                    self.move_queue.put(("resign", {'fen': self.last_fen}))
+                #elif outputs_list[-1] == 'draw':
+                #    self.move_queue.put(("draw", {'fen': self.last_fen}))
+                #elif outputs_list[-1] == 'resign':
+                #    self.move_queue.put(("resign", {'fen': self.last_fen}))
                 else:
                     move_str = output[9:13]
                     pos_move = Move.from_iccs(move_str)

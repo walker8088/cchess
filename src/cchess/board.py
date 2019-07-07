@@ -94,7 +94,7 @@ class BaseChessBoard(object):
 
     def get_piece(self, pos):
         return Piece.create(self, self.get_fench(pos), pos)
-
+               
     def is_valid_move_t(self, move_t):
         return self.is_valid_move(move_t[0], move_t[1])
 
@@ -284,7 +284,7 @@ class ChessBoard(BaseChessBoard):
         return piece.is_valid_move(pos_to)
 
     def create_moves(self):
-        for piece in self.get_side_pieces(self.move_side):
+        for piece in self.get_pieces(self.move_side):
             for move in piece.create_moves():
                 yield move
 
@@ -301,13 +301,13 @@ class ChessBoard(BaseChessBoard):
 
     def is_checked(self):
         king = self.get_king(self.move_side)
-        killers = self.get_side_pieces(ChessSide.next_side(self.move_side))
+        killers = self.get_pieces(ChessSide.next_side(self.move_side))
         return reduce(
             lambda count, piece: count + 1
             if piece.is_valid_move((king.x, king.y)) else count, killers, 0)
 
     def is_checkmate(self):
-        for piece in self.get_side_pieces(self.move_side):
+        for piece in self.get_pieces(self.move_side):
             for move_it in piece.create_moves():
                 if self.is_valid_move_t(move_it):
                     if not self.is_checked_move(move_it[0], move_it[1]):
@@ -325,16 +325,19 @@ class ChessBoard(BaseChessBoard):
                     return Piece.create(self, fench, (x, y))
         return None
 
-    def get_side_pieces(self, side):
+    def get_pieces(self, side = None):
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
                 if not fench:
                     continue
-                _, p_side = fench_to_species(fench)
-                if p_side == side:
+                if side == None:
                     yield Piece.create(self, fench, (x, y))
-
+                else:
+                    _, p_side = fench_to_species(fench)
+                    if p_side == side:
+                        yield Piece.create(self, fench, (x, y))
+    
     def get_fenchs_x(self, x, fench):
         #return filter( if(self._board[y][x])  for y in range(10))
         poss = []

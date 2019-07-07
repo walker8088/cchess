@@ -31,6 +31,7 @@ class Move(object):
         self.board_done._move_piece(p_from, p_to)
         self.next_move = None
         self.sibling_move = None
+        self.ucci_moves = []
 
     def mirror(self):
         self.board.mirror()
@@ -184,7 +185,7 @@ class Move(object):
                 self.ucci_moves.append(self.to_iccs())
 
     def to_ucci_fen(self):
-        if not self.ucci_moves:
+        if len(self.ucci_moves) == 0:
             return self.ucci_fen
 
         move_str = ' '.join(self.ucci_moves)
