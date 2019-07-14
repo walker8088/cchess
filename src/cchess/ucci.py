@@ -16,10 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import sys, time
+import os, sys, time
 from enum import *
 
-from subprocess import PIPE, Popen
+import subprocess
+
 from threading import Thread
 from queue import Queue, Empty
 
@@ -48,7 +49,7 @@ ON_POSIX = 'posix' in sys.builtin_module_names
 
 class UcciEngine(Thread):
     def __init__(self, name=''):
-        super(UcciEngine, self).__init__()
+        super().__init__()
 
         self.engine_name = name
 
@@ -89,9 +90,13 @@ class UcciEngine(Thread):
         self.engine_name = engine_path
 
         try:
-            self.pipe = Popen(
-                self.engine_name, stdin=PIPE,
-                stdout=PIPE)  #, close_fds=ON_POSIX)
+            startupinfo = None
+            if os.name == 'nt':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            self.pipe = subprocess.Popen(
+                self.engine_name, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                startupinfo=startupinfo)  #, close_fds=ON_POSIX)
         except OSError:
             return False
 
@@ -176,7 +181,7 @@ class UcciEngine(Thread):
                 self.move_queue.put(("dead", {'fen': self.last_fen}))
 
             elif resp_id == 'bestmove':
-                print(output)
+                #print(output)
                 if outputs_list[1] == 'null':
                     self.move_queue.put(("dead", {'fen': self.last_fen}))
                 #elif outputs_list[-1] == 'draw':
