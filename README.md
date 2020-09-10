@@ -35,6 +35,8 @@ game.print_chinese_moves()
   参见examples/end_game.py
   
 cchess库使用pytest进行单元测试，使用pytest-cov进行覆盖检查，目标实现100%覆盖。
-测试执行：pytest -v --pep8 --flakes --cov=cchess .\tests\
-代码检测：pytest -v --pep8 --flakes .\src\
+#测试执行：pytest -v --pep8 --flakes --cov=cchess .\tests\
+#代码检测：pytest -v --pep8 --flakes .\cchess
+测试执行：python3 -m pytest -v  .\tests\
+
 或者直接执行：pytest  

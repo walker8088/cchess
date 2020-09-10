@@ -1,0 +1,36 @@
+
+from enum import IntEnum
+
+'''
+class EnumSide(IntEnum):
+    NO_SIDE = 0
+    RED = 1
+    BLACK = 2
+'''
+
+class ChessSide():
+    NO_SIDE = 0
+    RED = 1
+    BLACK = 2
+
+    def __init__(self, side):
+        self.value = side
+        
+    def next(self):
+        if self.value != ChessSide.NO_SIDE: 
+            self.value = 3 - self.value
+        return self.value
+    
+    def opposite(self):
+        if self.value == ChessSide.NO_SIDE: 
+            return ChessSide.NO_SIDE
+        return 3 - self.value
+        
+a = ChessSide(ChessSide.NO_SIDE) 
+print(a.next())
+
+b = ChessSide(ChessSide.BLACK) 
+print(b.next())
+print(b.next())
+
+       
