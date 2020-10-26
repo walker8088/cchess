@@ -98,8 +98,9 @@ class Game(object):
                 for move_line in self.dump_moves()]
 
     def print_init_board(self):
-        self.init_board.print_board()
-
+        for line in self.init_board.dump_board():
+            print(line)
+            
     def print_chinese_moves(self, steps_per_line=3):
 
         moves = self.dump_chinese_moves()

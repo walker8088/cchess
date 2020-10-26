@@ -29,7 +29,8 @@ try:
 except ImportError:
     warn("unable to load setuptools. 'setup.py develop' will not work")
     pass  # it's not essential for installation
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup, Extension
 
 # Get version and docstring
 __version__ = None
@@ -67,15 +68,9 @@ setup(
     setup_requires=[
         'pytest-runner',
     ],
-    tests_requires=[
-        'pytest',
-        'pytest-cov',
-        'pytest-pep8',
-        'pytest-flakes',
-    ],
-    install_requires=[
-        'pygame',
-    ],
+    #install_requires=[
+    #    'pygame',
+    #],
     extras_require={   },
     packages=find_packages(),
     zip_safe=True,

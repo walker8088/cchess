@@ -309,6 +309,8 @@ class ChessBoard(BaseChessBoard):
                 yield move
 
     def is_checked_move(self, pos_from, pos_to):
+        if not self.is_valid_move(pos_from, pos_to):
+            raise CChessException('Invalid Move')
         board = self.copy()
         board._move_piece(pos_from, pos_to)
         board.move_side.next()

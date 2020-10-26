@@ -30,6 +30,7 @@ class Move(object):
         self.captured = self.board.get_fench(p_to)
         self.board_done = board.copy()
         self.board_done._move_piece(p_from, p_to)
+        self.board_done.next_turn()
         self.next_move = None
         self.sibling_move = None
         self.ucci_moves = []
