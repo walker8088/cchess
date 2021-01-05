@@ -145,7 +145,7 @@ class ChessSide():
     NO_SIDE = 0
     RED = 1
     BLACK = 2
-
+    SIDE_VALUES = ('', RED', 'BLACK')
     def __init__(self, side):
         self.value = side
         
@@ -159,6 +159,9 @@ class ChessSide():
             return ChessSide.NO_SIDE
         return 3 - self.value
     
+    def __str__(self):
+        return self.SIDE_VALUES(self.value)
+        
     def __eq__(self, other):
         if isinstance(other, ChessSide):
             return self.value == other.value

@@ -57,13 +57,12 @@ _text_board = [
 ]
 
 #-----------------------------------------------------#
-
-
 def _pos_to_text_board_pos(pos):
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
 
 
 #-----------------------------------------------------#
+
 class BaseChessBoard(object):
     def __init__(self, fen=''):
         self.from_fen(fen)

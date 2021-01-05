@@ -80,7 +80,9 @@ class UcciEngine(Thread):
 
         outputs_list = output.split()
         resp_id = outputs_list[0]
-
+        
+        move_info = {}
+        
         if self.enging_status == EngineStatus.BOOTING:
             if resp_id == "id":
                 self.ids.append(output)
@@ -88,40 +90,34 @@ class UcciEngine(Thread):
                 self.options.append(output)
             if resp_id == "ucciok":
                 self.enging_status = EngineStatus.READY
-
+            
         elif self.enging_status == EngineStatus.READY:
-
+            move_info["fen"] = self.last_fen
+            move_info['raw_msg'] = output
+            move_info["action"] = 'info'
+                                    
             if resp_id == 'nobestmove':
-                self.move_queue.put(("dead", {'fen': self.last_fen}))
-
+                move_info["action"] = 'dead'
             elif resp_id == 'bestmove':
-                #print(output)
-                if outputs_list[1] == 'null':
-                    self.move_queue.put(("dead", {'fen': self.last_fen}))
-                #elif outputs_list[-1] == 'draw':
-                #    self.move_queue.put(("draw", {'fen': self.last_fen}))
-                #elif outputs_list[-1] == 'resign':
-                #    self.move_queue.put(("resign", {'fen': self.last_fen}))
+                if outputs_list[1] in ['null', 'resign']:
+                    move_info["action"] = 'dead'
+                if outputs_list[1] == 'draw':
+                    move_info["action"] = 'draw' 
                 else:
-                    move_str = output[9:13]
-                    pos_move = Move.from_iccs(move_str)
-
-                    move_info = {}
-                    move_info["fen"] = self.last_fen
-                    move_info["move"] = pos_move
-
-                    self.move_queue.put(("best_move", move_info))
-
+                    move_info["action"] = 'best_move'
+                    move_info["move"] = Move.from_iccs(outputs_list[1])
+                    if len(outputs_list) >= 4: 
+                        move_info['ponder'] = Move.from_iccs(outputs_list[3])
+                    
             elif resp_id == 'info':
                 #info depth 6 score 4 pv b0c2 b9c7 c3c4 h9i7 c2d4 h7e7
                 if outputs_list[1] == "depth":
-                    move_info = {}
-                    info_list = output[5:].split()
+                    move_info['action'] = 'info_move'
+                    info_list = outputs_list[1:]
 
                     if len(info_list) < 5:
                         return
 
-                    move_info["fen"] = self.last_fen
                     move_info[info_list[0]] = int(info_list[1])  #depth 6
                     move_info[info_list[2]] = int(info_list[3])  #score 4
 
@@ -129,9 +125,13 @@ class UcciEngine(Thread):
                     for step_str in info_list[5:]:
                         move = Move.from_iccs(step_str)
                         move_steps.append(move)
+                    
                     move_info["move"] = move_steps
-
-                    self.move_queue.put(("info_move", move_info))
+                else:
+                    pass
+                    
+        if len(move_info) > 0:
+            self.move_queue.put(move_info)
 
         return True
 
@@ -172,7 +172,6 @@ class UcciEngine(Thread):
         time.sleep(0.2)
 
     def go_from(self, fen, search_depth=8):
-
         #pass all output msg first
         #self._send_cmd('stop')
         while True:
@@ -210,17 +209,5 @@ class UcciEngine(Thread):
             self.pin.flush()
         except IOError as e:
             print("error in send cmd", e)
-
-    '''
-    def preset_best_move(self, iccs_move_str):
-
-        pos_move = Move.from_iccs(iccs_move_str)
-
-        move_info = {}
-        move_info["fen"] = self.last_fen
-        move_info["move"] = pos_move
-
-        self.move_queue.put(("best_move", move_info))
-    '''
 
 #-----------------------------------------------------#
