@@ -365,7 +365,7 @@ class TestBoard():
     
     def test_board_text(self):
         board = ChessBoard(FULL_INIT_FEN)
-        board_txt = board.dump_board()
+        board_txt = board.text_view()
         good_txt = [
             '9 砗──碼──象──士──将──士──象──碼──砗',
             '  │   │   │   │ ＼│ ／│   │   │   │ ',

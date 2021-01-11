@@ -266,7 +266,7 @@ class BaseChessBoard(object):
     def to_fen(self):
         return self.to_fen_base() + ' - - 0 1'
 
-    def dump_board(self):
+    def text_view(self):
 
         board_str = _text_board[:]
 
@@ -282,6 +282,10 @@ class BaseChessBoard(object):
             y += 1
 
         return board_str
+
+    def print_board(self):
+        for s in self.text_view():
+            print(s)
 
 #-----------------------------------------------------#
 

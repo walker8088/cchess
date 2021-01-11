@@ -4,10 +4,12 @@ board = ChessBoard()
 board.from_fen(FULL_INIT_FEN)
 
 #1.棋盘显示
-board_strs = board.dump_board()
+board_strs = board.text_view()
 print()
 for s in board_strs:
     print(s)
+#或者
+board.print_board()
 
 #2.走子(内部格式), 中文显示
 move = board.copy().move((0,0),(0,1))
@@ -53,7 +55,9 @@ print(board.is_dead())    #True
 #8.读取xqf文件, 显示棋谱
 game = read_from_xqf("WildHouse.xqf")
 
-board_strs = game.init_board.dump_board()
+game.init_board.print_board()
+
+board_strs = game.init_board.text_view()
 print('******************')
 print()
 for s in board_strs:

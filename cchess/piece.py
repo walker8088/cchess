@@ -145,7 +145,8 @@ class ChessSide():
     NO_SIDE = 0
     RED = 1
     BLACK = 2
-    SIDE_VALUES = ('', RED', 'BLACK')
+    SIDE_VALUES = ('', 'RED', 'BLACK')
+
     def __init__(self, side):
         self.value = side
         
