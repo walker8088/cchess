@@ -8,7 +8,7 @@ board_strs = board.text_view()
 print()
 for s in board_strs:
     print(s)
-#或者
+#or    
 board.print_board()
 ```
 

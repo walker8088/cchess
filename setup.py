@@ -37,7 +37,7 @@ __version__ = None
 __doc__ = ''
 name = 'cchess'
 description = 'ChineseChess library'
-with open("README.md", "r", encoding='utf-8') as fh:
+with open("README.rst", "r", encoding='utf-8') as fh:
     __doc__ = fh.read()
     
 initFile = Path(os.path.dirname(__file__), 'cchess', '__init__.py')
@@ -68,14 +68,11 @@ setup(
     setup_requires=[
         'pytest-runner',
     ],
-    #install_requires=[
-    #    'pygame',
-    #],
     extras_require={   },
     packages=find_packages(),
     zip_safe=True,
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Education',
         'Intended Audience :: Developers',

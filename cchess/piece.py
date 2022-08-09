@@ -95,10 +95,10 @@ def fench_to_chinese(fench):
 
 def chinese_to_fench(chinese, side):
     fench = name_fench_dict[chinese]
-    return fench.lower() if side == ChessSide.BLACK else fench.upper()
+    return fench.lower() if side == BLACK else fench.upper()
 
 def fench_to_species(fen_ch):
-    return fen_ch.lower(), ChessSide.BLACK if fen_ch.islower() else ChessSide.RED
+    return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
 def species_to_fench(species, side):
     return species_fench_dict[species][side]
@@ -141,27 +141,27 @@ def middle_p(x, y):
 
 #-----------------------------------------------------#
 
-class ChessSide():
-    NO_SIDE = 0
-    RED = 1
-    BLACK = 2
-    SIDE_VALUES = ('', 'RED', 'BLACK')
+NO_SIDE, RED, BLACK = (0, 1, 2)
+SIDE_VALUES = ('', 'RED', 'BLACK')
+SIDE_VALUES_CN = ('', '红方', '黑方')
 
+class ChessSide():
+    
     def __init__(self, side):
         self.value = side
         
     def next(self):
-        if self.value != ChessSide.NO_SIDE: 
+        if self.value != NO_SIDE: 
             self.value = 3 - self.value
-        return self
-    
+        return ChessSide(self.value)
+
     def opposite(self):
-        if self.value == ChessSide.NO_SIDE: 
-            return ChessSide.NO_SIDE
+        if self.value == NO_SIDE: 
+            return NO_SIDE
         return 3 - self.value
     
     def __str__(self):
-        return self.SIDE_VALUES(self.value)
+        return SIDE_VALUES[self.value]
         
     def __eq__(self, other):
         if isinstance(other, ChessSide):
@@ -298,9 +298,9 @@ class Bishop(Piece):
             return False
 
         #象过河检查
-        if (self.side == ChessSide.RED) and (pos_to[1] > 4):
+        if (self.side == RED) and (pos_to[1] > 4):
             return False
-        if (self.side == ChessSide.BLACK) and (pos_to[1] < 5):
+        if (self.side == BLACK) and (pos_to[1] < 5):
             return False
 
         return True
@@ -429,10 +429,10 @@ class Pawn(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if (self.side == ChessSide.RED) and pos[1] < 3:
+        if (self.side == RED) and pos[1] < 3:
             return False
 
-        if (self.side == ChessSide.BLACK) and pos[1] > 6:
+        if (self.side == BLACK) and pos[1] > 6:
             return False
 
         return True
@@ -456,10 +456,10 @@ class Pawn(Piece):
         return False
 
     def is_crossed_river(self):
-        if (self.side == ChessSide.RED) and (self.y > 4):
+        if (self.side == RED) and (self.y > 4):
             return True
 
-        if (self.side == ChessSide.BLACK) and (self.y < 5):
+        if (self.side == BLACK) and (self.y < 5):
             return True
 
         return False

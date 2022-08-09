@@ -37,14 +37,34 @@ class Move(object):
 
     def mirror(self):
         self.board.mirror()
-        self.p_from[0] = 8 - self.p_from[0]
-        self.p_to[0] = 8 - self.p_to[0]
+        self.p_from = (8 - self.p_from[0], self.p_from[1])
+        self.p_to   = (8 - self.p_to[0], self.p_to[1])
         self.board_done.mirror()
 
         if self.next_move:
             self.next_move.mirror()
         if self.sibling_move:
             self.sibling_move.mirror()
+
+    def flip(self):
+        self.board.flip()
+        self.p_from = (self.p_from[0], 9 - self.p_from[1])
+        self.p_to =   (self.p_to[0], 9 - self.p_to[1])
+        self.board_done.flip()
+
+        if self.next_move:
+            self.next_move.flip()
+        if self.sibling_move:
+            self.sibling_move.flip()
+    
+    def swap(self):
+        self.board.swap()
+        self.board_done.swap()
+
+        if self.next_move:
+            self.next_move.swap()
+        if self.sibling_move:
+            self.sibling_move.swap()
 
     def is_valid_move(self):
         return self.board.is_valid_move(self.p_from, self.p_to)
@@ -96,7 +116,7 @@ class Move(object):
         diff = self.p_to[1] - self.p_from[1]
 
         #黑方是红方的反向操作
-        if man_side == ChessSide.BLACK:
+        if man_side == BLACK:
             diff = -diff
 
         if diff == 0:
@@ -217,7 +237,7 @@ class Move(object):
                 if move_str[0] == "退":
                     diff = -diff
 
-                if move_side == ChessSide.BLACK:
+                if move_side == BLACK:
                     diff = -diff
 
                 return (p_from[0], p_from[1] + diff)
@@ -226,7 +246,7 @@ class Move(object):
         elif man_kind == 'a':
             new_x = h_level_index[move_side].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
-            if self.side == ChessSide.BLACK:
+            if self.side == BLACK:
                 diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
@@ -234,7 +254,7 @@ class Move(object):
         elif man_kind == 'b':
             new_x = h_level_index[move_side].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
-            if self.side == ChessSide.BLACK:
+            if self.side == BLACK:
                 diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
@@ -248,7 +268,7 @@ class Move(object):
             else:
                 diff_y = [-3, -2, -1][diff_x]
 
-            if move_side == ChessSide.RED:
+            if move_side == RED:
                 diff_y = -diff_y
 
             return (new_x, p_from[1] - diff_y)

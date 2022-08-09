@@ -69,13 +69,17 @@ class BaseChessBoard(object):
 
     def clear(self):
         self._board = [[None for x in range(9)] for y in range(10)]
-        self.move_side = ChessSide(ChessSide.NO_SIDE)
+        self.move_side = ChessSide(NO_SIDE)
 
     def copy(self):
         return copy.deepcopy(self)
 
     def mirror(self):
         board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
+        self._board = board
+    
+    def flip(self):
+        board = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
         self._board = board
 
     def swap(self):
@@ -154,8 +158,7 @@ class BaseChessBoard(object):
         _, from_side = fench_to_species(fench_from)
 
         #move_side 不是None值才会进行走子颜色检查，这样处理某些特殊的存储格式时会处理比较迅速
-        if (self.move_side != ChessSide.NO_SIDE) and (from_side !=
-                                                      self.move_side):
+        if (self.move_side != NO_SIDE) and (from_side != self.move_side):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -231,11 +234,11 @@ class BaseChessBoard(object):
 
         fens = fen.split()
 
-        self.move_side = ChessSide(ChessSide.NO_SIDE)
+        self.move_side = ChessSide(NO_SIDE)
         if (len(fens) >= 2) and (fens[1] == 'b'):
-            self.move_side = ChessSide(ChessSide.BLACK)
+            self.move_side = ChessSide(BLACK)
         else:
-            self.move_side = ChessSide(ChessSide.RED)
+            self.move_side = ChessSide(RED)
 
         return True
 
@@ -246,7 +249,7 @@ class BaseChessBoard(object):
             for x in range(9):
                 fench = self._board[y][x]
                 if fench:
-                    if count is not 0:
+                    if count != 0:
                         fen += str(count)
                         count = 0
                     fen += fench
@@ -259,7 +262,7 @@ class BaseChessBoard(object):
 
             if y > 0: fen += '/'
 
-        fen += ' b' if self.move_side == ChessSide.BLACK else ' w'
+        fen += ' b' if self.move_side == BLACK else ' w'
 
         return fen
 

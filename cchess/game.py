@@ -35,7 +35,10 @@ class Game(object):
         self.annotation = annotation
         self.next_move = None
         self.info = {}
-
+    
+    def __str__(self):
+        return str(self.info)
+            
     def append_next_move(self, chess_move):
         chess_move.parent = self
         if not self.next_move:
@@ -63,6 +66,16 @@ class Game(object):
         self.init_board.mirror()
         if self.next_move:
             self.next_move.mirror()
+    
+    def flip(self):
+        self.init_board.flip()
+        if self.next_move:
+            self.next_move.flip()
+    
+    def swap(self):
+        self.init_board.swap()
+        if self.next_move:
+            self.next_move.swap()
 
     def iter_moves(self, move=None):
         if move == None:

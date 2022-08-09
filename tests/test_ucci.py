@@ -19,8 +19,9 @@ import os, sys, time
 from pathlib import Path
 from cchess import *
 
-result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
-
+result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
+S_RED_WIN = '1-0'
+S_BLACK_WIN = '0-1'
 
 def load_move_txt(txt_file):
     with open(txt_file, "rb") as f:
@@ -30,6 +31,20 @@ def load_move_txt(txt_file):
     result = result_dict[lines[-1].strip().decode('utf-8')]
     return (fen, moves, result)
 
+class TestUCCI_BAD():
+    def setup(self):
+        os.chdir(os.path.dirname(__file__))
+        
+    def teardown(self):
+        pass
+
+    def test_ucci(self):
+        self.engine = UcciEngine()
+        assert False == self.engine.load("eleeye.exe")
+
+        fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
+        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
+        game.init_board.move_side = ChessSide(RED)
 
 class TestUCCI():
     def setup(self):
@@ -43,14 +58,15 @@ class TestUCCI():
     def test_ucci(self):
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
-        game.init_board.move_side = ChessSide.RED
+        game.init_board.move_side = ChessSide(RED)
 
         assert game.init_board.to_fen() == fen
-        assert game.info['Result'] == result
+        assert game.info['result'] == result
         board = game.init_board.copy()
 
         dead = False
         while not dead:
+            self.engine.stop_thinking()
             self.engine.go_from(board.to_fen(), 8)
             while True:
                 self.engine.handle_msg_once()
@@ -58,30 +74,32 @@ class TestUCCI():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                if output[0] == 'best_move':
-                    p_from, p_to = output[1]["move"]
+                action = output['action']
+                if action == 'best_move':
+                    p_from, p_to = output["move"]
                     move_str = board.move(p_from, p_to).to_chinese()
                     assert move_str == moves.pop(0)
                     last_side = board.move_side
                     board.next_turn()
                     break
-                elif output[0] == 'dead':
-                    if board.move_side == ChessSide.RED:
-                        assert result == BLACK_WIN
+                elif action == 'dead':
+                    if board.move_side == ChessSide(RED):
+                        assert result == S_BLACK_WIN
                     else:
-                        assert result == RED_WIN
+                        assert result == S_RED_WIN
                     dead = True
                     break
-                elif output[0] == 'draw':
+                elif action == 'draw':
                     dead = True
                     break
-                elif output[0] == 'resign':
-                    if board.move_side == ChessSide.RED:
-                        assert result == BLACK_WIN
+                elif action == 'resign':
+                    if board.move_side == RED:
+                        assert result == S_BLACK_WIN
                     else:
-                        assert result == RED_WIN
+                        assert result == S_RED_WIN
                     dead = True
                     break
 
         self.engine.quit()
+        
         time.sleep(0.5)

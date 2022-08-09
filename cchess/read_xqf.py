@@ -23,8 +23,8 @@ from .board import *
 from .game import *
 
 #-----------------------------------------------------#
-result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
-
+#result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
+result_dict = {0:'*', 1:'1-0', 2:'0-1', 3:'1/2-1/2', 4:'1/2-1/2'}
 
 def _decode_pos(man_pos):
     return (int(man_pos // 10), man_pos % 10)
@@ -307,19 +307,19 @@ def read_from_xqf(full_file_name, read_annotation=True):
 
     game_info = {}
 
-    game_info["game_source"] = "XQF"
-    game_info["game_version"] = version
-    game_info["game_type"] = ucType + 1
+    game_info["source"] = "XQF"
+    game_info["version"] = version
+    game_info["type"] = ucType + 1
 
     if ucRes <= 4:  #It's really some file has value 4
-        game_info["Result"] = result_dict[ucRes]
+        game_info["result"] = result_dict[ucRes]
     else:
         print("Bad Result  ", ucRes, full_file_name)
-        game_info["Result"] = '*'
+        game_info["result"] = '*'
 
     if ucRedPlayerNameLen > 0:
         try:
-            game_info["Red"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
+            game_info["red"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
                 "GB18030")
         except:
             pass
@@ -327,33 +327,25 @@ def read_from_xqf(full_file_name, read_annotation=True):
     if ucBlackPlayerNameLen > 0:
         try:
             game_info[
-                "Black"] = szBlackPlayerName[:ucBlackPlayerNameLen].decode(
+                "black"] = szBlackPlayerName[:ucBlackPlayerNameLen].decode(
                     "GB18030")
         except:
             pass
 
     if ucTitleLen > 0:
         try:
-            game_info["Game"] = szTitle[:ucTitleLen].decode("GB18030")
+            game_info["name"] = szTitle[:ucTitleLen].decode("GB18030")
         except:
             pass
 
     if ucMatchNameLen > 0:
         try:
-            game_info["Event"] = szMatchName[:ucMatchNameLen].decode("GB18030")
+            game_info["event"] = szMatchName[:ucMatchNameLen].decode("GB18030")
         except:
             pass
 
     path, file_name = os.path.split(full_file_name)
-    '''
-        if game_info["Result"] == '*' :
-                if (u"先胜" in file_name) and (u"先和" not in file_name) and (u"先负" not in file_name) :
-                        game_info["Result"] = '1-0'
-                elif (u"先负" in file_name) and (u"先和" not in file_name) and (u"先胜" not in file_name) :
-                        game_info["Result"] = '0-1'
-                elif (u"先和" in file_name) and (u"先负" not in file_name) and (u"先胜" not in file_name) :
-                        game_info["Result"] = '1/2-1/2'
-        '''
+    
     if (version <= 0x0A):
         keys = None
         chess_mans = __init_chess_board(ucBoard, version)
@@ -391,5 +383,9 @@ def read_from_xqf(full_file_name, read_annotation=True):
     first_move = game.next_move
     if first_move is not None:
         game.init_board.move_side = first_move.board.move_side
-       
+    else:
+        game.init_board.move_side = ChessSide(RED)
+    
+    game.info['move_side'] = str(game.init_board.move_side)
+    
     return game

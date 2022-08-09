@@ -21,30 +21,51 @@ from cchess import *
 #-----------------------------------------------------#
 class TestBoard():
     def test_base(self):
+        board = ChessBoard('')
+        assert '9/9/9/9/9/9/9/9/9/9 w - - 0 1' == board.to_fen()
+        assert None == board.get_king(RED)
+        assert None == board.get_king(BLACK)
+        assert False == board.is_checking()
+        assert True == board.is_dead()
+        assert True == board.is_win()
+        
         board = ChessBoard(FULL_INIT_FEN)
+        assert False == board.is_checking()
+        assert False == board.is_dead()
+        assert False == board.is_win()
+        
         fen = board.to_fen()
         assert FULL_INIT_FEN == fen
 
         board.from_fen(fen)
         assert board.to_fen() == fen
 
-        board.swap()
-        board.swap()
+        board.flip()
+        board.flip()
         assert board.to_fen() == fen
 
         board.mirror()
         board.mirror()
         assert board.to_fen() == fen
+        
+        board.swap()
+        board.swap()
+        assert board.to_fen() == fen
 
-        k = board.get_king(ChessSide.RED)
+        k = board.get_king(RED)
         assert (k.x, k.y) == (4, 0)
 
-        k = board.get_king(ChessSide.BLACK)
+        k = board.get_king(BLACK)
         assert (k.x, k.y) == (4, 9)
         assert len(list(board.create_moves())) == 44
 
         assert board.check_count() == 0
-        
+        try:
+            board.is_checked_move((4, 0), (5, 0),)
+        except CChessException as e:
+            assert True
+        else:
+            assert False
         #assert board.is_checkmate() is False
         
         assert board.get_fench((0, 9)) == 'r'
@@ -53,18 +74,22 @@ class TestBoard():
         board.from_fen(fen2)
         assert board.to_fen() == fen2
 
-        board.swap()
-        board.swap()
+        board.flip()
+        board.flip()
         assert board.to_fen() == fen2
 
         board.mirror()
         board.mirror()
         assert board.to_fen() == fen2
+        
+        board.swap()
+        board.swap()
+        assert board.to_fen() == fen2
 
-        k = board.get_king(ChessSide.RED)
+        k = board.get_king(RED)
         assert (k.x, k.y) == (4, 0)
 
-        k = board.get_king(ChessSide.BLACK)
+        k = board.get_king(BLACK)
         assert (k.x, k.y) == (4, 9)
 
         assert board.check_count() == 0
@@ -354,7 +379,7 @@ class TestBoard():
         board = ChessBoard(FULL_INIT_FEN)
 
         move = board.copy().move_iccs('a0a1')
-        assert move.move_side == ChessSide.RED
+        assert move.move_side == RED
         assert move.to_iccs() == 'a0a1'
         assert str(move) == 'a0a1'
         assert move.is_valid_move() is True
