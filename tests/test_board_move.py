@@ -379,7 +379,7 @@ class TestBoard():
         board = ChessBoard(FULL_INIT_FEN)
 
         move = board.copy().move_iccs('a0a1')
-        assert move.move_side == RED
+        assert move.move_player == RED
         assert move.to_iccs() == 'a0a1'
         assert str(move) == 'a0a1'
         assert move.is_valid_move() is True

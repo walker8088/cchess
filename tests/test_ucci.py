@@ -44,7 +44,7 @@ class TestUCCI_BAD():
 
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
-        game.init_board.move_side = ChessSide(RED)
+        game.init_board.move_player = ChessPlayer(RED)
 
 class TestUCCI():
     def setup(self):
@@ -58,7 +58,7 @@ class TestUCCI():
     def test_ucci(self):
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
-        game.init_board.move_side = ChessSide(RED)
+        game.init_board.move_player = ChessPlayer(RED)
 
         assert game.init_board.to_fen() == fen
         assert game.info['result'] == result
@@ -79,11 +79,11 @@ class TestUCCI():
                     p_from, p_to = output["move"]
                     move_str = board.move(p_from, p_to).to_chinese()
                     assert move_str == moves.pop(0)
-                    last_side = board.move_side
+                    last_player = board.move_player
                     board.next_turn()
                     break
                 elif action == 'dead':
-                    if board.move_side == ChessSide(RED):
+                    if board.move_player == RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -93,7 +93,7 @@ class TestUCCI():
                     dead = True
                     break
                 elif action == 'resign':
-                    if board.move_side == RED:
+                    if board.move_player == RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN

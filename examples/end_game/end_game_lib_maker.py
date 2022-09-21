@@ -19,9 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys, os
 import shutil
 
-sys.path.append('..')
 from cchess import *
-
 
 def load_board(root_path):
     games = []
@@ -33,10 +31,10 @@ def load_board(root_path):
             continue
         file_name = os.path.join(root_path, file)
         game = read_from_xqf(file_name)
-        game.init_board.move_side = ChessSide.RED
+        game.init_board.move_player = RED
         fen = game.init_board.to_short_fen()
         #fen = ' '.join(init_fen.split()[0:2])
-        print file[:-4], game.info["Result"], fen
+        print( file[:-4], game.info["Result"], fen)
         game_info['name'] = file[:-4]
         game_info['result'] = game.info["Result"]
         game_info['fen'] = fen

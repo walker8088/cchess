@@ -75,8 +75,8 @@ class Move(object):
         return False
 
     @property
-    def move_side(self):
-        return self.board.move_side
+    def move_player(self):
+        return self.board.move_player
 
     def append_next_move(self, chess_move):
         chess_move.parent = self
@@ -180,10 +180,10 @@ class Move(object):
 
         return man_name + h_level_index[man_side][pos[0]]
 
-    def for_ucci(self, move_side, history):
+    def for_ucci(self, move_player, history):
         if self.captured:
             #吃子移动
-            self.board_done.move_side = move_side
+            self.board_done.move_player = move_player
             self.ucci_fen = self.board_done.to_fen()
             self.ucci_moves = []
         else:
@@ -216,7 +216,7 @@ class Move(object):
                 (ord(move_str[2]) - ord('a'), int(move_str[3])))
 
     @staticmethod
-    def chinese_move_to_std_move(man_kind, move_side, p_from, move_str):
+    def chinese_move_to_std_move(man_kind, move_player, p_from, move_str):
 
         #移动规则检查
         if man_kind in ['a', 'b', 'n'] and move_str[0] == "平":
@@ -228,23 +228,23 @@ class Move(object):
         if man_kind in ['k', 'r', 'c', 'p']:
             #平移
             if move_str[0] == "平":
-                new_x = h_level_index[move_side].index(move_str[1])
+                new_x = h_level_index[move_player].index(move_str[1])
                 return (new_x, p_from[1])
             else:
                 #王，车，炮，兵的前进和后退
-                diff = v_change_index[move_side].index(move_str[1])
+                diff = v_change_index[move_player].index(move_str[1])
 
                 if move_str[0] == "退":
                     diff = -diff
 
-                if move_side == BLACK:
+                if move_player == BLACK:
                     diff = -diff
 
                 return (p_from[0], p_from[1] + diff)
 
         #仕的移动规则
         elif man_kind == 'a':
-            new_x = h_level_index[move_side].index(move_str[1])
+            new_x = h_level_index[move_player].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
             if self.side == BLACK:
                 diff_y = -diff_y
@@ -252,7 +252,7 @@ class Move(object):
 
         #象的移动规则
         elif man_kind == 'b':
-            new_x = h_level_index[move_side].index(move_str[1])
+            new_x = h_level_index[move_player].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
             if self.side == BLACK:
                 diff_y = -diff_y
@@ -268,7 +268,7 @@ class Move(object):
             else:
                 diff_y = [-3, -2, -1][diff_x]
 
-            if move_side == RED:
+            if move_player == RED:
                 diff_y = -diff_y
 
             return (new_x, p_from[1] - diff_y)
@@ -291,15 +291,15 @@ class Move(object):
         else:
             man_name = move_str[0]
 
-        fench = chinese_to_fench(man_name, board.move_side)
+        fench = chinese_to_fench(man_name, board.move_player)
         if not fench:
             return None
 
-        man_kind, move_side = fench_to_species(fench)
+        man_kind, move_player = fench_to_species(fench)
 
         if not multi_mans:
             #单子移动
-            x = h_level_index[move_side].index(move_str[1])
+            x = h_level_index[move_player].index(move_str[1])
             poss = board.get_fenchs_x(x, fench)
 
             #无子可走
@@ -311,7 +311,7 @@ class Move(object):
                 return None
 
             for pos in poss:
-                move = Move.chinese_move_to_std_move(man_kind, move_side, pos,
+                move = Move.chinese_move_to_std_move(man_kind, move_player, pos,
                                                      move_str[2:])
                 if move:
                     return (pos, move)
@@ -324,7 +324,7 @@ class Move(object):
                 poss = board.get_fenchs(fench)
                 move_indexs = {"前": 0, "后": -1}
                 pos = poss[move_indexs[move_str[0]]]
-                move = Move.chinese_move_to_std_move(man_kind, move_side, pos,
+                move = Move.chinese_move_to_std_move(man_kind, move_player, pos,
                                                      move_str[2:])
                 if move:
                     return (pos, move)

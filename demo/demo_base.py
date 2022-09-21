@@ -50,7 +50,7 @@ mv = move.from_iccs('d9e9')
 print(board.is_checked_move(*mv)) #True
 
 #被对方将死检测
-print(board.is_dead())    #True
+print(board.is_lost())    #True
 
 #8.读取xqf文件, 显示棋谱
 game = read_from_xqf("WildHouse.xqf")

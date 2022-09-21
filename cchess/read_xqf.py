@@ -258,7 +258,7 @@ def __read_steps(buff_decoder, version, keys, parent, board):
         good_move = parent
     else:
         _, man_side = fench_to_species(fench)
-        board.move_side = ChessSide(man_side)
+        board.move_player = ChessPlayer(man_side)
 
         if board.is_valid_move(move_from, move_to):
             #认为当前走子一方就是合理一方，避免过多走子方检查
@@ -382,10 +382,10 @@ def read_from_xqf(full_file_name, read_annotation=True):
     
     first_move = game.next_move
     if first_move is not None:
-        game.init_board.move_side = first_move.board.move_side
+        game.init_board.move_player = first_move.board.move_player
     else:
-        game.init_board.move_side = ChessSide(RED)
+        game.init_board.move_player = ChessPlayer(RED)
     
-    game.info['move_side'] = str(game.init_board.move_side)
+    game.info['move_player'] = str(game.init_board.move_player)
     
     return game

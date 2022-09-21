@@ -21,11 +21,11 @@ from cchess import *
 #-----------------------------------------------------#
 class TestPiece():
     def test_base(self):
-        side = ChessSide(NO_SIDE)
-        assert side.next() == NO_SIDE
-        assert side.opposite() == NO_SIDE
+        side = ChessPlayer(NO_COLOR)
+        assert side.next() == NO_COLOR
+        assert side.opposite() == NO_COLOR
         
-        side = ChessSide(RED)
+        side = ChessPlayer(RED)
         assert side.opposite() == BLACK
         assert side.next() == BLACK
         assert side.next() == RED

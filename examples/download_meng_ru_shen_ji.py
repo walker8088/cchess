@@ -28,7 +28,7 @@ def parse_games(html):
     for td in soup.find_all('td'):
         if td.a == None or len(td.a.text) == 0:
             continue
-        title = unicode(td.a.text)
+        title = td.a.text
         if title.encode('utf-8')[0] in [
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         ]:
@@ -67,11 +67,11 @@ for it in games[:]:
 
     board_txt = game.dump_init_board()
 
-    print it[0]
+    print( it[0])
 
-    if game.init_board.move_side != ChessSide.RED:
-        game.init_board.move_side = ChessSide.RED
-        # print "Erorr",game.init_board.move_side
+    if game.init_board.move_player != RED:
+        game.init_board.move_player = RED
+        # print "Erorr",game.init_board.move_player
 
     game_info['name'] = it[0][3:]
     game_info['fen'] = game.init_board.to_short_fen()
@@ -89,10 +89,10 @@ for it in games[:]:
 games_result.sort(key=lambda x: x['move_len'])
 
 if len(bad_files) > 0:
-    print "BAD FILES:",
+    print( "BAD FILES:",)
     for it in bad_files:
-        print it,
-    print 'End.'
+        print(it,)
+    print( 'End.')
 
 with open(u"梦入神机.eglib", "wb") as f:
     for it in games_result:

@@ -68,20 +68,20 @@ name_fench_dict = {
 }
 
 _fench_txt_name_dict = {
-    'K': u"帅",
-    'k': u"将",
-    'A': u"仕",
-    'a': u"士",
-    'B': u"相",
-    'b': u"象",
-    'N': u"马",
-    'n': u"碼",
-    'R': u"车",
-    'r': u"砗",
-    'C': u"炮",
-    'c': u"砲",
-    'P': u"兵",
-    'p': u"卒"
+    'K': "帅",
+    'A': "仕",
+    'B': "相",
+    'R': "车",
+    'N': "马",
+    'C': "炮",
+    'P': "兵",
+    'k': "将",
+    'a': "士",
+    'b': "象",
+    'r': "砗",
+    'n': "碼",
+    'c': "砲",
+    'p': "卒"
 }
 
 
@@ -93,15 +93,15 @@ def fench_to_txt_name(fench):
 def fench_to_chinese(fench):
     return fench_name_dict[fench]
 
-def chinese_to_fench(chinese, side):
+def chinese_to_fench(chinese, color):
     fench = name_fench_dict[chinese]
-    return fench.lower() if side == BLACK else fench.upper()
+    return fench.lower() if color == BLACK else fench.upper()
 
 def fench_to_species(fen_ch):
     return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
-def species_to_fench(species, side):
-    return species_fench_dict[species][side]
+def species_to_fench(species, color):
+    return species_fench_dict[species][color]
 
 #-----------------------------------------------------#
 #KING, ADVISOR, BISHOP, KNIGHT, ROOK, CANNON, PAWN
@@ -116,8 +116,8 @@ chessman_show_name_dict = {
     PieceT.PAWN: ("兵", "卒")
 }
 
-def get_show_name(species, side):
-    return chessman_show_name_dict[species][side]
+def get_show_name(species, color):
+    return chessman_show_name_dict[species][color]
 '''
 '''
 piece_create_dict = {
@@ -141,44 +141,19 @@ def middle_p(x, y):
 
 #-----------------------------------------------------#
 
-NO_SIDE, RED, BLACK = (0, 1, 2)
-SIDE_VALUES = ('', 'RED', 'BLACK')
-SIDE_VALUES_CN = ('', '红方', '黑方')
+NO_COLOR, RED, BLACK = (0, 1, 2)
 
-class ChessSide():
+def opposite_color(color):
+    return 3 - color
     
-    def __init__(self, side):
-        self.value = side
-        
-    def next(self):
-        if self.value != NO_SIDE: 
-            self.value = 3 - self.value
-        return ChessSide(self.value)
 
-    def opposite(self):
-        if self.value == NO_SIDE: 
-            return NO_SIDE
-        return 3 - self.value
-    
-    def __str__(self):
-        return SIDE_VALUES[self.value]
-        
-    def __eq__(self, other):
-        if isinstance(other, ChessSide):
-            return self.value == other.value
-        elif isinstance(other, int):
-            return self.value == other    
-        return False
-        
 #-----------------------------------------------------#
 class Piece(object):
     def __init__(self, board, fench, pos):
 
         self.board = board
         self.fench = fench
-
-        self.species, _side = fench_to_species(fench)
-        self.side = ChessSide(_side)
+        self.species, self.color = fench_to_species(fench)
         self.x, self.y = pos
         
     def is_valid_pos(self, pos):
@@ -225,7 +200,7 @@ class King(Piece):
     def is_valid_move(self, pos_to):
 
         #face to face
-        k2 = self.board.get_king(self.side.opposite())
+        k2 = self.board.get_king(opposite_color(self.color))
         if (self.x == k2.x) and (pos_to[1] == k2.y) and (self.board.count_y_line_in(
                 self.x, self.y, k2.y) == 0):
             #白脸将,王杀王    
@@ -246,7 +221,7 @@ class King(Piece):
             (self.x, self.y - 1),
         ]
 
-        k2 = self.board.get_king(self.side.opposite())
+        k2 = self.board.get_king(opposite_color(self.color))
         poss.append((k2.x, k2.y))
 
         curr_pos = (self.x, self.y)
@@ -260,7 +235,7 @@ class Advisor(Piece):
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
-        return True if pos in advisor_pos[self.side.value] else False
+        return True if pos in advisor_pos[self.color] else False
 
     def is_valid_move(self, pos_to):
 
@@ -287,7 +262,7 @@ class Bishop(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        return True if pos in bishop_pos[self.side.value] else False
+        return True if pos in bishop_pos[self.color] else False
 
     def is_valid_move(self, pos_to):
         if abs_diff((self.x, self.y), (pos_to)) != (2, 2):
@@ -298,9 +273,9 @@ class Bishop(Piece):
             return False
 
         #象过河检查
-        if (self.side == RED) and (pos_to[1] > 4):
+        if (self.color == RED) and (pos_to[1] > 4):
             return False
-        if (self.side == BLACK) and (pos_to[1] < 5):
+        if (self.color == BLACK) and (pos_to[1] < 5):
             return False
 
         return True
@@ -429,10 +404,10 @@ class Pawn(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if (self.side == RED) and pos[1] < 3:
+        if (self.color == RED) and pos[1] < 3:
             return False
 
-        if (self.side == BLACK) and pos[1] > 6:
+        if (self.color == BLACK) and pos[1] > 6:
             return False
 
         return True
@@ -447,19 +422,19 @@ class Pawn(Piece):
 
         crossed_river = self.is_crossed_river()
 
-        if (not crossed_river) and (step == not_crossed_river_step[self.side.value]):
+        if (not crossed_river) and (step == not_crossed_river_step[self.color]):
             return True
 
-        if crossed_river and (step in crossed_river_step[self.side.value]):
+        if crossed_river and (step in crossed_river_step[self.color]):
             return True
 
         return False
 
     def is_crossed_river(self):
-        if (self.side == RED) and (self.y > 4):
+        if (self.color == RED) and (self.y > 4):
             return True
 
-        if (self.side == BLACK) and (self.y < 5):
+        if (self.color == BLACK) and (self.y < 5):
             return True
 
         return False

@@ -23,10 +23,8 @@ import time
 import pygame
 from pygame.locals import *
 
-from GUI import SlideBar, Button, InLineTextBox
-from GUI.locals import *
-
-sys.path.append('..\..')
+#from GUI import SlideBar, Button, InLineTextBox
+#from GUI.locals import *
 
 from cchess import *
 
@@ -37,7 +35,7 @@ BOARD_SIZE = (WIDTH, HEIGHT) = (530, 586)
 SCREEN_SIZE = (WIDTH+200, HEIGHT)
 
 RES_PATH = 'res'
-win_dict = {ChessSide.BLACK: u"红胜", ChessSide.RED: u"黑胜"}
+win_dict = {BLACK: "红胜", RED: "黑胜"}
 
 #-----------------------------------------------------#
 def load_image(file_name):
@@ -74,12 +72,12 @@ class GameTable():
         self.pieces_image = {}
         
         #self.back_btn = Button(self.back_btn_clicked, (WIDTH+100, 40), (180, 40), 'BACK') #, anchor=BOTTOMRIGHT)
-        self.back_btn = Button(self.back_btn_clicked, (WIDTH+100, 82), (180, 40), 'GoBack') #, anchor=BOTTOMRIGHT)
-        self.next_btn = Button(self.next_btn_clicked, (WIDTH+100, 124), (180, 40), 'NextGame') #, anchor=BOTTOMRIGHT)
-        self.prev_btn = Button(self.prev_btn_clicked, (WIDTH+100, 166), (180, 40), 'PrevGame') #, anchor=BOTTOMRIGHT)
-        self.restart_btn = Button(self.restart_btn_clicked, (WIDTH+100, 40), (180, 40), 'RestartGame') #, anchor=BOTTOMRIGHT)
-        self.info_box = InLineTextBox((WIDTH+10, 186), 220, RED, anchor=TOPLEFT, default_text='')
-        self.good_box = InLineTextBox((WIDTH+10, 206), 220, RED, anchor=TOPLEFT, default_text='')
+        #self.back_btn = Button(self.back_btn_clicked, (WIDTH+100, 82), (180, 40), 'GoBack') #, anchor=BOTTOMRIGHT)
+        #self.next_btn = Button(self.next_btn_clicked, (WIDTH+100, 124), (180, 40), 'NextGame') #, anchor=BOTTOMRIGHT)
+        #self.prev_btn = Button(self.prev_btn_clicked, (WIDTH+100, 166), (180, 40), 'PrevGame') #, anchor=BOTTOMRIGHT)
+        #self.restart_btn = Button(self.restart_btn_clicked, (WIDTH+100, 40), (180, 40), 'RestartGame') #, anchor=BOTTOMRIGHT)
+        #self.info_box = InLineTextBox((WIDTH+10, 186), 220, RED, anchor=TOPLEFT, default_text='')
+        #self.good_box = InLineTextBox((WIDTH+10, 206), 220, RED, anchor=TOPLEFT, default_text='')
     
     
         for name in ['r', 'n', 'c', 'k', 'a', 'b', 'p']:
@@ -473,12 +471,12 @@ if __name__ == '__main__':
                 print(u'重新开始。')
                 done = True
 
-            elif dead_side == ChessSide.BLACK:
+            elif dead_side == BLACK:
                 keeper.done(index)
                 print(u'挑战成功！再接再励！')
                 done = True
             else:
-                if dead_side == ChessSide.RED:
+                if dead_side == RED:
                     done = True
                     print(u'挑战失败！重新再来！')
         if quit:

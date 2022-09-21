@@ -36,6 +36,7 @@ from setuptools import setup, Extension
 __version__ = None
 __doc__ = ''
 name = 'cchess'
+
 description = 'ChineseChess library'
 with open("README.rst", "r", encoding='utf-8') as fh:
     __doc__ = fh.read()
@@ -50,6 +51,7 @@ def package_tree(pkgroot):
     subdirs = [os.path.relpath(i[0], path).replace(os.path.sep, '.')
                for i in os.walk(Path(path, pkgroot))
                if '__init__.py' in i[2]]
+    print(subdirs)
     return subdirs
 
 setup(
@@ -79,7 +81,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python 3',
+        'Programming Language :: Python :: 3.9',
     ],
 )

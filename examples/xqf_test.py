@@ -19,16 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys, os
 import json
 import shutil
-from sets import Set
 
-sys.path.append('..')
 from cchess import *
 
 dup_files = []
 
 
 def read_hist_moves():
-    moves = Set()
+    moves = set()
     with open('game_moves_good.txt') as f:
         lines = f.readlines()
     for item in lines:
@@ -37,7 +35,7 @@ def read_hist_moves():
 
 
 def main(root_path):
-    good_moves = Set()
+    good_moves = set()
     bad_files = []
     skip_count = 0
 
@@ -47,12 +45,12 @@ def main(root_path):
             if ext != '.xqf':
                 continue
             file_name = os.path.join(root, file)
-            print file_name.encode('GB18030')
+            print(file_name.encode('GB18030'))
             game = read_from_xqf(file_name)
             if not game:
-                print 'None game at file', file_name
+                print( 'None game at file', file_name)
             if not game.verify_moves():
-                print 'Bad move at file', file_name
+                print( 'Bad move at file', file_name)
                 bad_files.append(file_name)
 
             game.print_init_board()
@@ -70,7 +68,7 @@ def main(root_path):
                 steps = len(moves.split(' '))
                 #print steps
                 if (steps < 30) and (book['Result'] == '1/2-1/2'):
-                    print "bad peace moves", steps, file_name.encode('GB18030')
+                    print( "bad peace moves", steps, file_name.encode('GB18030'))
                     dup_files.append(file_name)
                     #print moves
                     #shutil.move(file_name, 'bad_' + file)
