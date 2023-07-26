@@ -18,12 +18,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import copy
+import json
 
 from functools import *
 
-from .exception import *
-from .piece import *
-from .move import *
+from exception import *
+from piece import *
+from move import *
 
 #-----------------------------------------------------#
 FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
@@ -370,8 +371,13 @@ class BaseChessBoard(object):
 #-----------------------------------------------------#
 
 class ChessBoard(BaseChessBoard):
-    def __init__(self, fen=''):
+    def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
+        if chess_dict:  # 自己指定的独热编码方式
+            self.__chess_dict = chess_dict
+        else:  # 默认的独热编码方式
+            self.__chess_dict = json.load(open('./config/Chinese Chess One Hot.json'))
+            self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def is_valid_move(self, pos_from, pos_to):
         if not super().is_valid_move(pos_from, pos_to):
@@ -443,3 +449,31 @@ class ChessBoard(BaseChessBoard):
     def y_line_in(self, x, y_from, y_to):
         step = 1 if y_to > y_from else -1
         return [self._board[y][x] for y in range(y_from + step, y_to, step)]
+
+    def get_one_hot_board(self) -> list:
+        """
+        依据`self.__chess_dict`对棋子进行独热编码
+        :return: 一个列表，将棋子进行独热编码后的棋盘
+        """
+        one_hot_board = []
+        for x in self._board.copy():
+            temp = []
+            for y in x:
+                temp.append(self.__chess_dict.get(y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+            one_hot_board.append(temp)
+        return one_hot_board
+
+    @property
+    def chess_dict(self):
+        """
+        获取棋子-独热编码的映射
+        :return: 字典，棋子-独热编码的映射
+        """
+        return self.__chess_dict.copy()
+
+
+# 测试代码
+if __name__ == "__main__":
+    board = ChessBoard()
+    print(board.get_one_hot_board())
+    print(board.chess_dict)
