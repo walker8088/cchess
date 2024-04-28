@@ -72,6 +72,8 @@ setup(
     ],
     extras_require={   },
     packages=find_packages(),
+    package_data = {'cchess/config': ['config//*.json']},
+    include_package_data=True,
     zip_safe=True,
     classifiers=[
         'Development Status :: 4 - Beta',

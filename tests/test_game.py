@@ -33,10 +33,10 @@ def load_move_txt(txt_file):
 
 
 class TestReaderXQF():
-    def setup(self):
+    def setup_method(self):
         os.chdir(os.path.dirname(__file__))
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_base(self):
@@ -51,53 +51,7 @@ class TestReaderXQF():
         assert game.info['result'] == result
 
         #game.print_init_board()
-        m = game.dump_chinese_moves()[0]
+        m = game.dump_text_moves()[0]
         assert len(m) == len(moves)
         for i in range(len(m)):
             assert m[i] == moves[i]
-
-
-#-----------------------------------------------------#
-if __name__ == '__main___':
-    '''
-    game = read_from_xqf(u"test\\FiveGoatsTest.xqf")
-    game.dump_info()
-    print 'verified', game.verify_moves()
-    #moves = game.dump_moves()
-    #print len(moves)
-    '''
-    game = read_from_xqf(u"test\\EmptyTest.xqf")
-    game.dump_info()
-    '''
-    game = read_from_xqf(u"test\\BadMoveTest1.xqf")
-    game.dump_info()
-    print game.init_fen
-    print 'verified', game.verify_moves()
-    
-    game = read_from_xqf(u"test\\BadMoveTest2.xqf")
-    game.dump_info()
-    print game.init_fen
-    print game.annotation    
-    print 'verified', game.verify_moves()
-    '''
-
-    #game = read_from_xqf(u"test\\BadMoveTest3.xqf")
-    #game = read_from_xqf(u"test\\BadMoveTest4.xqf")
-    game = read_from_xqf(u"test\\WildHouse.xqf")
-    game.dump_info()
-    #moves = game.dump_moves()
-    #moves = game.dump_std_moves()
-    #print moves
-    game.print_init_board()
-    game.print_chinese_moves(3)
-    #print len(moves)
-    #print 'verified', game.verify_moves()
-    #print 'verified', game.verify_moves()
-
-#-----------------------------------------------------#
-if __name__ == '__main__':
-    from reader_xqf import *
-    game = read_from_xqf('test\\ucci_test1.xqf')
-    game.init_board.move_player = RED
-    game.print_init_board()
-    game.print_chinese_moves()

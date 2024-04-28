@@ -29,17 +29,14 @@ result_dict = {0:'*', 1:'1-0', 2:'0-1', 3:'1/2-1/2', 4:'1/2-1/2'}
 def _decode_pos(man_pos):
     return (int(man_pos // 10), man_pos % 10)
 
-
 def _decode_pos2(man_pos):
     return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
                                                        man_pos[1] % 10))
-
 
 #-----------------------------------------------------#
 class XQFKey(object):
     def __init__(self):
         pass
-
 
 #-----------------------------------------------------#
 class XQFBuffDecoder(object):
@@ -212,7 +209,7 @@ def __read_init_info(buff_decoder, version, keys):
 
 
 #-----------------------------------------------------#
-def __read_steps(buff_decoder, version, keys, parent, board):
+def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 
     step_info = buff_decoder.read_bytes(4)
 
@@ -255,7 +252,7 @@ def __read_steps(buff_decoder, version, keys, parent, board):
 
     if not fench:
         #raise CChessException("bad move at %s %s" % (str(move_from), str(move_to)))
-        good_move = parent
+        good_move = parent_move
     else:
         _, man_side = fench_to_species(fench)
         board.move_player = ChessPlayer(man_side)
@@ -265,19 +262,22 @@ def __read_steps(buff_decoder, version, keys, parent, board):
             curr_move = board.move(move_from, move_to)
             curr_move.note = annote
             #print curr_move.move_str(), has_next_step, has_var_step
-            parent.append_next_move(curr_move)
+            if parent_move:
+                parent_move.append_next_move(curr_move)
+            else:
+                game.append_first_move(curr_move)
             good_move = curr_move
         else:
             #print "bad move at", move_from, move_to
             #board.print_board()
-            good_move = parent
+            good_move = parent_move
 
     if has_next_step:
-        __read_steps(buff_decoder, version, keys, good_move, board)
+        __read_steps(buff_decoder, version, keys, game, good_move, board)
 
     if has_var_step:
         #print Move.to_iccs(parent.next_move.move), 'has var'
-        __read_steps(buff_decoder, version, keys, parent, board_bak)
+        __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
 
 
 #-----------------------------------------------------#
@@ -355,7 +355,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
         chess_mans = __init_chess_board(ucBoard, version, keys)
         step_base_buff = XQFBuffDecoder(__decode_buff(keys, contents[0x400:]))
 
-    board = BaseChessBoard()
+    board = ChessBoard()
 
     chessman_kinds = \
             (
@@ -378,11 +378,10 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game = Game(board, game_annotation)
     game.info = game_info
 
-    __read_steps(step_base_buff, version, keys, game, board)
+    __read_steps(step_base_buff, version, keys, game,  None, board)
     
-    first_move = game.next_move
-    if first_move is not None:
-        game.init_board.move_player = first_move.board.move_player
+    if game.first_move is not None:
+        game.init_board.move_player = game.first_move.board.move_player
     else:
         game.init_board.move_player = ChessPlayer(RED)
     

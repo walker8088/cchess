@@ -15,20 +15,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+import os
 import sys
 import copy
 import json
 
 from functools import *
 
-from exception import *
-from piece import *
-from move import *
+from .exception import *
+from .piece import *
+from .move import *
+
 
 #-----------------------------------------------------#
-FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1'
-EMPTY_FEN = '9/9/9/9/9/9/9/9/9/9 w - - 0 1'
+FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
+EMPTY_BOARD = '9/9/9/9/9/9/9/9/9/9'
+EMPTY_FEN = f'{EMPTY_BOARD} w'
 
 #-----------------------------------------------------#
 _text_board = [
@@ -123,9 +125,18 @@ class BaseChessBoard(object):
                        for y in range(10)]
                        
         self.move_player.next()
-
+    
+    def set_move_color(self, color):
+        self.move_player = ChessPlayer(color)
+        
+    def get_move_color(self):
+        return self.move_player.color
+        
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
+    
+    def remove_fench(self, pos):
+        self._board[pos[1]][pos[0]] = None
 
     def get_fench(self, pos):
         return self._board[pos[1]][pos[0]]
@@ -241,8 +252,8 @@ class BaseChessBoard(object):
         move_from, move_to = Move.from_iccs(move_str)
         return self.move(move_from, move_to)
 
-    def move_chinese(self, move_str):
-        move_from, move_to = Move.from_chinese(self, move_str)
+    def move_text(self, move_str):
+        move_from, move_to = Move.from_text(self, move_str)
         return self.move(move_from, move_to)
 
     def next_turn(self):
@@ -292,7 +303,7 @@ class BaseChessBoard(object):
 
         return True
 
-    def to_fen_base(self):
+    def to_fen(self):
         fen = ''
         count = 0
         for y in range(9, -1, -1):
@@ -316,8 +327,8 @@ class BaseChessBoard(object):
 
         return fen
 
-    def to_fen(self):
-        return self.to_fen_base() + ' - - 0 1'
+    def to_full_fen(self):
+        return self.to_fen() + ' - - 0 1'
     
     def detect_move_pieces(self, new_board):
         p_from = []
@@ -371,17 +382,26 @@ class BaseChessBoard(object):
 #-----------------------------------------------------#
 
 class ChessBoard(BaseChessBoard):
-    def __init__(self, fen='', chess_dict=None):
+    def __init__(self, fen = '', chess_dict = None):
         super().__init__(fen)
-        if chess_dict:  # 自己指定的独热编码方式
-            self.__chess_dict = chess_dict
-        else:  # 默认的独热编码方式
-            self.__chess_dict = json.load(open('./config/Chinese Chess One Hot.json'))
-            self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
+        self.__chess_dict = chess_dict
+        
+    def load_one_hot_dict(self, file):
+           self.__chess_dict = json.load(open(file))
+           self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    
+    def move(self, pos_from, pos_to):
+        move = super().move(pos_from, pos_to)  
+        if move:
+            if  self.is_checking():
+                move.is_checking = True
+                if  self.is_checkmate():
+                    move.is_checkmate = True        
+        return  move
+        
     def is_valid_move(self, pos_from, pos_to):
         if not super().is_valid_move(pos_from, pos_to):
-            return False
+            return False  
 
         piece = self.get_piece(pos_from)
         return piece.is_valid_move(pos_to)
@@ -403,25 +423,33 @@ class ChessBoard(BaseChessBoard):
         board = self.copy()
         board._move_piece(pos_from, pos_to)
         board.move_player.next()
-        return (board.check_count() > 0)
+        return board.is_checking()
 
     def is_checking_move(self, pos_from, pos_to):
         board = self.copy()
         board._move_piece(pos_from, pos_to)
-        return (board.check_count() > 0)
+        return board.is_checking()
     
     def is_checking(self):
-        board = self.copy()
-        return (board.check_count() > 0)
-
-    def check_count(self):
         king = self.get_king(self.move_player.opposite())
-        killers = self.get_pieces(self.move_player)
-        return reduce(
-            lambda count, piece: count + 1
-            if piece.is_valid_move((king.x, king.y)) else count, killers, 0)
-
-    def is_lost(self):
+        if not king:
+            return False
+        
+        for piece in self.get_pieces(self.move_player):
+            if piece.is_valid_move((king.x, king.y)):
+                return True
+        
+        return False     
+    
+    def is_checkmate(self):
+        board = self.copy()
+        board.move_player.next()
+        return board.no_moves()
+    
+    def no_moves(self):
+        king = self.get_king(self.move_player)
+        if not king:
+            return True
         for piece in self.get_pieces(self.move_player):
             for move_it in piece.create_moves():
                 if self.is_valid_move_t(move_it):
@@ -429,10 +457,6 @@ class ChessBoard(BaseChessBoard):
                         return False
         return True
     
-    def is_win(self):
-        board = self.copy()
-        board.move_player.next()
-        return board.is_lost()
     
     def count_x_line_in(self, y, x_from, x_to):
         return reduce(lambda count, fench: count + 1 if fench else count,
@@ -471,9 +495,3 @@ class ChessBoard(BaseChessBoard):
         """
         return self.__chess_dict.copy()
 
-
-# 测试代码
-if __name__ == "__main__":
-    board = ChessBoard()
-    print(board.get_one_hot_board())
-    print(board.chess_dict)

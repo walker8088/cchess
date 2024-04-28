@@ -15,19 +15,19 @@ board.print_board()
 ##走子(内部格式), 中文显示
 ```
 move = board.copy().move((0,0),(0,1))
-print(move.to_chinese())
+print(move.to_text())
 ```
 
 ##走子(ICCS纵线格式),中文显示
 ```
 move = board.copy().move_iccs('a0a1')
-print(move.to_chinese())
+print(move.to_text())
 ```
 
 ##走子(中文格式,尚待完善),中文显示
 ```
-move = board.copy().move_chinese('车九进一')
-print(move.to_chinese())
+move = board.copy().move_text('车九进一')
+print(move.to_text())
 ```
 
 ##产生某个棋子的合法走子
@@ -35,7 +35,7 @@ print(move.to_chinese())
 moves = board.create_piece_moves((0,0))
 for mv in moves:
     move = board.copy().move(*mv)
-    print(move.to_chinese())
+    print(move.to_text())
 ```
 
 ##产生所有合法走子
@@ -43,7 +43,7 @@ for mv in moves:
 moves = board.create_moves()
 for mv in moves:
     move = board.copy().move(*mv)
-    print(move.to_chinese())
+    print(move.to_text())
 ```
 
 ##将军检测
@@ -79,7 +79,7 @@ print()
 for s in board_strs:
     print(s)
     
-game.print_chinese_moves()
+game.print_text_moves()
 ```
 
 以上参见demo/demo_base.py

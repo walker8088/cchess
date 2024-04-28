@@ -81,7 +81,7 @@ for it in games[:]:
         moves) > 0 else 0  # ','.join(moves[0]) if len(moves) > 0 else ''
     games_result.append(game_info)
     game.print_init_board()
-    game.print_chinese_moves()
+    game.print_text_moves()
     # db.insert(game_info)
 
 # db.close()

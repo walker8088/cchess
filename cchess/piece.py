@@ -90,11 +90,11 @@ def fench_to_txt_name(fench):
 
 
 #-----------------------------------------------------#
-def fench_to_chinese(fench):
+def fench_to_text(fench):
     return fench_name_dict[fench]
 
-def chinese_to_fench(chinese, color):
-    fench = name_fench_dict[chinese]
+def text_to_fench(text, color):
+    fench = name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 
 def fench_to_species(fen_ch):

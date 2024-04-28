@@ -54,7 +54,7 @@ def main(root_path):
                 bad_files.append(file_name)
 
             game.print_init_board()
-            game.print_chinese_moves()
+            game.print_text_moves()
 
             continue
 

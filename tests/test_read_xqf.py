@@ -33,10 +33,10 @@ def load_move_txt(txt_file):
 
 
 class TestReaderXQF():
-    def setup(self):
+    def setup_method(self):
         os.chdir(os.path.dirname(__file__))
 
-    def teardown(self):
+    def teardown_method(self):
         pass
 
     def test_base(self):
@@ -51,7 +51,7 @@ class TestReaderXQF():
         assert game.info['result'] == result
 
         #game.print_init_board()
-        m = game.dump_chinese_moves()[0]
+        m = game.dump_text_moves()[0]
         assert len(m) == len(moves)
         for i in range(len(m)):
             assert m[i] == moves[i]
@@ -89,7 +89,7 @@ if __name__ == '__main___':
     #moves = game.dump_std_moves()
     #print moves
     game.print_init_board()
-    game.print_chinese_moves(3)
+    game.print_text_moves(3)
     #print len(moves)
     #print 'verified', game.verify_moves()
     #print 'verified', game.verify_moves()
@@ -100,4 +100,4 @@ if __name__ == '__main__':
     game = read_from_xqf('test\\ucci_test1.xqf')
     game.init_board.move_player = ChessPlayer(RED)
     game.print_init_board()
-    game.print_chinese_moves()
+    game.print_text_moves()

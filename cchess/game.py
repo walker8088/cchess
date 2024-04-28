@@ -33,30 +33,27 @@ class Game(object):
     def __init__(self, board=None, annotation=None):
         self.init_board = board.copy()
         self.annotation = annotation
+        self.first_move = None
         self.next_move = None
+        
         self.info = {}
     
     def __str__(self):
         return str(self.info)
             
-    def append_next_move(self, chess_move):
-        chess_move.parent = self
-        if not self.next_move:
-            self.next_move = chess_move
+    def append_first_move(self, chess_move):
+        if not self.first_move:
+            self.first_move = chess_move
         else:
-            #找最右一个
-            move = self.next_move
-            while move.sibling_move:
-                move = move.sibling_move
-            move.sibling_move = chess_move
-
+            self.first_move.branchs.append(chess_move)
+            
     def verify_moves(self):
         move_list = self.dump_moves()
         for move_line in move_list:
             j = 0
             for move in move_line:
                 if not move.is_valid_move():
-                    print(moves_to_chinese(self.init_fen, move_line[:j]))
+                    print(moves_to_text(self.init_fen, move_line[:j]))
                     #print j, move, move_line
                     return False
                 j += 1
@@ -64,26 +61,24 @@ class Game(object):
 
     def mirror(self):
         self.init_board.mirror()
-        if self.next_move:
-            self.next_move.mirror()
+        if self.first_move:
+            self.first_move.mirror()
     
     def flip(self):
         self.init_board.flip()
-        if self.next_move:
-            self.next_move.flip()
+        if self.first_move:
+            self.first_move.flip()
     
     def swap(self):
         self.init_board.swap()
-        if self.next_move:
-            self.next_move.swap()
+        if self.first_move:
+            self.first_move.swap()
 
     def iter_moves(self, move=None):
         if move == None:
-            move = self.next_move
+            move = self.first_move
         while move:
             yield move
-            if move.sibling_move:
-                self.iter_moves(move.sibling_move)
             move = move.next_move
 
     def dump_init_board(self):
@@ -91,32 +86,42 @@ class Game(object):
 
     def dump_moves(self):
 
-        if not self.next_move:
+        if not self.first_move:
             return []
 
         move_list = []
-        curr_move = []
+        curr_move = [[], ]
         move_list.append(curr_move)
-
-        self.next_move.dump_moves(move_list, curr_move)
+       
+        self.first_move.dump_moves(move_list, curr_move)
 
         return move_list
 
     def dump_iccs_moves(self):
-        return [[str(move) for move in move_line]
+        return [[str(move) for move in move_line[1:]]
                 for move_line in self.dump_moves()]
 
-    def dump_chinese_moves(self):
-        return [[move.to_chinese() for move in move_line]
+    def dump_text_moves(self):
+        return [[move.to_text() for move in move_line[1:]]
                 for move_line in self.dump_moves()]
-
+    
+    def dump_moves_line(self):
+    
+        if not self.first_move:
+            return []
+        
+        move_line = []
+        self.first_move.dump_moves_line(move_line)
+        
+        return move_line
+        
     def print_init_board(self):
         for line in self.init_board.dump_board():
             print(line)
             
-    def print_chinese_moves(self, steps_per_line=3):
+    def print_text_moves(self, steps_per_line=3):
 
-        moves = self.dump_chinese_moves()
+        moves = self.dump_text_moves()
         line_no = 1
         for line in moves:
 

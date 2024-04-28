@@ -19,11 +19,11 @@ from .piece import *
 from .board import *
 from .game import *
 from .move import *
-from .ucci import *
+from .engine import *
 from .read_xqf import read_from_xqf
 from .read_cbf import read_from_cbf
 from .read_pgn import read_from_pgn
 from .read_txt import read_from_txt
 from .exception import *
 
-__version__ = '0.8'
+__version__ = '0.9'
