@@ -54,7 +54,7 @@ print(board.is_checking()) #True
 
 ##将死对方检测
 ```
-print(board.is_win())      #True 
+print(board.is_checkmate())      #True 
 ```
 
 ##走子被将军检测
@@ -66,7 +66,7 @@ print(board.is_checked_move(*mv)) #True
 
 ##被对方将死检测
 ```
-print(board.is_dead())    #True
+print(board.no_move())    #True
 ```
 
 ##读取xqf文件, 显示棋谱

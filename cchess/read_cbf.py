@@ -59,7 +59,7 @@ def read_from_cbf(file_name):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException(
-                "bad move at %d %s %s" % (step_no, move_from, move_to))
+            raise CChessException("bad move at %d %s %s" %
+                                  (step_no, move_from, move_to))
         step_no += 1
     return game

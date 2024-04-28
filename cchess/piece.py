@@ -32,8 +32,6 @@ advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
 bishop_pos = ((), ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
               ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)))
 
-
-        
 #-----------------------------------------------------#
 fench_name_dict = {
     'K': "帅",
@@ -93,15 +91,19 @@ def fench_to_txt_name(fench):
 def fench_to_text(fench):
     return fench_name_dict[fench]
 
+
 def text_to_fench(text, color):
     fench = name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 
+
 def fench_to_species(fen_ch):
     return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
+
 def species_to_fench(species, color):
     return species_fench_dict[species][color]
+
 
 #-----------------------------------------------------#
 #KING, ADVISOR, BISHOP, KNIGHT, ROOK, CANNON, PAWN
@@ -129,7 +131,9 @@ piece_create_dict = {
     'n': Knight,
     'p': Pawn,
     }
-'''        
+'''
+
+
 #-----------------------------------------------------#
 def abs_diff(x, y):
     return (abs(x[0] - y[0]), abs(x[1] - y[1]))
@@ -143,9 +147,10 @@ def middle_p(x, y):
 
 NO_COLOR, RED, BLACK = (0, 1, 2)
 
+
 def opposite_color(color):
     return 3 - color
-    
+
 
 #-----------------------------------------------------#
 class Piece(object):
@@ -155,7 +160,7 @@ class Piece(object):
         self.fench = fench
         self.species, self.color = fench_to_species(fench)
         self.x, self.y = pos
-        
+
     def is_valid_pos(self, pos):
         return True if ((0 <= pos[0] < 9) and (0 <= pos[1] <= 9)) else False
 
@@ -191,7 +196,7 @@ class King(Piece):
 
         if pos[0] < 3 or pos[0] > 5:
             return False
-        
+
         if (pos[1] > 2) and (pos[1] < 7):
             return False
 
@@ -201,9 +206,10 @@ class King(Piece):
 
         #face to face
         k2 = self.board.get_king(opposite_color(self.color))
-        if (self.x == k2.x) and (pos_to[1] == k2.y) and (self.board.count_y_line_in(
-                self.x, self.y, k2.y) == 0):
-            #白脸将,王杀王    
+        if (self.x == k2.x) and (pos_to[1]
+                                 == k2.y) and (self.board.count_y_line_in(
+                                     self.x, self.y, k2.y) == 0):
+            #白脸将,王杀王
             return True
 
         if not self.is_valid_pos(pos_to):
@@ -422,7 +428,8 @@ class Pawn(Piece):
 
         crossed_river = self.is_crossed_river()
 
-        if (not crossed_river) and (step == not_crossed_river_step[self.color]):
+        if (not crossed_river) and (step
+                                    == not_crossed_river_step[self.color]):
             return True
 
         if crossed_river and (step in crossed_river_step[self.color]):
@@ -448,4 +455,3 @@ class Pawn(Piece):
                     continue
                 moves.append((curr_pos, (x, y)))
         return filter(self.board.is_valid_move_t, moves)
-        

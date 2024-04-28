@@ -24,19 +24,23 @@ from .game import *
 
 #-----------------------------------------------------#
 #result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
-result_dict = {0:'*', 1:'1-0', 2:'0-1', 3:'1/2-1/2', 4:'1/2-1/2'}
+result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
+
 
 def _decode_pos(man_pos):
     return (int(man_pos // 10), man_pos % 10)
+
 
 def _decode_pos2(man_pos):
     return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
                                                        man_pos[1] % 10))
 
+
 #-----------------------------------------------------#
 class XQFKey(object):
     def __init__(self):
         pass
+
 
 #-----------------------------------------------------#
 class XQFBuffDecoder(object):
@@ -345,7 +349,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
             pass
 
     path, file_name = os.path.split(full_file_name)
-    
+
     if (version <= 0x0A):
         keys = None
         chess_mans = __init_chess_board(ucBoard, version)
@@ -378,13 +382,13 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game = Game(board, game_annotation)
     game.info = game_info
 
-    __read_steps(step_base_buff, version, keys, game,  None, board)
-    
+    __read_steps(step_base_buff, version, keys, game, None, board)
+
     if game.first_move is not None:
         game.init_board.move_player = game.first_move.board.move_player
     else:
         game.init_board.move_player = ChessPlayer(RED)
-    
+
     game.info['move_player'] = str(game.init_board.move_player)
-    
+
     return game

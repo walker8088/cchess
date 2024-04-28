@@ -20,9 +20,10 @@ from copy import deepcopy
 
 from .piece import *
 
+
 #-----------------------------------------------------#
 class Move(object):
-    def __init__(self, board, p_from, p_to, is_checking = False):
+    def __init__(self, board, p_from, p_to, is_checking=False):
 
         self.board = board.copy()
         self.p_from = p_from
@@ -30,59 +31,59 @@ class Move(object):
         self.is_checking = is_checking
         self.step_index = 0
         self.score = None
-        
+
         if self.is_checking:
             self.is_checkmate = self.board.is_checkmate()
         else:
             self.is_checkmate = False
-            
+
         self.captured = self.board.get_fench(p_to)
         self.board_done = board.copy()
         self.board_done._move_piece(p_from, p_to)
-        self.board_done.next_turn() ##TODO fix
+        self.board_done.next_turn()  ##TODO fix
         self.next_move = None
-        
+
         self.branchs = []
-        
+
         self.branch_index = 0
-        
+
         self.move_list_for_engine = []
         self.fen_for_engine = None
-        
+
     def mirror(self):
         self.board.mirror()
         self.p_from = (8 - self.p_from[0], self.p_from[1])
-        self.p_to   = (8 - self.p_to[0], self.p_to[1])
+        self.p_to = (8 - self.p_to[0], self.p_to[1])
         self.board_done.mirror()
-        
+
         for move in self.branchs:
             move.mirror()
 
         if self.next_move:
             self.next_move.mirror()
-        
+
     def flip(self):
         self.board.flip()
         self.p_from = (self.p_from[0], 9 - self.p_from[1])
-        self.p_to =   (self.p_to[0], 9 - self.p_to[1])
+        self.p_to = (self.p_to[0], 9 - self.p_to[1])
         self.board_done.flip()
-        
+
         for move in self.branchs:
             move.flip()
 
         if self.next_move:
             self.next_move.flip()
-        
+
     def swap(self):
         self.board.swap()
         self.board_done.swap()
-        
+
         for move in self.branchs:
             move.swap()
-            
+
         if self.next_move:
             self.next_move.swap()
-        
+
     def is_valid_move(self):
         return self.board.is_valid_move(self.p_from, self.p_to)
 
@@ -102,62 +103,62 @@ class Move(object):
             self.next_move = chess_move
         else:
             self.next_move.branchs.append(chess_move)
-    
+
     def branchs(self):
-           return len(self.branchs)
-    
+        return len(self.branchs)
+
     def get_branch(self, index):
-         return self.branchs[index]
-    
+        return self.branchs[index]
+
     def select_branch(self, index):
-         self.branch_index = index
-         
+        self.branch_index = index
+
     def get_all_branchs(self):
         return [self].extent(self.branchs)
-        
+
     def dump_moves(self, move_list, curr_move_line):
 
         backup_move_line = curr_move_line[:]
         index_save = backup_move_line[0][:]
-        
+
         curr_move_line.append(self)
-        
+
         if not self.next_move:
             return
-            
+
         if len(self.branchs) > 0:
             curr_move_line[0].append(0)
-  
+
         self.next_move.dump_moves(move_list, curr_move_line)
-        
+
         if len(self.branchs) > 0:
             for index, move in enumerate(self.branchs):
                 new_line = backup_move_line[:]
                 indexs = index_save[:]
-                indexs.append(index+1)
+                indexs.append(index + 1)
                 new_line[0] = indexs
                 move_list.append(new_line)
                 move.dump_moves(move_list, new_line)
-                
+
     def dump_moves_line(self, move_list):
-            
-        if self.branch_index == 0 :    
+
+        if self.branch_index == 0:
             sel_move = self
-        
+
         elif self.branch_index <= len(self.branchs):
             sel_move = self.branchs[self.branch_index - 1]
         else:
             sel_move = None
-        
+
         if not sel_move:
             return
         move_list.append(sel_move)
-        
+
         if not sel_move.next_move:
             return
-        
+
         sel_move.next_move.dump_moves_line(move_list)
-        
+
     #对move分支进行标记
     def tag_move_branch(self, move_list, curr_move_line):
 
@@ -175,8 +176,8 @@ class Move(object):
 
     def __str__(self):
         return self.to_iccs()
-        
-    def to_text(self, detailed = False):
+
+    def to_text(self, detailed=False):
 
         fench = self.board.get_fench(self.p_from)
         _, man_side = fench_to_species(fench)
@@ -206,24 +207,24 @@ class Move(object):
             dest_str = h_level_index[man_side][self.p_to[0]]
 
         name_str = self.__get_text_name(self.p_from)
-        
-        text =  name_str + diff_str + dest_str
+
+        text = name_str + diff_str + dest_str
         if not detailed:
             return text
-    
+
         details = []
         if self.captured:
-            details.append(f'吃{fench_to_text(self.captured)}',)
+            details.append(f'吃{fench_to_text(self.captured)}', )
         if self.is_checkmate:
-            details.append('将死',)
+            details.append('将死', )
         elif self.is_checking:
-            details.append('将军',)
-       
+            details.append('将军', )
+
         if len(details) == 0:
             return text
         else:
             return f'{text}({",".join(details)})'
-    
+
     def __get_text_name(self, pos):
 
         fench = self.board.get_fench(pos)
@@ -395,7 +396,7 @@ class Move(object):
 
             for pos in poss:
                 move = Move.text_move_to_std_move(man_kind, move_player, pos,
-                                                     move_str[2:])
+                                                  move_str[2:])
                 if move:
                     return (pos, move)
 
@@ -408,7 +409,7 @@ class Move(object):
                 move_indexs = {"前": 0, "后": -1}
                 pos = poss[move_indexs[move_str[0]]]
                 move = Move.text_move_to_std_move(man_kind, move_player, pos,
-                                                     move_str[2:])
+                                                  move_str[2:])
                 if move:
                     return (pos, move)
                 else:
@@ -416,7 +417,8 @@ class Move(object):
             #多兵选一移动
             else:
                 pass
-                
+
+
 '''
 #-----------------------------------------------------#
 class Move(object):

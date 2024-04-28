@@ -26,7 +26,6 @@ from .exception import *
 from .piece import *
 from .move import *
 
-
 #-----------------------------------------------------#
 FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
 EMPTY_BOARD = '9/9/9/9/9/9/9/9/9/9'
@@ -64,6 +63,7 @@ _text_board = [
 PLAYER = ('', 'RED', 'BLACK')
 PLAYER_CN = ('', '红方', '黑方')
 
+
 #-----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
@@ -71,30 +71,30 @@ def _pos_to_text_board_pos(pos):
 
 #-----------------------------------------------------#
 class ChessPlayer():
-    
     def __init__(self, color):
         self.color = color
-        
+
     def next(self):
-        if self.color != NO_COLOR: 
+        if self.color != NO_COLOR:
             self.color = 3 - self.color
         return ChessPlayer(self.color)
 
     def opposite(self):
-        if self.color == NO_COLOR: 
+        if self.color == NO_COLOR:
             return NO_COLOR
         return 3 - self.color
-    
+
     def __str__(self):
         return PLAYER[self.color]
-        
+
     def __eq__(self, other):
         if isinstance(other, ChessPlayer):
             return self.color == other.color
         elif isinstance(other, int):
-            return self.color == other    
+            return self.color == other
         return False
-        
+
+
 #-----------------------------------------------------#
 class BaseChessBoard(object):
     def __init__(self, fen=''):
@@ -110,45 +110,44 @@ class BaseChessBoard(object):
     def mirror(self):
         board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
         self._board = board
-    
+
     def flip(self):
         board = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
         self._board = board
 
     def swap(self):
-    
         def swap_fench(fench):
             if fench == None: return None
             return fench.upper() if fench.islower() else fench.lower()
 
         self._board = [[swap_fench(self._board[y][x]) for x in range(9)]
                        for y in range(10)]
-                       
+
         self.move_player.next()
-    
+
     def set_move_color(self, color):
         self.move_player = ChessPlayer(color)
-        
+
     def get_move_color(self):
         return self.move_player.color
-        
+
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
-    
+
     def remove_fench(self, pos):
         self._board[pos[1]][pos[0]] = None
 
     def get_fench(self, pos):
         return self._board[pos[1]][pos[0]]
-    
+
     def get_fench_color(self, pos):
         fench = self.get_fench(pos)
-        
+
         if not fench:
             return None
-        
+
         return RED if fench.isupper() else BLACK
-        
+
     def get_fenchs(self, fench):
         poss = []
         for x in range(9):
@@ -156,16 +155,16 @@ class BaseChessBoard(object):
                 if self._board[y][x] == fench:
                     poss.append((x, y))
         return poss
-    
+
     def get_piece(self, pos):
         fench = self.get_fench(pos)
         return Piece.create(self, fench, pos) if fench else None
-    
-    def get_pieces(self, color = None):
-        
+
+    def get_pieces(self, color=None):
+
         if isinstance(color, ChessPlayer):
             color = color.color
-        
+
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
@@ -177,19 +176,19 @@ class BaseChessBoard(object):
                     _, p_color = fench_to_species(fench)
                     if color == p_color:
                         yield Piece.create(self, fench, (x, y))
-    
+
     def get_fenchs_x(self, x, fench):
         poss = []
         for y in range(10):
             if self._board[y][x] == fench:
                 poss.append((x, y))
         return poss
-           
+
     def get_king(self, color):
-        
+
         if isinstance(color, ChessPlayer):
             color = color.color
-            
+
         limit_y = ((), (0, 1, 2), (7, 8, 9))
         for x in (3, 4, 5):
             for y in limit_y[color]:
@@ -258,7 +257,7 @@ class BaseChessBoard(object):
 
     def next_turn(self):
         return self.move_player.next()
-        
+
     def from_fen(self, fen):
 
         num_set = set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
@@ -295,7 +294,7 @@ class BaseChessBoard(object):
         fens = fen.split()
 
         self.move_player = ChessPlayer(NO_COLOR)
-        
+
         if (len(fens) >= 2) and (fens[1] == 'b'):
             self.move_player = ChessPlayer(BLACK)
         else:
@@ -329,34 +328,34 @@ class BaseChessBoard(object):
 
     def to_full_fen(self):
         return self.to_fen() + ' - - 0 1'
-    
+
     def detect_move_pieces(self, new_board):
         p_from = []
         p_to = []
         for x in range(9):
             for y in range(10):
                 p_old = self.get_fench((x, y))
-                p_new = new_board.get_fench((x, y))    
+                p_new = new_board.get_fench((x, y))
                 #same
-                if p_old == p_new: 
+                if p_old == p_new:
                     continue
                 #move from
                 if p_new is None:
-                   p_from.append((x, y)) 
+                    p_from.append((x, y))
                 #move_to
                 else:
-                   p_to.append((x, y))
+                    p_to.append((x, y))
         return (p_from, p_to)
-    
+
     def create_move_from_board(self, new_board):
         p_froms, p_tos = self.detect_move_pieces(new_board)
         if (len(p_froms) == 1) and (len(p_tos) == 1):
-            p_from = p_froms[0]   
-            p_to = p_tos[0]   
+            p_from = p_froms[0]
+            p_to = p_tos[0]
             if self.is_valid_move(p_from, p_to):
-                return (p_from, p_to)   
+                return (p_from, p_to)
         return None
-            
+
     def text_view(self):
 
         board_str = _text_board[:]
@@ -367,7 +366,8 @@ class BaseChessBoard(object):
             for ch in line[::-1]:
                 if ch:
                     pos = _pos_to_text_board_pos((x, y))
-                    new_text = board_str[pos[1]][:pos[0]] + fench_to_txt_name(ch) + board_str[pos[1]][pos[0] + 2:]
+                    new_text = board_str[pos[1]][:pos[0]] + fench_to_txt_name(
+                        ch) + board_str[pos[1]][pos[0] + 2:]
                     board_str[pos[1]] = new_text
                 x -= 1
             y += 1
@@ -379,29 +379,31 @@ class BaseChessBoard(object):
         for s in self.text_view():
             print(s)
 
+
 #-----------------------------------------------------#
 
+
 class ChessBoard(BaseChessBoard):
-    def __init__(self, fen = '', chess_dict = None):
+    def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
         self.__chess_dict = chess_dict
-        
+
     def load_one_hot_dict(self, file):
-           self.__chess_dict = json.load(open(file))
-           self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    
+        self.__chess_dict = json.load(open(file))
+        self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
     def move(self, pos_from, pos_to):
-        move = super().move(pos_from, pos_to)  
+        move = super().move(pos_from, pos_to)
         if move:
-            if  self.is_checking():
+            if self.is_checking():
                 move.is_checking = True
-                if  self.is_checkmate():
-                    move.is_checkmate = True        
-        return  move
-        
+                if self.is_checkmate():
+                    move.is_checkmate = True
+        return move
+
     def is_valid_move(self, pos_from, pos_to):
         if not super().is_valid_move(pos_from, pos_to):
-            return False  
+            return False
 
         piece = self.get_piece(pos_from)
         return piece.is_valid_move(pos_to)
@@ -429,23 +431,23 @@ class ChessBoard(BaseChessBoard):
         board = self.copy()
         board._move_piece(pos_from, pos_to)
         return board.is_checking()
-    
+
     def is_checking(self):
         king = self.get_king(self.move_player.opposite())
         if not king:
             return False
-        
+
         for piece in self.get_pieces(self.move_player):
             if piece.is_valid_move((king.x, king.y)):
                 return True
-        
-        return False     
-    
+
+        return False
+
     def is_checkmate(self):
         board = self.copy()
         board.move_player.next()
         return board.no_moves()
-    
+
     def no_moves(self):
         king = self.get_king(self.move_player)
         if not king:
@@ -456,8 +458,7 @@ class ChessBoard(BaseChessBoard):
                     if not self.is_checked_move(move_it[0], move_it[1]):
                         return False
         return True
-    
-    
+
     def count_x_line_in(self, y, x_from, x_to):
         return reduce(lambda count, fench: count + 1 if fench else count,
                       self.x_line_in(y, x_from, x_to), 0)
@@ -483,7 +484,9 @@ class ChessBoard(BaseChessBoard):
         for x in self._board.copy():
             temp = []
             for y in x:
-                temp.append(self.__chess_dict.get(y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+                temp.append(
+                    self.__chess_dict.get(
+                        y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
             one_hot_board.append(temp)
         return one_hot_board
 
@@ -494,4 +497,3 @@ class ChessBoard(BaseChessBoard):
         :return: 字典，棋子-独热编码的映射
         """
         return self.__chess_dict.copy()
-

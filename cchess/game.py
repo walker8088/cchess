@@ -35,18 +35,18 @@ class Game(object):
         self.annotation = annotation
         self.first_move = None
         self.next_move = None
-        
+
         self.info = {}
-    
+
     def __str__(self):
         return str(self.info)
-            
+
     def append_first_move(self, chess_move):
         if not self.first_move:
             self.first_move = chess_move
         else:
             self.first_move.branchs.append(chess_move)
-            
+
     def verify_moves(self):
         move_list = self.dump_moves()
         for move_line in move_list:
@@ -63,12 +63,12 @@ class Game(object):
         self.init_board.mirror()
         if self.first_move:
             self.first_move.mirror()
-    
+
     def flip(self):
         self.init_board.flip()
         if self.first_move:
             self.first_move.flip()
-    
+
     def swap(self):
         self.init_board.swap()
         if self.first_move:
@@ -90,9 +90,11 @@ class Game(object):
             return []
 
         move_list = []
-        curr_move = [[], ]
+        curr_move = [
+            [],
+        ]
         move_list.append(curr_move)
-       
+
         self.first_move.dump_moves(move_list, curr_move)
 
         return move_list
@@ -104,21 +106,21 @@ class Game(object):
     def dump_text_moves(self):
         return [[move.to_text() for move in move_line[1:]]
                 for move_line in self.dump_moves()]
-    
+
     def dump_moves_line(self):
-    
+
         if not self.first_move:
             return []
-        
+
         move_line = []
         self.first_move.dump_moves_line(move_line)
-        
+
         return move_line
-        
+
     def print_init_board(self):
         for line in self.init_board.dump_board():
             print(line)
-            
+
     def print_text_moves(self, steps_per_line=3):
 
         moves = self.dump_text_moves()

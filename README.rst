@@ -71,7 +71,7 @@ cchess是一个Python版的中国象棋库，主要功能如下:
 
 .. code-block::
 
-   board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 w - - 0 1') 
+   board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 w') 
    print(board.is_checking()) #True
 
 
@@ -80,7 +80,7 @@ cchess是一个Python版的中国象棋库，主要功能如下:
 
 .. code-block::
 
-   print(board.is_win())      #True
+   print(board.is_checkmate())      #True
 
 
 走子被将军检测
@@ -88,7 +88,7 @@ cchess是一个Python版的中国象棋库，主要功能如下:
 
 .. code-block::
 
-   board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b - - 0 1')
+   board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b')
    mv = move.from_iccs('d9e9') 
    print(board.is_checked_move(*mv)) #True
 
@@ -98,7 +98,7 @@ cchess是一个Python版的中国象棋库，主要功能如下:
 
 .. code-block::
 
-   print(board.is_dead())    #True
+   print(board.no_moves())    #True
 
 
 读取xqf文件, 显示棋谱
