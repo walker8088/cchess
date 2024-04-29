@@ -1,0 +1,17 @@
+
+[tool.poetry]
+name = "cchess"
+version = "0.9"
+description = "ChineseChess (AKA XiangQi) library"
+authors = ["walker8088 <walker8088@gmail.com>"]
+license = "GPL3"
+readme = "README.md"
+keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

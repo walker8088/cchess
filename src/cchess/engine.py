@@ -110,7 +110,7 @@ class Engine(Thread):
             move_info["action"] = 'info'
 
             if resp_id == 'nobestmove':
-                move_info["action"] = 'nobestmove'
+                move_info["action"] = 'dead'
             elif resp_id == 'bestmove':
                 if out_list[1] in ['null', 'resign', '(none)']:
                     move_info["action"] = 'dead'

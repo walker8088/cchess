@@ -66,7 +66,7 @@ print(board.is_checked_move(*mv)) #True
 
 ##被对方将死检测
 ```
-print(board.no_move())    #True
+print(board.no_moves())    #True
 ```
 
 ##读取xqf文件, 显示棋谱
@@ -88,6 +88,6 @@ game.print_text_moves()
 
 参见examples/end_game.py
   
-cchess库使用pytest进行单元测试，使用pytest-cov进行覆盖检查，目标实现100%覆盖(目前还未完成)。
+cchess库使用pytest进行单元测试，使用pytest-cov进行覆盖检查，目标实现100%覆盖。
 
 测试执行：pytest -v --cov=cchess .\tests\
