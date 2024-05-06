@@ -201,7 +201,11 @@ class BaseChessBoard(object):
 
     def is_valid_move_t(self, move_t):
         return self.is_valid_move(move_t[0], move_t[1])
-
+    
+    def is_valid_iccs_move(self, iccs):
+        move_from, move_to = Move.from_iccs(iccs)
+        return self.is_valid_move( move_from, move_to)
+        
     def is_valid_move(self, pos_from, pos_to):
         '''
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度

@@ -86,8 +86,4 @@ game.print_text_moves()
 
 ##加载引擎进行对弈
 
-参见examples/end_game.py
-  
-cchess库使用pytest进行单元测试，使用pytest-cov进行覆盖检查，目标实现100%覆盖。
-
-测试执行：pytest -v --cov=cchess .\tests\
+参见demo/end_game.py
