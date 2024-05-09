@@ -401,6 +401,8 @@ class TestBoard():
         assert move.is_valid_move() is True
         
         assert move.from_iccs('a0a1') == ((0, 0), (0, 1))
+        assert board.pos_to_iccs((0, 0), (0, 1)) == 'a0a1'
+        
         assert move.to_text() == '车九进一'
         #assert move.from_text(board, '车九进一') == ((0,0), (0,1))
     

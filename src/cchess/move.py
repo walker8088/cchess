@@ -20,7 +20,6 @@ from copy import deepcopy
 
 from .piece import *
 
-
 #-----------------------------------------------------#
 class Move(object):
     def __init__(self, board, p_from, p_to, is_checking=False):
@@ -291,13 +290,17 @@ class Move(object):
         return ' '.join([self.fen_for_engine, 'moves', move_str])
 
     def to_iccs(self):
-        return chr(ord('a') + self.p_from[0]) + str(
-            self.p_from[1]) + chr(ord('a') + self.p_to[0]) + str(self.p_to[1])
-
+        return self.pos_to_iccs(self.p_from, self.p_to)
+    
     @staticmethod
-    def from_iccs(move_str):
-        return ((ord(move_str[0]) - ord('a'), int(move_str[1])),
-                (ord(move_str[2]) - ord('a'), int(move_str[3])))
+    def pos_to_iccs(p_from, p_to):
+        return chr(ord('a') + p_from[0]) + str(
+            p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
+     
+    @staticmethod
+    def from_iccs(iccs_str):
+        return ((ord(iccs_str[0]) - ord('a'), int(iccs_str[1])),
+                (ord(iccs_str[2]) - ord('a'), int(iccs_str[3])))
 
     @staticmethod
     def text_move_to_std_move(man_kind, move_player, p_from, move_str):

@@ -31,12 +31,12 @@ def read_from_txt(moves_txt, pos_txt=None):
     chessman_kinds = 'RNBAKABNRCCPPPPP'
 
     if not pos_txt:
-        board = BaseChessBoard(FULL_INIT_FEN)
+        board = ChessBoard(FULL_INIT_FEN)
     else:
         if len(pos_txt) != 64:
             raise CChessException("bad pos_txt")
 
-        board = BaseChessBoard()
+        board = ChessBoard()
         for side in range(2):
             for man_index in range(16):
                 pos_index = (side * 16 + man_index) * 2

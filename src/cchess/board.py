@@ -96,10 +96,15 @@ class ChessPlayer():
 
 
 #-----------------------------------------------------#
-class BaseChessBoard(object):
+class ChessBoard(object):
+
     def __init__(self, fen=''):
         self.from_fen(fen)
 
+    @staticmethod
+    def pos_to_iccs(p_from, p_to):
+        return Move.pos_to_iccs(p_from, p_to)
+        
     def clear(self):
         self._board = [[None for x in range(9)] for y in range(10)]
         self.move_player = ChessPlayer(NO_COLOR)
@@ -110,11 +115,13 @@ class BaseChessBoard(object):
     def mirror(self):
         board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
         self._board = board
-
+        return self
+        
     def flip(self):
         board = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
         self._board = board
-
+        return self
+        
     def swap(self):
         def swap_fench(fench):
             if fench == None: return None
@@ -124,13 +131,14 @@ class BaseChessBoard(object):
                        for y in range(10)]
 
         self.move_player.next()
-
+        return self
+        
     def set_move_color(self, color):
         self.move_player = ChessPlayer(color)
 
     def get_move_color(self):
         return self.move_player.color
-
+    
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
 
@@ -220,17 +228,18 @@ class BaseChessBoard(object):
 
         _, from_color = fench_to_species(fench_from)
 
-        #move_player 不是None值才会进行走子颜色检查，这样处理某些特殊的存储格式时会处理比较迅速
         if (self.move_player != NO_COLOR) and (self.move_player != from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
-        if not fench_to:
-            return True
-
-        _, to_color = fench_to_species(fench_to)
-
-        return (from_color != to_color)
+        if fench_to:            
+            _, to_color = fench_to_species(fench_to)
+            if from_color == to_color:
+                return False
+            
+        piece = self.get_piece(pos_from)
+        
+        return piece.is_valid_move(pos_to)
 
     def _move_piece(self, pos_from, pos_to):
 
@@ -249,8 +258,14 @@ class BaseChessBoard(object):
         fench = self.get_fench(pos_to)
         self._move_piece(pos_from, pos_to)
 
-        return Move(board, pos_from, pos_to)
-
+        move =  Move(board, pos_from, pos_to)
+        if self.is_checking():
+            move.is_checking = True
+            if self.is_checkmate():
+                move.is_checkmate = True
+        
+        return move
+        
     def move_iccs(self, move_str):
         move_from, move_to = Move.from_iccs(move_str)
         return self.move(move_from, move_to)
@@ -261,6 +276,73 @@ class BaseChessBoard(object):
 
     def next_turn(self):
         return self.move_player.next()
+        
+    def create_moves(self):
+        for piece in self.get_pieces(self.move_player):
+            for move in piece.create_moves():
+                yield move
+
+    def create_piece_moves(self, pos):
+        piece = self.get_piece(pos)
+        if piece:
+            for move in piece.create_moves():
+                yield move
+
+    def is_checked_move(self, pos_from, pos_to):
+        if not self.is_valid_move(pos_from, pos_to):
+            raise CChessException('Invalid Move')
+        board = self.copy()
+        board._move_piece(pos_from, pos_to)
+        board.move_player.next()
+        return board.is_checking()
+
+    def is_checking_move(self, pos_from, pos_to):
+        board = self.copy()
+        board._move_piece(pos_from, pos_to)
+        return board.is_checking()
+
+    def is_checking(self):
+        king = self.get_king(self.move_player.opposite())
+        if not king:
+            return False
+
+        for piece in self.get_pieces(self.move_player):
+            if piece.is_valid_move((king.x, king.y)):
+                return True
+
+        return False
+
+    def is_checkmate(self):
+        board = self.copy()
+        board.move_player.next()
+        return board.no_moves()
+
+    def no_moves(self):
+        king = self.get_king(self.move_player)
+        if not king:
+            return True
+        for piece in self.get_pieces(self.move_player):
+            for move_it in piece.create_moves():
+                if self.is_valid_move_t(move_it):
+                    if not self.is_checked_move(move_it[0], move_it[1]):
+                        return False
+        return True
+
+    def count_x_line_in(self, y, x_from, x_to):
+        return reduce(lambda count, fench: count + 1 if fench else count,
+                      self.x_line_in(y, x_from, x_to), 0)
+
+    def count_y_line_in(self, x, y_from, y_to):
+        return reduce(lambda count, fench: count + 1 if fench else count,
+                      self.y_line_in(x, y_from, y_to), 0)
+
+    def x_line_in(self, y, x_from, x_to):
+        step = 1 if x_to > x_from else -1
+        return [self._board[y][x] for x in range(x_from + step, x_to, step)]
+
+    def y_line_in(self, x, y_from, y_to):
+        step = 1 if y_to > y_from else -1
+        return [self._board[y][x] for y in range(y_from + step, y_to, step)]
 
     def from_fen(self, fen):
 
@@ -382,12 +464,23 @@ class BaseChessBoard(object):
         print('')
         for s in self.text_view():
             print(s)
-
-
+            
+    def __str__(self):
+        return self.to_fen()
+        
+    def __repr__(self):
+        return self.to_fen()
+        
+    def __eq__(self, other):
+        if other.isinstance(str):
+            return (self.to_fen() == other)
+        elif other.isinstance(ChessBoard):
+            return (self.to_fen() == other.to_fen())
+        else:
+            return False
 #-----------------------------------------------------#
 
-
-class ChessBoard(BaseChessBoard):
+class ChessBoardOneHot(ChessBoard):
     def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
         self.__chess_dict = chess_dict
@@ -395,89 +488,6 @@ class ChessBoard(BaseChessBoard):
     def load_one_hot_dict(self, file):
         self.__chess_dict = json.load(open(file))
         self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-    def move(self, pos_from, pos_to):
-        move = super().move(pos_from, pos_to)
-        if move:
-            if self.is_checking():
-                move.is_checking = True
-                if self.is_checkmate():
-                    move.is_checkmate = True
-        return move
-
-    def is_valid_move(self, pos_from, pos_to):
-        if not super().is_valid_move(pos_from, pos_to):
-            return False
-
-        piece = self.get_piece(pos_from)
-        return piece.is_valid_move(pos_to)
-
-    def create_moves(self):
-        for piece in self.get_pieces(self.move_player):
-            for move in piece.create_moves():
-                yield move
-
-    def create_piece_moves(self, pos):
-        piece = self.get_piece(pos)
-        if piece:
-            for move in piece.create_moves():
-                yield move
-
-    def is_checked_move(self, pos_from, pos_to):
-        if not self.is_valid_move(pos_from, pos_to):
-            raise CChessException('Invalid Move')
-        board = self.copy()
-        board._move_piece(pos_from, pos_to)
-        board.move_player.next()
-        return board.is_checking()
-
-    def is_checking_move(self, pos_from, pos_to):
-        board = self.copy()
-        board._move_piece(pos_from, pos_to)
-        return board.is_checking()
-
-    def is_checking(self):
-        king = self.get_king(self.move_player.opposite())
-        if not king:
-            return False
-
-        for piece in self.get_pieces(self.move_player):
-            if piece.is_valid_move((king.x, king.y)):
-                return True
-
-        return False
-
-    def is_checkmate(self):
-        board = self.copy()
-        board.move_player.next()
-        return board.no_moves()
-
-    def no_moves(self):
-        king = self.get_king(self.move_player)
-        if not king:
-            return True
-        for piece in self.get_pieces(self.move_player):
-            for move_it in piece.create_moves():
-                if self.is_valid_move_t(move_it):
-                    if not self.is_checked_move(move_it[0], move_it[1]):
-                        return False
-        return True
-
-    def count_x_line_in(self, y, x_from, x_to):
-        return reduce(lambda count, fench: count + 1 if fench else count,
-                      self.x_line_in(y, x_from, x_to), 0)
-
-    def count_y_line_in(self, x, y_from, y_to):
-        return reduce(lambda count, fench: count + 1 if fench else count,
-                      self.y_line_in(x, y_from, y_to), 0)
-
-    def x_line_in(self, y, x_from, x_to):
-        step = 1 if x_to > x_from else -1
-        return [self._board[y][x] for x in range(x_from + step, x_to, step)]
-
-    def y_line_in(self, x, y_from, y_to):
-        step = 1 if y_to > y_from else -1
-        return [self._board[y][x] for y in range(y_from + step, y_to, step)]
 
     def get_one_hot_board(self) -> list:
         """

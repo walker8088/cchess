@@ -44,7 +44,7 @@ def read_from_cbf(file_name):
         #print node.tag
 
     books = {}
-    board = BaseChessBoard(init_fen)
+    board = ChessBoard(init_fen)
 
     move_list = root.find("MoveList").getchildren()
 

@@ -137,7 +137,7 @@ class Engine(Thread):
                     elif score_type == 'mate':
                         mate_steps = int(info_list[score_index + 2])
                         move_info['mate'] = mate_steps
-                        move_info['score'] = 9999 if mate_steps > 0 else -9999
+                        #move_info['score'] = 9999 if mate_steps > 0 else -9999
                     elif score_type == 'lowerbound':
                         move_info['score'] = int(info_list[score_index + 2])
                     elif score_type == 'upperbound':
