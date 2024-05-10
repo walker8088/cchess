@@ -20,6 +20,32 @@ from copy import deepcopy
 
 from .piece import *
 
+h_dict = {
+    'a':'i', 'b':'h', 'c':'g', 'd':'f', 'e':'e', 'f':'d', 'g':'c', 'h':'b', 'i':'a'         
+}
+
+v_dict = {
+    '0':'9', '1':'8', '2':'7', '3':'6', '4':'5', '5':'4', '6':'3', '6':'2', '8':'1', '9':'0'         
+}
+
+#-----------------------------------------------------#
+def pos2iccs(p_from, p_to):
+    return chr(ord('a') + p_from[0]) + str(
+        p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
+     
+def iccs2pos(iccs):
+        return ((ord(iccs[0]) - ord('a'), int(iccs[1])),
+                (ord(iccs[2]) - ord('a'), int(iccs[3])))
+
+def iccs_mirror(iccs):
+    return f'{h_dict[iccs[0]]}{iccs[1]}{h_dict[iccs[2]]}{iccs[3]}'
+    
+def iccs_flip(iccs):
+    return f'{iccs[0]}{v_dict[iccs[1]]}{iccs[2]}{v_dict[iccs[3]]}'
+    
+def iccs_swap(iccs):
+    return f'{h_dict[iccs[0]]}{v_dict[iccs[1]]}{h_dict[iccs[2]]}{v_dict[iccs[3]]}'
+                    
 #-----------------------------------------------------#
 class Move(object):
     def __init__(self, board, p_from, p_to, is_checking=False):
@@ -290,18 +316,8 @@ class Move(object):
         return ' '.join([self.fen_for_engine, 'moves', move_str])
 
     def to_iccs(self):
-        return self.pos_to_iccs(self.p_from, self.p_to)
+        return pos2iccs(self.p_from, self.p_to)
     
-    @staticmethod
-    def pos_to_iccs(p_from, p_to):
-        return chr(ord('a') + p_from[0]) + str(
-            p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
-     
-    @staticmethod
-    def from_iccs(iccs_str):
-        return ((ord(iccs_str[0]) - ord('a'), int(iccs_str[1])),
-                (ord(iccs_str[2]) - ord('a'), int(iccs_str[3])))
-
     @staticmethod
     def text_move_to_std_move(man_kind, move_player, p_from, move_str):
 

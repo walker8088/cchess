@@ -100,10 +100,6 @@ class ChessBoard(object):
 
     def __init__(self, fen=''):
         self.from_fen(fen)
-
-    @staticmethod
-    def pos_to_iccs(p_from, p_to):
-        return Move.pos_to_iccs(p_from, p_to)
         
     def clear(self):
         self._board = [[None for x in range(9)] for y in range(10)]
@@ -113,24 +109,27 @@ class ChessBoard(object):
         return copy.deepcopy(self)
 
     def mirror(self):
-        board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
-        self._board = board
-        return self
+        b = self.copy()
+        b._board  = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
+        return b
         
     def flip(self):
-        board = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
-        self._board = board
-        return self
+        b = self.copy()
+        b._board  = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
+        return b
         
     def swap(self):
+    
         def swap_fench(fench):
             if fench == None: return None
             return fench.upper() if fench.islower() else fench.lower()
-
-        self._board = [[swap_fench(self._board[y][x]) for x in range(9)]
+        
+        b = self.copy()
+        b._board = [[swap_fench(self._board[y][x]) for x in range(9)]
                        for y in range(10)]
 
-        self.move_player.next()
+        b.move_player.next()
+        
         return self
         
     def set_move_color(self, color):
@@ -211,7 +210,7 @@ class ChessBoard(object):
         return self.is_valid_move(move_t[0], move_t[1])
     
     def is_valid_iccs_move(self, iccs):
-        move_from, move_to = Move.from_iccs(iccs)
+        move_from, move_to = iccs2pos(iccs)
         return self.is_valid_move( move_from, move_to)
         
     def is_valid_move(self, pos_from, pos_to):
@@ -267,7 +266,7 @@ class ChessBoard(object):
         return move
         
     def move_iccs(self, move_str):
-        move_from, move_to = Move.from_iccs(move_str)
+        move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to)
 
     def move_text(self, move_str):

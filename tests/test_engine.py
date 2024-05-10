@@ -79,7 +79,7 @@ class TestUCCI():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    p_from, p_to =  Move.from_iccs(output["move"])
+                    p_from, p_to =  iccs2pos(output["move"])
                     move_str = board.move(p_from, p_to).to_text()
                     assert move_str == moves.pop(0)
                     last_player = board.move_player
@@ -138,7 +138,7 @@ class TestUCI():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    p_from, p_to = Move.from_iccs(output["move"])
+                    p_from, p_to = iccs2pos(output["move"])
                     move_str = board.move(p_from, p_to).to_text()
                     #print(move_str) #assert move_str == moves.pop(0)
                     last_player = board.move_player

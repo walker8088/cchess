@@ -70,16 +70,17 @@ class TestBoard():
         
         assert board.get_fench((0, 9)) == 'r'
 
-        fen2 = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b'
+        fen2 = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w'
         board.from_fen(fen2)
         assert board.to_fen() == fen2
 
+        b = board.mirror()
+        assert board.to_fen() != b.to_fen()
+        b2 = b.mirror()
+        assert str(board) == str(b2)
+        
         board.flip()
         board.flip()
-        assert board.to_fen() == fen2
-
-        board.mirror()
-        board.mirror()
         assert board.to_fen() == fen2
         
         board.swap()
@@ -117,7 +118,15 @@ class TestBoard():
         assert False == board.is_checking()
         #assert True == board.is_checked()
         assert True == board.no_moves()
-
+        
+        board.from_fen('rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w')   
+        assert(board.mirror().to_fen() == 'rnbakabnr/9/1c5c1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B2C1/9/RNBAKA1NR w')
+            
+        assert(board.is_valid_iccs_move('b0d1') == True)
+        assert(board.copy().is_valid_iccs_move('b0d1') == True)
+        assert(board.is_valid_move((1, 0), (3, 1)) == True)
+        move_it = board.move((1, 0), (3, 1))
+        assert move_it.to_text() == '马八进六'
 
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -190,7 +199,7 @@ class TestBoard():
 
         board = ChessBoard('3k5/9/9/9/9/4R4/9/9/9/5K3 w')
         assert board.copy().move_iccs('e4e9').is_king_killed() is False
-        assert board.copy().is_checking_move(*move.from_iccs('e4e9')) == True
+        assert board.copy().is_checking_move(*iccs2pos('e4e9')) == True
         
     def test_AA_move(self):
 
@@ -400,8 +409,11 @@ class TestBoard():
         assert str(move) == 'a0a1'
         assert move.is_valid_move() is True
         
-        assert move.from_iccs('a0a1') == ((0, 0), (0, 1))
-        assert board.pos_to_iccs((0, 0), (0, 1)) == 'a0a1'
+        assert iccs2pos('a0a1') == ((0, 0), (0, 1))
+        assert pos2iccs((0, 0), (0, 1)) == 'a0a1'
+        assert iccs_mirror('a0a1') == 'i0i1'
+        assert iccs_flip('a0a1') == 'a9a8'
+        assert iccs_swap('a0a1') == 'i9i8'
         
         assert move.to_text() == '车九进一'
         #assert move.from_text(board, '车九进一') == ((0,0), (0,1))

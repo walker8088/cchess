@@ -46,7 +46,7 @@ print(board.is_win())      #True
 #7.走子被将军检测
 board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b - - 0 1')
 
-mv = move.from_iccs('d9e9') 
+mv = iccs2pos('d9e9') 
 print(board.is_checked_move(*mv)) #True
 
 #被对方将死检测
