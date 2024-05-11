@@ -24,6 +24,7 @@ result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
 S_BLACK_WIN = '0-1'
 
+
 def load_move_txt(txt_file):
     with open(txt_file, "rb") as f:
         lines = f.readlines()
@@ -32,10 +33,11 @@ def load_move_txt(txt_file):
     result = result_dict[lines[-1].strip().decode('utf-8')]
     return (fen, moves, result)
 
+
 class TestUCCI_BAD():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
-        
+
     def teardown_method(self):
         pass
 
@@ -79,7 +81,7 @@ class TestUCCI():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    p_from, p_to =  iccs2pos(output["move"])
+                    p_from, p_to = iccs2pos(output["move"])
                     move_str = board.move(p_from, p_to).to_text()
                     assert move_str == moves.pop(0)
                     last_player = board.move_player
@@ -104,8 +106,9 @@ class TestUCCI():
                     break
 
         self.engine.quit()
-        
+
         time.sleep(0.5)
+
 
 class TestUCI():
     def setup_method(self):
@@ -128,7 +131,7 @@ class TestUCI():
         dead = False
         while not dead:
             self.engine.stop_thinking()
-            self.engine.go_from(board.to_fen(), {'depth':8})
+            self.engine.go_from(board.to_fen(), {'depth': 8})
             while True:
                 self.engine.handle_msg_once()
                 if self.engine.move_queue.empty():
@@ -163,5 +166,5 @@ class TestUCI():
                     break
 
         self.engine.quit()
-        
+
         time.sleep(0.5)

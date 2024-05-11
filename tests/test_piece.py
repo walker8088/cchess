@@ -18,15 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cchess import *
 
+
 #-----------------------------------------------------#
 class TestPiece():
     def test_base(self):
         side = ChessPlayer(NO_COLOR)
         assert side.next() == NO_COLOR
         assert side.opposite() == NO_COLOR
-        
+
         side = ChessPlayer(RED)
         assert side.opposite() == BLACK
         assert side.next() == BLACK
         assert side.next() == RED
-        

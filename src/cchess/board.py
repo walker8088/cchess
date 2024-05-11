@@ -69,6 +69,11 @@ def _pos_to_text_board_pos(pos):
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
 
 
+def get_move_color(fen):
+    color = fen.rstrip()[-1].lower()
+    return RED if color == 'w' else BLACK
+
+
 #-----------------------------------------------------#
 class ChessPlayer():
     def __init__(self, color):
@@ -97,10 +102,9 @@ class ChessPlayer():
 
 #-----------------------------------------------------#
 class ChessBoard(object):
-
     def __init__(self, fen=''):
         self.from_fen(fen)
-        
+
     def clear(self):
         self._board = [[None for x in range(9)] for y in range(10)]
         self.move_player = ChessPlayer(NO_COLOR)
@@ -110,34 +114,35 @@ class ChessBoard(object):
 
     def mirror(self):
         b = self.copy()
-        b._board  = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
+        b._board = [[self._board[y][8 - x] for x in range(9)]
+                    for y in range(10)]
         return b
-        
+
     def flip(self):
         b = self.copy()
-        b._board  = [[self._board[9 - y][x] for x in range(9)] for y in range(10)]
+        b._board = [[self._board[9 - y][x] for x in range(9)]
+                    for y in range(10)]
         return b
-        
+
     def swap(self):
-    
         def swap_fench(fench):
             if fench == None: return None
             return fench.upper() if fench.islower() else fench.lower()
-        
+
         b = self.copy()
         b._board = [[swap_fench(self._board[y][x]) for x in range(9)]
-                       for y in range(10)]
+                    for y in range(10)]
 
         b.move_player.next()
-        
+
         return self
-        
+
     def set_move_color(self, color):
         self.move_player = ChessPlayer(color)
 
     def get_move_color(self):
         return self.move_player.color
-    
+
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
 
@@ -208,11 +213,11 @@ class ChessBoard(object):
 
     def is_valid_move_t(self, move_t):
         return self.is_valid_move(move_t[0], move_t[1])
-    
+
     def is_valid_iccs_move(self, iccs):
         move_from, move_to = iccs2pos(iccs)
-        return self.is_valid_move( move_from, move_to)
-        
+        return self.is_valid_move(move_from, move_to)
+
     def is_valid_move(self, pos_from, pos_to):
         '''
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
@@ -231,13 +236,13 @@ class ChessBoard(object):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
-        if fench_to:            
+        if fench_to:
             _, to_color = fench_to_species(fench_to)
             if from_color == to_color:
                 return False
-            
+
         piece = self.get_piece(pos_from)
-        
+
         return piece.is_valid_move(pos_to)
 
     def _move_piece(self, pos_from, pos_to):
@@ -257,14 +262,14 @@ class ChessBoard(object):
         fench = self.get_fench(pos_to)
         self._move_piece(pos_from, pos_to)
 
-        move =  Move(board, pos_from, pos_to)
+        move = Move(board, pos_from, pos_to)
         if self.is_checking():
             move.is_checking = True
             if self.is_checkmate():
                 move.is_checkmate = True
-        
+
         return move
-        
+
     def move_iccs(self, move_str):
         move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to)
@@ -275,7 +280,7 @@ class ChessBoard(object):
 
     def next_turn(self):
         return self.move_player.next()
-        
+
     def create_moves(self):
         for piece in self.get_pieces(self.move_player):
             for move in piece.create_moves():
@@ -463,13 +468,13 @@ class ChessBoard(object):
         print('')
         for s in self.text_view():
             print(s)
-            
+
     def __str__(self):
         return self.to_fen()
-        
+
     def __repr__(self):
         return self.to_fen()
-        
+
     def __eq__(self, other):
         if other.isinstance(str):
             return (self.to_fen() == other)
@@ -477,7 +482,10 @@ class ChessBoard(object):
             return (self.to_fen() == other.to_fen())
         else:
             return False
+
+
 #-----------------------------------------------------#
+
 
 class ChessBoardOneHot(ChessBoard):
     def __init__(self, fen='', chess_dict=None):

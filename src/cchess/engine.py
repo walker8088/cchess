@@ -32,9 +32,11 @@ from .move import *
 
 logger = logging.getLogger(__name__)
 
+
 #-----------------------------------------------------#
 #Engine status
 class EngineStatus(enum.IntEnum):
+    ERROR = 0,
     BOOTING = 1,
     READY = 2,
     WAITING = 3,
@@ -43,7 +45,8 @@ class EngineStatus(enum.IntEnum):
     DEAD = 6,
     UNKNOWN = 7,
     BOARD_RESET = 8
-    
+
+
 #ON_POSIX = 'posix' in sys.builtin_module_names
 #-----------------------------------------------------#
 class Engine(Thread):
@@ -64,7 +67,7 @@ class Engine(Thread):
 
     def init_cmd(self):
         return ""
-
+    
     def run(self):
 
         self.running = True
@@ -73,14 +76,19 @@ class Engine(Thread):
             output = self.pout.readline().strip()
             if len(output) > 0:
                 self.engine_out_queque.put(output)
-
+    
+    def run_once(self):
+        output = self.pout.readline().strip()
+        if len(output) > 0:
+            self.engine_out_queque.put(output)
+            
     def handle_msg_once(self):
         try:
             output = self.engine_out_queque.get_nowait()
         except Empty:
             return
 
-        logger.debug(f"<--:{output}")
+        logger.debug(f"<-- {output}")
 
         if output in ['bye', '']:  #stop pipe
             self.process.terminate()
@@ -164,25 +172,32 @@ class Engine(Thread):
                                             stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE,
                                             startupinfo=startupinfo,
+                                            bufsize=1,
                                             cwd=Path(
                                                 self.engine_exec_path).parent,
-                                            universal_newlines=True)
-        except OSError:
+                                             text=True)
+        except Exception as e:
             return False
 
         time.sleep(0.5)
-
-        (self.pin, self.pout) = (self.process.stdin, self.process.stdout)
+        (self.pin, self.pout,
+         self.perr) = (self.process.stdin, self.process.stdout,
+                       self.process.stderr)
 
         self.engine_out_queque = Queue()
 
         self.enging_status = EngineStatus.BOOTING
-        self._send_cmd(self.init_cmd())
+
+        self._send_cmd('test')
+        
+        if not self._send_cmd(self.init_cmd()):
+            self.enging_status = EngineStatus.ERROR
+            return False
 
         self.start()
 
-        while self.enging_status == EngineStatus.BOOTING:
-            self.handle_msg_once()
+        #while self.enging_status == EngineStatus.BOOTING:
+        #    self.handle_msg_once()
 
         return True
 
@@ -193,7 +208,7 @@ class Engine(Thread):
 
     def stop_thinking(self):
         self._send_cmd('stop')
-       
+
     def go_from(self, fen, params={}):
         #pass all output msg first
         self._send_cmd('stop')
@@ -211,22 +226,25 @@ class Engine(Thread):
 
         self.last_fen = fen
         self.last_go = go_cmd
-    
+
     def set_option(self, name, value):
         cmd = f'setoption name {name} value {value}'
         self._send_cmd(cmd)
-        
+
     def _send_cmd(self, cmd_str):
 
-        logger.debug(f"-->:{cmd_str}")
+        logger.debug(f"--> {cmd_str}")
 
         try:
-            cmd_bytes = f'{cmd_str}\n' 
+            cmd_bytes = f'{cmd_str}\r\n'
             self.pin.write(cmd_bytes)
             self.pin.flush()
-        except IOError as e:
-            print(f"error in send cmd {cmd_str}", e)
-            raise
+        except Exception as e:
+            logger.warning(f"Send cmd [{cmd_str}] ERROR: {e}")
+            return False
+
+        return True
+
 
 #-----------------------------------------------------#
 class UcciEngine(Engine):
