@@ -73,10 +73,8 @@ class Engine(Thread):
         self.running = True
 
         while self.running:
-            output = self.pout.readline().strip()
-            if len(output) > 0:
-                self.engine_out_queque.put(output)
-    
+            self.run_once()
+            
     def run_once(self):
         output = self.pout.readline().strip()
         if len(output) > 0:
@@ -172,23 +170,22 @@ class Engine(Thread):
                                             stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE,
                                             startupinfo=startupinfo,
-                                            bufsize=1,
                                             cwd=Path(
                                                 self.engine_exec_path).parent,
                                              text=True)
         except Exception as e:
+            logger.warning(f"load engine {engine_path} ERROR: {e}")
             return False
 
         time.sleep(0.5)
-        (self.pin, self.pout,
-         self.perr) = (self.process.stdin, self.process.stdout,
-                       self.process.stderr)
-
+        
+        self.pin = self.process.stdin
+        self.pout = self.process.stdout
+        self.perr = self.process.stderr
         self.engine_out_queque = Queue()
-
         self.enging_status = EngineStatus.BOOTING
 
-        self._send_cmd('test')
+        #self._send_cmd('test')
         
         if not self._send_cmd(self.init_cmd()):
             self.enging_status = EngineStatus.ERROR

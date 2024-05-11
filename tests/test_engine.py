@@ -50,16 +50,18 @@ class TestUCCI_BAD():
         game.init_board.move_player = ChessPlayer(RED)
 
 
-class TestUCCI():
+class TestUCI():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
-        self.engine = UcciEngine()
-        self.engine.load("bin\\eleeye")
-
+        self.engine = UciEngine()
+        
     def teardown_method(self):
         pass
 
-    def test_ucci(self):
+    def test_uci(self):
+        ret = self.engine.load("bin\\pikafish")
+        assert ret == True
+        
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
@@ -71,14 +73,75 @@ class TestUCCI():
         dead = False
         while not dead:
             self.engine.stop_thinking()
-            self.engine.go_from(board.to_fen(), {'depth': 15})
+            self.engine.go_from(board.to_fen(), {'depth': 8})
             while True:
                 self.engine.handle_msg_once()
                 if self.engine.move_queue.empty():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                #print(output)
+                print(output)
+                action = output['action']
+                if action == 'bestmove':
+                    p_from, p_to = iccs2pos(output["move"])
+                    move_str = board.move(p_from, p_to).to_text()
+                    print(move_str) #assert move_str == moves.pop(0)
+                    last_player = board.move_player
+                    board.next_turn()
+                    break
+                elif action == 'dead':
+                    if board.move_player == RED:
+                        assert result == S_BLACK_WIN
+                    else:
+                        assert result == S_RED_WIN
+                    dead = True
+                    break
+                elif action == 'draw':
+                    dead = True
+                    break
+                elif action == 'resign':
+                    if board.move_player == RED:
+                        assert result == S_BLACK_WIN
+                    else:
+                        assert result == S_RED_WIN
+                    dead = True
+                    break
+
+        self.engine.quit()
+
+        time.sleep(0.5)
+
+class TestUCCI():
+    def setup_method(self):
+        os.chdir(os.path.dirname(__file__))
+        self.engine = UcciEngine()
+        
+    def teardown_method(self):
+        pass
+
+    def test_ucci(self):
+        ret = self.engine.load("bin\\eleeye")
+        assert ret == True
+        
+        fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
+        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
+        game.init_board.move_player = ChessPlayer(RED)
+
+        assert game.init_board.to_fen() == fen
+        assert game.info['result'] == result
+        board = game.init_board.copy()
+
+        dead = False
+        while not dead:
+            self.engine.stop_thinking()
+            self.engine.go_from(board.to_fen(), {'depth': 8})
+            while True:
+                self.engine.handle_msg_once()
+                if self.engine.move_queue.empty():
+                    time.sleep(0.2)
+                    continue
+                output = self.engine.move_queue.get()
+                print(output)
                 action = output['action']
                 if action == 'bestmove':
                     p_from, p_to = iccs2pos(output["move"])
@@ -109,62 +172,3 @@ class TestUCCI():
 
         time.sleep(0.5)
 
-
-class TestUCI():
-    def setup_method(self):
-        os.chdir(os.path.dirname(__file__))
-        self.engine = UciEngine()
-        self.engine.load("bin\\pikafish")
-
-    def teardown_method(self):
-        pass
-
-    def test_uci(self):
-        fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
-        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
-        game.init_board.move_player = ChessPlayer(RED)
-
-        assert game.init_board.to_fen() == fen
-        assert game.info['result'] == result
-        board = game.init_board.copy()
-
-        dead = False
-        while not dead:
-            self.engine.stop_thinking()
-            self.engine.go_from(board.to_fen(), {'depth': 8})
-            while True:
-                self.engine.handle_msg_once()
-                if self.engine.move_queue.empty():
-                    time.sleep(0.2)
-                    continue
-                output = self.engine.move_queue.get()
-                #print(output)
-                action = output['action']
-                if action == 'bestmove':
-                    p_from, p_to = iccs2pos(output["move"])
-                    move_str = board.move(p_from, p_to).to_text()
-                    #print(move_str) #assert move_str == moves.pop(0)
-                    last_player = board.move_player
-                    board.next_turn()
-                    break
-                elif action == 'dead':
-                    if board.move_player == RED:
-                        assert result == S_BLACK_WIN
-                    else:
-                        assert result == S_RED_WIN
-                    dead = True
-                    break
-                elif action == 'draw':
-                    dead = True
-                    break
-                elif action == 'resign':
-                    if board.move_player == RED:
-                        assert result == S_BLACK_WIN
-                    else:
-                        assert result == S_RED_WIN
-                    dead = True
-                    break
-
-        self.engine.quit()
-
-        time.sleep(0.5)

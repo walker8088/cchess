@@ -1,1 +1,1 @@
- poetry run pytest -v --cov=src --capture=no .\tests\
+ poetry run pytest -v --cov=src --capture=no  --full-trace .\tests\
