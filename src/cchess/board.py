@@ -19,12 +19,12 @@ import os
 import sys
 import copy
 import json
-
 from functools import *
 
 from .exception import *
 from .piece import *
 from .move import *
+from .zhash_data import *
 
 #-----------------------------------------------------#
 FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
@@ -62,7 +62,6 @@ _text_board = [
 
 PLAYER = ('', 'RED', 'BLACK')
 PLAYER_CN = ('', '红方', '黑方')
-
 
 #-----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
@@ -117,7 +116,7 @@ class ChessBoard(object):
         b._board = [[self._board[y][8 - x] for x in range(9)]
                     for y in range(10)]
         return b
-
+            
     def flip(self):
         b = self.copy()
         b._board = [[self._board[9 - y][x] for x in range(9)]
@@ -136,6 +135,10 @@ class ChessBoard(object):
         b.move_player.next()
 
         return self
+    
+    def is_mirror(self):
+        b = self.mirror()
+        return  self.to_fen() == b.to_fen() 
 
     def set_move_color(self, color):
         self.move_player = ChessPlayer(color)
@@ -418,7 +421,26 @@ class ChessBoard(object):
 
     def to_full_fen(self):
         return self.to_fen() + ' - - 0 1'
-
+        
+    def zhash(self, fen = None):
+    
+        if fen:
+            self.from_fen(fen)
+        
+        key = 0
+        for y in range(10):
+             for x in range(9):
+                    square = z_c90[x + (9 - y) * 9]
+                    letter = self.get_fench((x, y))
+                    if letter in z_pieces:
+                        chess = z_pieces[letter]
+                        key ^= z_hashTable[chess * 256 + square]
+                        
+        if (self.get_move_color() == RED):
+            key ^= z_redKey
+            
+        return (key & ((1 << 63) - 1)) - (key & (1 << 63))    
+        
     def detect_move_pieces(self, new_board):
         p_from = []
         p_to = []
@@ -445,7 +467,7 @@ class ChessBoard(object):
             if self.is_valid_move(p_from, p_to):
                 return (p_from, p_to)
         return None
-
+    
     def text_view(self):
 
         board_str = _text_board[:]
@@ -483,10 +505,7 @@ class ChessBoard(object):
         else:
             return False
 
-
 #-----------------------------------------------------#
-
-
 class ChessBoardOneHot(ChessBoard):
     def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
@@ -518,3 +537,4 @@ class ChessBoardOneHot(ChessBoard):
         :return: 字典，棋子-独热编码的映射
         """
         return self.__chess_dict.copy()
+

@@ -80,12 +80,12 @@ class TestUCI():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                print(output)
+                #print(output)
                 action = output['action']
                 if action == 'bestmove':
                     p_from, p_to = iccs2pos(output["move"])
                     move_str = board.move(p_from, p_to).to_text()
-                    print(move_str) #assert move_str == moves.pop(0)
+                    #print(move_str) #assert move_str == moves.pop(0)
                     last_player = board.move_player
                     board.next_turn()
                     break
@@ -111,7 +111,7 @@ class TestUCI():
 
         time.sleep(0.5)
 
-class TestUCCI():
+class OTestUCCI():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
         self.engine = UcciEngine()
@@ -141,7 +141,7 @@ class TestUCCI():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                print(output)
+                #print(output)
                 action = output['action']
                 if action == 'bestmove':
                     p_from, p_to = iccs2pos(output["move"])

@@ -25,5 +25,5 @@ from .read_cbf import read_from_cbf
 from .read_pgn import read_from_pgn
 from .read_txt import read_from_txt
 from .exception import *
-
+ 
 __version__ = '0.9'

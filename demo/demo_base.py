@@ -2,7 +2,10 @@ from cchess import *
 
 board = ChessBoard()
 board.from_fen(FULL_INIT_FEN)
-
+board = ChessBoard(FULL_INIT_FEN)
+for line in board._board:
+    print(line)
+    
 #1.棋盘显示
 board_strs = board.text_view()
 print()

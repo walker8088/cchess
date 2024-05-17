@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cchess import *
 
-
 #-----------------------------------------------------#
 class TestBoard():
     def test_base(self):
@@ -28,12 +27,13 @@ class TestBoard():
         assert None == board.get_king(BLACK)
         assert False == board.is_checking()
         assert True == board.no_moves()
-        #assert True == board.is_checkmate()
+        assert True == board.is_mirror()
 
         board = ChessBoard(FULL_INIT_FEN)
         assert False == board.is_checking()
         assert False == board.no_moves()
         assert False == board.is_checkmate()
+        assert True == board.is_mirror()
 
         fen = board.to_fen()
         assert FULL_INIT_FEN == fen
@@ -41,16 +41,16 @@ class TestBoard():
         board.from_fen(fen)
         assert board.to_fen() == fen
 
-        board.flip()
-        board.flip()
+        board = board.flip()
+        board = board.flip()
         assert board.to_fen() == fen
 
-        board.mirror()
-        board.mirror()
+        baord = board.mirror()
+        board = board.mirror()
         assert board.to_fen() == fen
 
-        board.swap()
-        board.swap()
+        board = board.swap()
+        board =  board.swap()
         assert board.to_fen() == fen
 
         k = board.get_king(RED)
@@ -210,6 +210,7 @@ class TestBoard():
         board = ChessBoard('3k5/9/9/9/9/4R4/9/9/9/5K3 w')
         assert board.copy().move_iccs('e4e9').is_king_killed() is False
         assert board.copy().is_checking_move(*iccs2pos('e4e9')) == True
+        assert False == board.is_mirror()
 
     def test_AA_move(self):
 
@@ -239,7 +240,8 @@ class TestBoard():
         assert len(moves) == 1
         moves = list(board.create_piece_moves((5, 0)))
         assert len(moves) == 1
-
+        
+        
     def test_BB_move(self):
         #middle BB
         board = ChessBoard('4k4/4a4/4b4/9/9/9/9/4B4/4A4/4K4 w')
@@ -474,3 +476,9 @@ class TestBoard():
         assert board.copy().move((7, 7), (7, 3)).to_text() == '炮８进４'
         assert board.copy().move((0, 9), (0, 8)).to_text() == '车１进１'
         assert board.copy().move((4, 9), (4, 8)).to_text() == '将５进１'
+
+    def test_hash(self):
+        board = ChessBoard(FULL_INIT_FEN)
+        assert board.zhash() == 7101337512282506414
+        assert board.zhash(FULL_INIT_FEN) == 7101337512282506414
+        
