@@ -210,6 +210,7 @@ class Engine(Thread):
         #pass all output msg first
         self._send_cmd('stop')
         time.sleep(0.1)
+        
         while True:
             try:
                 output = self.engine_out_queque.get_nowait()
@@ -219,11 +220,16 @@ class Engine(Thread):
         self._send_cmd(f'position fen {fen}')
         param_list = [f"{key} {value}" for key, value in params.items()]
         go_cmd = "go " + ' '.join(param_list)
-        self._send_cmd(go_cmd)
-
+        
+        ok = self._send_cmd(go_cmd)
+        if not ok:
+            return False
+            
         self.last_fen = fen
         self.last_go = go_cmd
-
+        
+        return True
+        
     def set_option(self, name, value):
         cmd = f'setoption name {name} value {value}'
         self._send_cmd(cmd)

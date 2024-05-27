@@ -46,7 +46,8 @@ class Game(object):
             self.first_move = chess_move
         else:
             self.first_move.branchs.append(chess_move)
-
+        return chess_move
+        
     def verify_moves(self):
         move_list = self.dump_moves()
         for move_line in move_list:
