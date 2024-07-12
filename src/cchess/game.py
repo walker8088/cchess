@@ -119,29 +119,27 @@ class Game(object):
         return move_line
 
     def print_init_board(self):
-        for line in self.init_board.dump_board():
+        for line in self.init_board.text_view():
             print(line)
 
-    def print_text_moves(self, steps_per_line=3):
+    def print_text_moves(self, steps_per_line = 2):
 
         moves = self.dump_text_moves()
-        line_no = 1
-        for line in moves:
-
-            if len(moves) > 1:
-                print(u'第%d分支' % line_no)
-
-            i = 0
-            for it in line:
+        for index, line in enumerate(moves):
+            print(f'第 {index+1} 分支')
+            line_move = '' 
+            for i, it in enumerate(line):
                 if (i % 2) == 0:
-                    print('%2d. ' % (i / 2 + 1), )
-                print(it, )
+                    line_move += f' {(i // 2 + 1):02d}.{it}'
+                else:
+                    line_move += f' {it}'
                 i += 1
                 if (i % (steps_per_line * 2)) == 0:
-                    print()
-            print()
-            line_no += 1
-
+                    print(line_move)
+                    line_move = ''
+            if line_move:
+                print(line_move)
+                
     def dump_info(self):
         for key in self.info:
             print(key, self.info[key])
