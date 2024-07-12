@@ -23,17 +23,17 @@ class TestBoard():
     def test_base(self):
         board = ChessBoard('')
         assert '9/9/9/9/9/9/9/9/9/9 w' == board.to_fen()
-        assert None == board.get_king(RED)
-        assert None == board.get_king(BLACK)
-        assert False == board.is_checking()
-        assert True == board.no_moves()
-        assert True == board.is_mirror()
+        assert board.get_king(RED) is None
+        assert board.get_king(BLACK) is None 
+        assert board.is_checking() is False
+        assert board.no_moves() is True 
+        assert board.is_mirror()  is True 
 
         board = ChessBoard(FULL_INIT_FEN)
-        assert False == board.is_checking()
-        assert False == board.no_moves()
-        assert False == board.is_checkmate()
-        assert True == board.is_mirror()
+        assert board.is_checking() is False
+        assert board.no_moves() is False 
+        assert board.is_checkmate() is False 
+        assert board.is_mirror() is True 
 
         fen = board.to_fen()
         assert FULL_INIT_FEN == fen
@@ -60,7 +60,7 @@ class TestBoard():
         assert (k.x, k.y) == (4, 9)
         assert len(list(board.create_moves())) == 44
 
-        assert board.is_checking() == False
+        assert board.is_checking() is False
         try:
             board.is_checked_move(
                 (4, 0),
@@ -97,9 +97,9 @@ class TestBoard():
         k = board.get_king(BLACK)
         assert (k.x, k.y) == (4, 9)
 
-        assert board.is_checking() == False
-        assert board.no_moves() == False
-        assert board.is_checkmate() == False
+        assert board.is_checking() is False
+        assert board.no_moves() is False
+        assert board.is_checkmate() is False
 
         #不存在的棋子的移动
         assert board.move((1, 0), (2, 0)) is None
@@ -110,31 +110,31 @@ class TestBoard():
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
-        assert True == board.is_checking()
+        assert board.is_checking() is True 
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR b')
-        assert False == board.is_checking()
+        assert board.is_checking() is False
 
         board.from_fen(
             'rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR b')
-        assert True == board.is_checking()
-        assert True == board.is_checkmate()
+        assert board.is_checking() is True 
+        assert board.is_checkmate() is True 
 
         board.from_fen(
             'rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w')
-        assert False == board.is_checking()
-        #assert True == board.is_checked()
-        assert True == board.no_moves()
+        assert board.is_checking() is False
+        #assert  is True board.is_checked()
+        assert board.no_moves() is True 
 
         board.from_fen(
             'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w')
         assert (board.mirror().to_fen(
         ) == 'rnbakabnr/9/1c5c1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B2C1/9/RNBAKA1NR w')
 
-        assert (board.is_valid_iccs_move('b0d1') == True)
-        assert (board.copy().is_valid_iccs_move('b0d1') == True)
-        assert (board.is_valid_move((1, 0), (3, 1)) == True)
+        assert (board.is_valid_iccs_move('b0d1') is True)
+        assert (board.copy().is_valid_iccs_move('b0d1') is True)
+        assert (board.is_valid_move((1, 0), (3, 1)) is True)
         move_it = board.move((1, 0), (3, 1))
         assert move_it.to_text() == '马八进六'
 
@@ -209,8 +209,8 @@ class TestBoard():
 
         board = ChessBoard('3k5/9/9/9/9/4R4/9/9/9/5K3 w')
         assert board.copy().move_iccs('e4e9').is_king_killed() is False
-        assert board.copy().is_checking_move(*iccs2pos('e4e9')) == True
-        assert False == board.is_mirror()
+        assert board.copy().is_checking_move(*iccs2pos('e4e9')) is True
+        assert board.is_mirror() is False 
 
     def test_AA_move(self):
 
