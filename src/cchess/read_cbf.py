@@ -38,7 +38,7 @@ def read_from_cbf(file_name):
     root = tree.getroot()
 
     head = root.find("Head")
-    for node in head.getchildren():
+    for node in list(head): #.getchildren():
         if node.tag == "FEN":
             init_fen = node.text
         #print node.tag
@@ -46,16 +46,19 @@ def read_from_cbf(file_name):
     books = {}
     board = ChessBoard(init_fen)
 
-    move_list = root.find("MoveList").getchildren()
+    move_list = list(root.find("MoveList")) #.getchildren()
 
     game = Game(board)
-    last_move = game
+    last_move = None
     step_no = 1
     for node in move_list[1:]:
         move_from, move_to = decode_move(node.attrib["value"])
         if board.is_valid_move(move_from, move_to):
             new_move = board.move(move_from, move_to)
-            last_move.append_next_move(new_move)
+            if last_move is not None:
+                last_move.append_next_move(new_move)
+            else:
+                game.append_first_move(new_move)
             last_move = new_move
             board.next_turn()
         else:
