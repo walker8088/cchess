@@ -17,7 +17,7 @@ def main():
     game.print_init_board()
     print('=====================================\n')
     
-    game.print_text_moves(steps_per_line = 4)
+    game.print_text_moves(steps_per_line = 5)
 
 
 if __name__ == "__main__":
