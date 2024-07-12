@@ -126,7 +126,8 @@ class Game(object):
 
         moves = self.dump_text_moves()
         for index, line in enumerate(moves):
-            print(f'第 {index+1} 分支')
+            if len(moves) > 1:
+                print(f'第 {index+1} 分支')
             line_move = '' 
             for i, it in enumerate(line):
                 if (i % 2) == 0:
