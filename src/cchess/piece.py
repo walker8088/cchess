@@ -84,6 +84,10 @@ _fench_txt_name_dict = {
 
 
 def fench_to_txt_name(fench):
+    
+    if fench not in _fench_txt_name_dict:
+        return None
+        
     return _fench_txt_name_dict[fench]
 
 
@@ -91,8 +95,9 @@ def fench_to_txt_name(fench):
 def fench_to_text(fench):
     return fench_name_dict[fench]
 
-
 def text_to_fench(text, color):
+    if text not in name_fench_dict:
+        return None
     fench = name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 

@@ -16,6 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import datetime as dt
+
 from .board import *
 from .move import *
 
@@ -34,7 +36,7 @@ class Game(object):
         self.init_board = board.copy()
         self.annotation = annotation
         self.first_move = None
-        self.next_move = None
+        self.last_move = None
 
         self.info = {}
 
@@ -44,20 +46,33 @@ class Game(object):
     def append_first_move(self, chess_move):
         if not self.first_move:
             self.first_move = chess_move
+            self.last_move = self.first_move
         else:
             self.first_move.branchs.append(chess_move)
         return chess_move
+    
+    def append_next_move(self, chess_move):
+    
+        if not self.first_move:
+            self.first_move = chess_move
+            self.last_move = self.first_move
+            return
+            
+        self.last_move.append_next_move(chess_move)
+        self.last_move = chess_move
+        
+        return self
         
     def verify_moves(self):
-        move_list = self.dump_moves()
-        for move_line in move_list:
-            j = 0
-            for move in move_line:
-                if not move.is_valid_move():
-                    print(moves_to_text(self.init_fen, move_line[:j]))
-                    #print j, move, move_line
-                    return False
-                j += 1
+        move_list = self.dump_iccs_moves()
+        for index, move_line in enumerate(move_list):
+            board = self.init_board.copy()
+            for step_no, iccs in enumerate(move_line):
+                m = board.move_iccs(iccs)
+                if m is None:
+                    raise Exception(f"{index}_{step_no}_{iccs} {','.join(move_line)}")
+                board.next_turn()
+                    
         return True
 
     def mirror(self):
@@ -99,15 +114,19 @@ class Game(object):
         self.first_move.dump_moves(move_list, curr_move)
 
         return move_list
-
+    
     def dump_iccs_moves(self):
         return [[str(move) for move in move_line[1:]]
+                for move_line in self.dump_moves()]
+    
+    def dump_fen_iccs_moves(self):
+        return [[ [move.board.to_fen(), str(move)] for move in move_line[1:] ]
                 for move_line in self.dump_moves()]
 
     def dump_text_moves(self):
         return [[move.to_text() for move in move_line[1:]]
                 for move_line in self.dump_moves()]
-
+    
     def dump_moves_line(self):
 
         if not self.first_move:
@@ -144,3 +163,25 @@ class Game(object):
     def dump_info(self):
         for key in self.info:
             print(key, self.info[key])
+    
+    def save_to(self, file_name):
+        init_fen = self.init_board.to_fen()
+        with open(file_name, 'w') as f:
+            f.write('[Game "Chinese Chess"]\n')
+            f.write(f'[Date "{dt.date.today()}"]\n')
+            f.write('[Red ""]\n')
+            f.write('[Black ""]\n')
+            if init_fen != FULL_INIT_FEN:
+                f.write(f'[FEN "{init_fen}"]\n')
+            moves = self.dump_text_moves()
+            if len(moves) > 0:
+                move_line = moves[0]
+                for index, m in enumerate(move_line):
+                    if (index % 2) == 0:
+                        pre_str = f" {index//2+1}."
+                    else:
+                        pre_str = f"    "
+                    f.write(f'{pre_str} {m}\n')
+            f.write(f'   *\n')
+            f.write(f'  =========\n')
+            

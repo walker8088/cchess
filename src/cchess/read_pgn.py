@@ -19,17 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 
 from .board import *
+from .game import Game
 from .exception import *
 
+#读取PGN文件的简易版本
 
 #-----------------------------------------------------#
 def read_from_pgn(file_name):
+    
+    board = ChessBoard(FULL_INIT_FEN)
+    
     with open(file_name) as file:
         flines = file.readlines()
 
     lines = []
     for line in flines:
-        it = line.strip().decode("GBK")  #TODO, fix it in linux
+        it = line.strip()
 
         if len(it) == 0:
             continue
@@ -37,16 +42,20 @@ def read_from_pgn(file_name):
         lines.append(it)
 
     lines = __get_headers(lines)
-    lines, docs = __get_comments(lines)
+    
+    game = Game(board)
+    
+    #lines, docs = __get_comments(lines)
     #infos["Doc"] = docs
-    __get_steps(lines)
-
-
+    __get_steps(lines, game)
+    
+    return game
+    
 def __get_headers(lines):
 
     index = 0
-    for line in lines:
-
+    for l in lines:
+        line = l.strip()
         if line[0] != "[":
             return lines[index:]
 
@@ -89,22 +98,41 @@ def __get_comments(lines):
     raise CChessException("Comments not closed")
 
 
-def __get_token(token_mode, lines):
-    pass
-
-
-def __get_steps(lines, next_step=1):
-
+def __get_steps(lines, game):
+    
+    steps = []
+    
+    board = game.init_board.copy()
+      
     for line in lines:
         if line in ["*", "1-0", "0-1", "1/2-1/2"]:
-            return
+            return steps
 
-        print(line)
-        items = line.split(".")
-
-        if (len(items) < 2):
-            continue
-            raise Exception("format error")
-
-        steps = items[1].strip().split(" ")
-        print(steps)
+        for step, it in enumerate(line.split(" ")):
+            if it in ["*", "1-0", "0-1", "1/2-1/2"]:
+                break
+            if it.endswith('.'):
+                continue
+            
+            move = board.move_text(it)
+            if move is None:
+               return game
+            board.next_turn()
+            game.append_next_move(move)
+            
+            #print(game.first_move.to_text(), game.last_move.to_text())
+            #print(move.next_move)
+            '''
+            count = 0
+            m = game.first_move
+            while m is not None:
+                print(count, m.to_text())
+                m = m.next_move
+                count += 1
+                if count > 10:
+                    break
+            '''
+            #steps.append(it)
+            
+    return game
+    

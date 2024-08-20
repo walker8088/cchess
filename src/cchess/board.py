@@ -69,9 +69,8 @@ def _pos_to_text_board_pos(pos):
 
 
 def get_move_color(fen):
-    color = fen.rstrip()[-1].lower()
+    color = fen.rstrip().split(' ' )[1].lower()
     return RED if color == 'w' else BLACK
-
 
 #-----------------------------------------------------#
 class ChessPlayer():
@@ -278,7 +277,10 @@ class ChessBoard(object):
         return self.move(move_from, move_to)
 
     def move_text(self, move_str):
-        move_from, move_to = Move.from_text(self, move_str)
+        ret = Move.from_text(self, move_str)
+        if not ret:
+            return None
+        move_from, move_to = ret    
         return self.move(move_from, move_to)
 
     def next_turn(self):

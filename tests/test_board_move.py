@@ -23,6 +23,7 @@ class TestBoard():
     def test_base(self):
         board = ChessBoard('')
         assert '9/9/9/9/9/9/9/9/9/9 w' == board.to_fen()
+        
         assert board.get_king(RED) is None
         assert board.get_king(BLACK) is None 
         assert board.is_checking() is False
@@ -105,12 +106,13 @@ class TestBoard():
         assert board.move((1, 0), (2, 0)) is None
         #错误fen字符串
         assert board.from_fen(
-            'rnbaka~d~nr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b'
+            'rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b'
         ) is False
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
         assert board.is_checking() is True 
+        assert board.is_checkmate() is False 
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR b')
@@ -137,6 +139,16 @@ class TestBoard():
         assert (board.is_valid_move((1, 0), (3, 1)) is True)
         move_it = board.move((1, 0), (3, 1))
         assert move_it.to_text() == '马八进六'
+        
+        fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w'
+        assert get_move_color(fen) == RED
+        fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w - - 0 1'
+        assert get_move_color(fen) == RED
+        
+        fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b'
+        assert get_move_color(fen) == BLACK
+        fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b - - 0 1'
+        assert get_move_color(fen) == BLACK
 
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -481,4 +493,6 @@ class TestBoard():
         board = ChessBoard(FULL_INIT_FEN)
         assert board.zhash() == 7101337512282506414
         assert board.zhash(FULL_INIT_FEN) == 7101337512282506414
+        b = board.mirror()
+        assert b.zhash() == 7101337512282506414
         
