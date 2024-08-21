@@ -17,9 +17,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
-from .board import ChessBoard, FULL_INIT_FEN
-from .game import Game
 from .exception import CChessException
+from .common import FULL_INIT_FEN
+from .board import ChessBoard
+from .game import Game
 
 #读取PGN文件的简易版本
 

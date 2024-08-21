@@ -19,10 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from xml.etree import ElementTree as et
 
+from .exception import CChessException
 from .board import ChessBoard
 from .game import Game
-
-from .exception import CChessException
 
 #-----------------------------------------------------#
 

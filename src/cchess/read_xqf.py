@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import struct
 
-from .piece import RED, fench_to_species
+from .common import RED, fench_to_species
 from .board import ChessPlayer, ChessBoard 
 from .game import Game
 

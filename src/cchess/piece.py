@@ -16,89 +16,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from .common import fench_to_species, opposite_color, RED, BLACK
+
 #-----------------------------------------------------#
 #士象固定位置枚举
-advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
+_advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
                ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)))
 
-bishop_pos = ((), ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
+_bishop_pos = ((), ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
               ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)))
 
-#-----------------------------------------------------#
-fench_name_dict = {
-    'K': "帅",
-    'k': "将",
-    'A': "仕",
-    'a': "士",
-    'B': "相",
-    'b': "象",
-    'N': "马",
-    'n': "马",
-    'R': "车",
-    'r': "车",
-    'C': "炮",
-    'c': "炮",
-    'P': "兵",
-    'p': "卒"
-}
-
-#-----------------------------------------------------#
-name_fench_dict = {
-    "帅": 'K',
-    "将": 'k',
-    "仕": 'A',
-    "士": 'a',
-    "相": 'B',
-    "象": 'b',
-    "马": 'n',
-    "车": 'r',
-    "炮": 'c',
-    "兵": 'P',
-    "卒": 'p'
-}
-
-_fench_txt_name_dict = {
-    'K': "帅",
-    'A': "仕",
-    'B': "相",
-    'R': "车",
-    'N': "马",
-    'C': "炮",
-    'P': "兵",
-    'k': "将",
-    'a': "士",
-    'b': "象",
-    'r': "砗",
-    'n': "碼",
-    'c': "砲",
-    'p': "卒"
-}
-
-#-----------------------------------------------------#
-def fench_to_txt_name(fench):
-    
-    if fench not in _fench_txt_name_dict:
-        return None
-        
-    return _fench_txt_name_dict[fench]
-
-
-def fench_to_text(fench):
-    return fench_name_dict[fench]
-
-def text_to_fench(text, color):
-    if text not in name_fench_dict:
-        return None
-    fench = name_fench_dict[text]
-    return fench.lower() if color == BLACK else fench.upper()
-
-def fench_to_species(fen_ch):
-    return fen_ch.lower(), BLACK if fen_ch.islower() else RED
-
-'''
-def species_to_fench(species, color):
-    return species_fench_dict[species][color]
-'''
 
 #-----------------------------------------------------#
 def abs_diff(x, y):
@@ -107,16 +34,6 @@ def abs_diff(x, y):
 
 def middle_p(x, y):
     return ((x[0] + y[0]) // 2, (x[1] + y[1]) // 2)
-
-
-#-----------------------------------------------------#
-
-NO_COLOR, RED, BLACK = (0, 1, 2)
-
-
-def opposite_color(color):
-    return 3 - color
-
 
 #-----------------------------------------------------#
 class Piece(object):
@@ -207,7 +124,7 @@ class Advisor(Piece):
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
-        return True if pos in advisor_pos[self.color] else False
+        return True if pos in _advisor_pos[self.color] else False
 
     def is_valid_move(self, pos_to):
 
@@ -234,7 +151,7 @@ class Bishop(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        return True if pos in bishop_pos[self.color] else False
+        return True if pos in _bishop_pos[self.color] else False
 
     def is_valid_move(self, pos_to):
         if abs_diff((self.x, self.y), (pos_to)) != (2, 2):

@@ -16,10 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .piece import fench_to_species
-from .board import ChessBoard, FULL_INIT_FEN
-from .game import Game
 from .exception import CChessException
+from .common import fench_to_species, FULL_INIT_FEN
+from .board import ChessBoard
+from .game import Game
 
 #-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):

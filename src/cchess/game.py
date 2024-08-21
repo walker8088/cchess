@@ -18,8 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime as dt
 
-from .board import FULL_INIT_FEN
-#from .move import *
+from .common import FULL_INIT_FEN
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)

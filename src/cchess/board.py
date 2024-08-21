@@ -20,15 +20,11 @@ import copy
 import json
 from functools import reduce
 
-from .piece import Piece, fench_to_species, fench_to_txt_name, NO_COLOR, RED, BLACK
-from .move import Move, iccs2pos
 from .exception import CChessException
+from .common import fench_to_species, fench_to_txt_name, NO_COLOR, RED, BLACK, iccs2pos
+from .piece import Piece
+from .move import Move
 from .zhash_data import z_c90, z_pieces, z_redKey, z_hashTable
-
-#-----------------------------------------------------#
-FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
-EMPTY_BOARD = '9/9/9/9/9/9/9/9/9/9'
-EMPTY_FEN = f'{EMPTY_BOARD} w'
 
 #-----------------------------------------------------#
 _text_board = [
@@ -59,19 +55,15 @@ _text_board = [
     #'',
 ]
 
-PLAYER = ('', 'RED', 'BLACK')
-PLAYER_CN = ('', '红方', '黑方')
 
 #-----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
 
 
-def get_move_color(fen):
-    color = fen.rstrip().split(' ' )[1].lower()
-    return RED if color == 'w' else BLACK
-
 #-----------------------------------------------------#
+PLAYER = ('', 'RED', 'BLACK')
+
 class ChessPlayer():
     def __init__(self, color):
         self.color = color

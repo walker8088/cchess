@@ -18,58 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from copy import deepcopy
 
-from .piece import RED, BLACK, fench_to_species, fench_to_text, text_to_fench
+from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs
 
 #-----------------------------------------------------#
-_h_dict = {
-    'a': 'i',
-    'b': 'h',
-    'c': 'g',
-    'd': 'f',
-    'e': 'e',
-    'f': 'd',
-    'g': 'c',
-    'h': 'b',
-    'i': 'a'
-}
-
-_v_dict = {
-    '0': '9',
-    '1': '8',
-    '2': '7',
-    '3': '6',
-    '4': '5',
-    '5': '4',
-    '6': '3',
-    '7': '2',
-    '8': '1',
-    '9': '0'
-}
-
-def pos2iccs(p_from, p_to):
-    return chr(ord('a') + p_from[0]) + str(
-        p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
-
-
-def iccs2pos(iccs):
-    return ((ord(iccs[0]) - ord('a'), int(iccs[1])), (ord(iccs[2]) - ord('a'),
-                                                      int(iccs[3])))
-
-def iccs_mirror(iccs):
-    return f'{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}'
-
-
-def iccs_flip(iccs):
-    return f'{iccs[0]}{_v_dict[iccs[1]]}{iccs[2]}{_v_dict[iccs[3]]}'
-
-
-def iccs_swap(iccs):
-    return f'{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}'
-
-
-
-#-----------------------------------------------------#
-#todo 英文全角半角统一识别
+#TODO 英文全角半角统一识别
 _h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
                  ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
