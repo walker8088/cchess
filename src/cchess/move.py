@@ -20,7 +20,8 @@ from copy import deepcopy
 
 from .piece import RED, BLACK, fench_to_species, fench_to_text, text_to_fench
 
-h_dict = {
+#-----------------------------------------------------#
+_h_dict = {
     'a': 'i',
     'b': 'h',
     'c': 'g',
@@ -32,7 +33,7 @@ h_dict = {
     'i': 'a'
 }
 
-v_dict = {
+_v_dict = {
     '0': '9',
     '1': '8',
     '2': '7',
@@ -45,15 +46,6 @@ v_dict = {
     '9': '0'
 }
 
-#-----------------------------------------------------#
-#todo 英文全角半角统一识别
-h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
-                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
-
-v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
-                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
-
-#-----------------------------------------------------#
 def pos2iccs(p_from, p_to):
     return chr(ord('a') + p_from[0]) + str(
         p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
@@ -63,18 +55,26 @@ def iccs2pos(iccs):
     return ((ord(iccs[0]) - ord('a'), int(iccs[1])), (ord(iccs[2]) - ord('a'),
                                                       int(iccs[3])))
 
-
 def iccs_mirror(iccs):
-    return f'{h_dict[iccs[0]]}{iccs[1]}{h_dict[iccs[2]]}{iccs[3]}'
+    return f'{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}'
 
 
 def iccs_flip(iccs):
-    return f'{iccs[0]}{v_dict[iccs[1]]}{iccs[2]}{v_dict[iccs[3]]}'
+    return f'{iccs[0]}{_v_dict[iccs[1]]}{iccs[2]}{_v_dict[iccs[3]]}'
 
 
 def iccs_swap(iccs):
-    return f'{h_dict[iccs[0]]}{v_dict[iccs[1]]}{h_dict[iccs[2]]}{v_dict[iccs[3]]}'
+    return f'{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}'
 
+
+
+#-----------------------------------------------------#
+#todo 英文全角半角统一识别
+_h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
+                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
+
+_v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
+                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
 #-----------------------------------------------------#
 class Move(object):
@@ -253,13 +253,13 @@ class Move(object):
         #王车炮兵规则
         if fench.lower() in ('k', 'r', 'c', 'p'):
             if diff == 0:
-                dest_str = h_level_index[man_side][self.p_to[0]]
+                dest_str = _h_level_index[man_side][self.p_to[0]]
             elif diff > 0:
-                dest_str = v_change_index[man_side][diff]
+                dest_str = _v_change_index[man_side][diff]
             else:
-                dest_str = v_change_index[man_side][-diff]
+                dest_str = _v_change_index[man_side][-diff]
         else:  #士相马的规则
-            dest_str = h_level_index[man_side][self.p_to[0]]
+            dest_str = _h_level_index[man_side][self.p_to[0]]
 
         name_str = self.__get_text_name(self.p_from)
 
@@ -288,7 +288,7 @@ class Move(object):
 
         #王，士，相命名规则
         if fench.lower() in ('k', 'a', 'b'):
-            return man_name + h_level_index[man_side][pos[0]]
+            return man_name + _h_level_index[man_side][pos[0]]
 
         #车,马,炮,兵命名规则
         #红黑顺序相反，俩数组减少计算工作量
@@ -306,7 +306,7 @@ class Move(object):
                 count += 1
 
         if count == 1:
-            return man_name + h_level_index[man_side][pos[0]]
+            return man_name + _h_level_index[man_side][pos[0]]
         elif count == 2:
             return pos_name2[man_side][pos_index] + man_name
         elif count == 3:
@@ -317,7 +317,7 @@ class Move(object):
         elif count == 5:
             return pos_name5[man_side][pos_index] + man_name
 
-        return man_name + h_level_index[man_side][pos[0]]
+        return man_name + _h_level_index[man_side][pos[0]]
 
     def prepare_for_engine(self, move_player, history):
         if self.captured:
@@ -361,11 +361,11 @@ class Move(object):
         if man_kind in ['k', 'r', 'c', 'p']:
             #平移
             if move_str[0] == "平":
-                new_x = h_level_index[move_player].index(move_str[1])
+                new_x = _h_level_index[move_player].index(move_str[1])
                 return (new_x, p_from[1])
             else:
                 #王，车，炮，兵的前进和后退
-                diff = v_change_index[move_player].index(move_str[1])
+                diff = _v_change_index[move_player].index(move_str[1])
 
                 if move_str[0] == "退":
                     diff = -diff
@@ -377,7 +377,7 @@ class Move(object):
 
         #仕的移动规则
         elif man_kind == 'a':
-            new_x = h_level_index[move_player].index(move_str[1])
+            new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
             if move_player == BLACK:
                 diff_y = -diff_y
@@ -385,7 +385,7 @@ class Move(object):
 
         #象的移动规则
         elif man_kind == 'b':
-            new_x = h_level_index[move_player].index(move_str[1])
+            new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
             if move_player == BLACK:
                 diff_y = -diff_y
@@ -393,7 +393,7 @@ class Move(object):
 
         #马的移动规则
         elif man_kind == 'n':
-            new_x = h_level_index[move_player].index(move_str[1])
+            new_x = _h_level_index[move_player].index(move_str[1])
             diff_x = abs(p_from[0] - new_x)
 
             if move_str[0] == "进":
@@ -423,6 +423,10 @@ class Move(object):
 
         else:
             man_name = move_str[0]
+        
+        if multi_lines:
+            #TODO 处理兵的多行位置定位问题
+            pass
 
         fench = text_to_fench(man_name, board.move_player)
         if not fench:
@@ -432,7 +436,7 @@ class Move(object):
 
         if not multi_mans:
             #单子移动
-            x = h_level_index[move_player].index(move_str[1])
+            x = _h_level_index[move_player].index(move_str[1])
             poss = board.get_fenchs_x(x, fench)
 
             #无子可走

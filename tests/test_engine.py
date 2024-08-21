@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, sys, time
 from pathlib import Path
 
-from cchess import *
+from cchess import UcciEngine, UciEngine, ChessPlayer, RED, BLACK, read_from_xqf, iccs2pos, pos2iccs
 
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
@@ -43,7 +43,7 @@ class TestUCCI_BAD():
 
     def test_ucci(self):
         self.engine = UcciEngine()
-        assert False == self.engine.load("eleeye")
+        assert self.engine.load("eleeye") is False 
 
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
@@ -60,7 +60,7 @@ class TestUCI():
 
     def test_uci(self):
         ret = self.engine.load("bin\\pikafish")
-        assert ret == True
+        assert ret is True
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = read_from_xqf(Path('data', 'ucci_test1.xqf'))

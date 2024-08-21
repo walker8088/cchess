@@ -16,16 +16,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .exception import CChessException
-from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn, NO_COLOR, RED, BLACK, fench_to_species 
-from .board import ChessBoard, ChessPlayer, get_move_color, FULL_INIT_FEN, EMPTY_FEN
-from .move import Move, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap
-from .game import Game
-from .engine import EngineStatus, UcciEngine, UciEngine
+from .exception import CChessException # noqa: F401
+from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn, NO_COLOR, RED, BLACK, fench_to_species # noqa: F401
+from .board import ChessBoard, ChessPlayer, get_move_color, FULL_INIT_FEN, EMPTY_FEN # noqa: F401
+from .move import Move, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap # noqa: F401
+from .game import Game # noqa: F401
+from .engine import EngineStatus, UcciEngine, UciEngine # noqa: F401
 
-from .read_xqf import read_from_xqf
-from .read_pgn import read_from_pgn
-from .read_txt import read_from_txt
-from .read_cbf import read_from_cbf
+from .read_xqf import read_from_xqf # noqa: F401
+from .read_pgn import read_from_pgn # noqa: F401
+from .read_txt import read_from_txt # noqa: F401
+from .read_cbf import read_from_cbf # noqa: F401
 
 __all__ = ["exception", "piece", "board", "move", "game", "engine", "read_xqf","read_pgn","read_txt", "read_cbf", "read_txt",]
