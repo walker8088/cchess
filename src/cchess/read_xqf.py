@@ -19,8 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import struct
 
-from .board import *
-from .game import *
+from .piece import RED, fench_to_species
+from .board import ChessPlayer, ChessBoard 
+from .game import Game
 
 #-----------------------------------------------------#
 #result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
@@ -65,7 +66,7 @@ class XQFBuffDecoder(object):
 
         try:
             ret = buff.decode(coding)
-        except:
+        except Exception:
             ret = None
 
         return ret
@@ -83,7 +84,7 @@ def __init_decrypt_key(buff_str):
 
     keys = XQFKey()
 
-    key_buff = bytearray(buff_str)
+    #key_buff = bytearray(buff_str)
 
     # Pascal code here from XQFRW.pas
     # KeyMask   : dTByte;                         // 加密掩码
@@ -162,7 +163,7 @@ def __init_chess_board(man_str, version, keys=None):
     tmpMan = bytearray([0 for x in range(32)])
     man_buff = bytearray(man_str)
 
-    if keys == None:
+    if keys is None:
         for i in range(32):
             tmpMan[i] = man_buff[i]
         return tmpMan
@@ -325,7 +326,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
         try:
             game_info["red"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
                 "GB18030")
-        except:
+        except Exception:
             pass
 
     if ucBlackPlayerNameLen > 0:
@@ -333,19 +334,19 @@ def read_from_xqf(full_file_name, read_annotation=True):
             game_info[
                 "black"] = szBlackPlayerName[:ucBlackPlayerNameLen].decode(
                     "GB18030")
-        except:
+        except Exception:
             pass
 
     if ucTitleLen > 0:
         try:
             game_info["name"] = szTitle[:ucTitleLen].decode("GB18030")
-        except:
+        except Exception:
             pass
 
     if ucMatchNameLen > 0:
         try:
             game_info["event"] = szMatchName[:ucMatchNameLen].decode("GB18030")
-        except:
+        except Exception:
             pass
 
     path, file_name = os.path.split(full_file_name)

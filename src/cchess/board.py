@@ -15,16 +15,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-import os
-import sys
+
 import copy
 import json
-from functools import *
+from functools import reduce
 
-from .exception import *
-from .piece import *
-from .move import *
-from .zhash_data import *
+from .piece import Piece, fench_to_species, fench_to_txt_name, NO_COLOR, RED, BLACK
+from .move import Move, iccs2pos
+from .exception import CChessException
+from .zhash_data import z_c90, z_pieces, z_redKey, z_hashTable
 
 #-----------------------------------------------------#
 FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
@@ -124,8 +123,12 @@ class ChessBoard(object):
 
     def swap(self):
         def swap_fench(fench):
-            if fench == None: return None
-            return fench.upper() if fench.islower() else fench.lower()
+            if fench is None: 
+                return None
+            if fench.islower():
+                return fench.upper()
+            else:
+                return fench.lower()
 
         b = self.copy()
         b._board = [[swap_fench(self._board[y][x]) for x in range(9)]
@@ -184,7 +187,7 @@ class ChessBoard(object):
                 fench = self._board[y][x]
                 if not fench:
                     continue
-                if color == None:
+                if color is None:
                     yield Piece.create(self, fench, (x, y))
                 else:
                     _, p_color = fench_to_species(fench)
@@ -225,8 +228,10 @@ class ChessBoard(object):
         只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
         '''
 
-        if not (0 <= pos_to[0] <= 8): return False
-        if not (0 <= pos_to[1] <= 9): return False
+        if not (0 <= pos_to[0] <= 8): 
+            return False
+        if not (0 <= pos_to[1] <= 9): 
+            return False
 
         fench_from = self._board[pos_from[1]][pos_from[0]]
         if not fench_from:
@@ -260,10 +265,9 @@ class ChessBoard(object):
         if not self.is_valid_move(pos_from, pos_to):
             return None
 
-        board = self.copy()
-        fench = self.get_fench(pos_to)
+        #保存board移动之前的状态    
+        board = self.copy() 
         self._move_piece(pos_from, pos_to)
-
         move = Move(board, pos_from, pos_to)
         if self.is_checking():
             move.is_checking = True
@@ -371,14 +375,17 @@ class ChessBoard(object):
         for i in range(0, len(fen)):
             ch = fen[i]
 
-            if ch == ' ': break
+            if ch == ' ': 
+                break
             elif ch == '/':
                 y -= 1
                 x = 0
-                if y < 0: break
+                if y < 0: 
+                    break
             elif ch in num_set:
                 x += int(ch)
-                if x > 8: x = 8
+                if x > 8: 
+                    x = 8
             elif ch.lower() in ch_set:
                 if x <= 8:
                     self.put_fench(ch, (x, y))
@@ -415,9 +422,13 @@ class ChessBoard(object):
                 fen += str(count)
                 count = 0
 
-            if y > 0: fen += '/'
+            if y > 0: 
+                fen += '/'
 
-        fen += ' b' if self.move_player == BLACK else ' w'
+        if self.move_player == BLACK:
+            fen += ' b'
+        else: 
+            fen += ' w'
 
         return fen
 

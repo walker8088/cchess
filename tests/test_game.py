@@ -17,7 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 import os
 from pathlib import Path
-from cchess import *
+
+from cchess import read_from_xqf
 
 #result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}

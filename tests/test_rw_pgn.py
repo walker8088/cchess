@@ -17,7 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 import os
 from pathlib import Path
-from cchess import *
+
+from cchess import read_from_pgn
 
 class TestPGN():
     def setup_method(self):

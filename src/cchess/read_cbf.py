@@ -16,13 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import os
 
 from xml.etree import ElementTree as et
 
-from .board import *
-from .game import *
-from .exception import *
+from .board import ChessBoard
+from .game import Game
+
+from .exception import CChessException
 
 #-----------------------------------------------------#
 
@@ -43,7 +43,7 @@ def read_from_cbf(file_name):
             init_fen = node.text
         #print node.tag
 
-    books = {}
+    #books = {}
     board = ChessBoard(init_fen)
 
     move_list = list(root.find("MoveList")) #.getchildren()
@@ -62,7 +62,6 @@ def read_from_cbf(file_name):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException("bad move at %d %s %s" %
-                                  (step_no, move_from, move_to))
+            raise CChessException(f"bad move at {step_no} {move_from}, {move_to}")
         step_no += 1
     return game

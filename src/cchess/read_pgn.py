@@ -16,11 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import os
 
-from .board import *
+from .board import ChessBoard, FULL_INIT_FEN
 from .game import Game
-from .exception import *
+from .exception import CChessException
 
 #读取PGN文件的简易版本
 
@@ -54,18 +53,18 @@ def read_from_pgn(file_name):
 def __get_headers(lines):
 
     index = 0
-    for l in lines:
-        line = l.strip()
+    for it in lines:
+        line = it.strip()
         if line[0] != "[":
             return lines[index:]
 
         if line[-1] != "]":
-            raise CChessException("Format Error on line %" % (index + 1))
+            raise CChessException(f"Format Error on line {index + 1}")
 
         items = line[1:-1].split("\"")
 
         if len(items) < 3:
-            raise CChessException("Format Error on line %" % (index + 1))
+            raise CChessException(f"Format Error on line {index + 1}")
 
         #self.infos[str(items[0]).strip()] = items[1].strip()
 

@@ -1,9 +1,6 @@
 import os
 import sys
 import argparse
-from pathlib import Path
-
-from .board import *
 
 from .read_xqf import read_from_xqf
 from .read_cbf import read_from_cbf

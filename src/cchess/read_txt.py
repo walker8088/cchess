@@ -16,10 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .board import *
-from .game import *
-from .exception import *
-
+from .piece import fench_to_species
+from .board import ChessBoard, FULL_INIT_FEN
+from .game import Game
+from .exception import CChessException
 
 #-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):
@@ -52,7 +52,7 @@ def read_from_txt(moves_txt, pos_txt=None):
         return Game(board)
     step_no = 0
     while step_no * 4 < len(moves_txt):
-        steps = moves_txt[step_no * 4:step_no * 4 + 4]
+        #steps = moves_txt[step_no * 4:step_no * 4 + 4]
 
         move_from = decode_txt_pos(moves_txt[step_no * 4:step_no * 4 + 2])
         move_to = decode_txt_pos(moves_txt[step_no * 4 + 2:step_no * 4 + 4])
@@ -70,8 +70,7 @@ def read_from_txt(moves_txt, pos_txt=None):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException("bad move at %d %s %s" %
-                                  (step_no, move_from, move_to))
+            raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
     if step_no == 0:
         game = Game(board)

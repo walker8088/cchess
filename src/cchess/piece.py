@@ -17,14 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 #-----------------------------------------------------#
-#todo 英文全角半角统一识别
-h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
-                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
-
-v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
-                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
-
-#-----------------------------------------------------#
 #士象固定位置枚举
 advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
                ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)))
@@ -82,7 +74,7 @@ _fench_txt_name_dict = {
     'p': "卒"
 }
 
-
+#-----------------------------------------------------#
 def fench_to_txt_name(fench):
     
     if fench not in _fench_txt_name_dict:
@@ -91,7 +83,6 @@ def fench_to_txt_name(fench):
     return _fench_txt_name_dict[fench]
 
 
-#-----------------------------------------------------#
 def fench_to_text(fench):
     return fench_name_dict[fench]
 
@@ -101,43 +92,13 @@ def text_to_fench(text, color):
     fench = name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 
-
 def fench_to_species(fen_ch):
     return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
-
+'''
 def species_to_fench(species, color):
     return species_fench_dict[species][color]
-
-
-#-----------------------------------------------------#
-#KING, ADVISOR, BISHOP, KNIGHT, ROOK, CANNON, PAWN
 '''
-chessman_show_name_dict = {
-    PieceT.KING: ("帅", "将"),
-    PieceT.ADVISOR: ("仕", "士"),
-    PieceT.BISHOP: ("相", "象"),
-    PieceT.KNIGHT: ("马", "碼"),
-    PieceT.ROOK: ("车", "砗"),
-    PieceT.CANNON: ("炮", "砲"),
-    PieceT.PAWN: ("兵", "卒")
-}
-
-def get_show_name(species, color):
-    return chessman_show_name_dict[species][color]
-'''
-'''
-piece_create_dict = {
-    'k': King,
-    'a': Advisor,
-    'b': Bishop,
-    'r': Rook,
-    'c': Cannon,
-    'n': Knight,
-    'p': Pawn,
-    }
-'''
-
 
 #-----------------------------------------------------#
 def abs_diff(x, y):
@@ -280,7 +241,7 @@ class Bishop(Piece):
             return False
 
         #塞象眼检查
-        if self.board.get_fench(middle_p((self.x, self.y), pos_to)) != None:
+        if self.board.get_fench(middle_p((self.x, self.y), pos_to)) is not None:
             return False
 
         #象过河检查
@@ -308,7 +269,7 @@ class Knight(Piece):
             m_y = self.y
 
             #别马腿检查
-            if self.board.get_fench((m_x, m_y)) != None:
+            if self.board.get_fench((m_x, m_y)) is not None:
                 return False
             else:
                 return True
@@ -317,7 +278,7 @@ class Knight(Piece):
             m_x = self.x
             m_y = (self.y + pos_to[1]) // 2
             #别马腿检查
-            if self.board.get_fench((m_x, m_y)) != None:
+            if self.board.get_fench((m_x, m_y)) is not None:
                 return False
             else:
                 return True
@@ -382,16 +343,16 @@ class Cannon(Piece):
 
             #水平移动
             count = self.board.count_x_line_in(self.y, self.x, pos_to[0])
-            if (count == 0) and (self.board.get_fench(pos_to) == None):
+            if (count == 0) and (self.board.get_fench(pos_to) is None):
                 return True
-            if (count == 1) and (self.board.get_fench(pos_to) != None):
+            if (count == 1) and (self.board.get_fench(pos_to) is not None):
                 return True
         else:
             #垂直移动
             count = self.board.count_y_line_in(self.x, self.y, pos_to[1])
-            if (count == 0) and (self.board.get_fench(pos_to) == None):
+            if (count == 0) and (self.board.get_fench(pos_to) is None):
                 return True
-            if (count == 1) and (self.board.get_fench(pos_to) != None):
+            if (count == 1) and (self.board.get_fench(pos_to) is not None):
                 return True
 
         return False

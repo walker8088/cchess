@@ -15,13 +15,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from .piece import *
-from .board import *
-from .game import *
-from .move import *
-from .engine import *
+
+from .exception import CChessException
+from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn, NO_COLOR, RED, BLACK, fench_to_species 
+from .board import ChessBoard, ChessPlayer, get_move_color, FULL_INIT_FEN, EMPTY_FEN
+from .move import Move, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap
+from .game import Game
+from .engine import EngineStatus, UcciEngine, UciEngine
+
 from .read_xqf import read_from_xqf
-from .read_cbf import read_from_cbf
 from .read_pgn import read_from_pgn
 from .read_txt import read_from_txt
-from .exception import *
+from .read_cbf import read_from_cbf
+
+__all__ = ["exception", "piece", "board", "move", "game", "engine", "read_xqf","read_pgn","read_txt", "read_cbf", "read_txt",]

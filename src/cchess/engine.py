@@ -17,21 +17,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import os
-import sys
 import time
 import enum
 import logging
-import traceback
 import subprocess
 from pathlib import Path
 from threading import Thread
 from queue import Queue, Empty
 
-from .board import *
-from .move import *
-
+#-----------------------------------------------------#
 logger = logging.getLogger(__name__)
-
 
 #-----------------------------------------------------#
 #Engine status
@@ -213,7 +208,7 @@ class Engine(Thread):
         
         while True:
             try:
-                output = self.engine_out_queque.get_nowait()
+                _ = self.engine_out_queque.get_nowait()
             except Empty:
                 break
 

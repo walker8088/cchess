@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from cchess import *
+from cchess import CChessException, ChessBoard,ChessPlayer, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, RED, BLACK
 
 #-----------------------------------------------------#
 class TestBoard():

@@ -18,8 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime as dt
 
-from .board import *
-from .move import *
+from .board import FULL_INIT_FEN
+#from .move import *
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
@@ -91,7 +91,7 @@ class Game(object):
             self.first_move.swap()
 
     def iter_moves(self, move=None):
-        if move == None:
+        if move is None:
             move = self.first_move
         while move:
             yield move
@@ -180,8 +180,8 @@ class Game(object):
                     if (index % 2) == 0:
                         pre_str = f" {index//2+1}."
                     else:
-                        pre_str = f"    "
+                        pre_str = "    "
                     f.write(f'{pre_str} {m}\n')
-            f.write(f'   *\n')
-            f.write(f'  =========\n')
+            f.write('   *\n')
+            f.write('  =========\n')
             

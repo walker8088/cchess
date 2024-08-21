@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from copy import deepcopy
 
-from .piece import *
+from .piece import RED, BLACK, fench_to_species, fench_to_text, text_to_fench
 
 h_dict = {
     'a': 'i',
@@ -45,6 +45,13 @@ v_dict = {
     '9': '0'
 }
 
+#-----------------------------------------------------#
+#todo 英文全角半角统一识别
+h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
+                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
+
+v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
+                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
 #-----------------------------------------------------#
 def pos2iccs(p_from, p_to):
