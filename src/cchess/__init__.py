@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from .exception import CChessException # noqa: F401
-from .common import NO_COLOR, RED, BLACK, fench_to_species , iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, EMPTY_FEN # noqa: F401# noqa: F401
+from .common import NO_COLOR, RED, BLACK, fench_to_species, fench_to_text, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, EMPTY_FEN # noqa: F401# noqa: F401
 from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn # noqa: F401
 from .board import ChessBoard, ChessPlayer # noqa: F401
 from .move import Move # noqa: F401
