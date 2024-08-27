@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from pathlib import Path
 
-from cchess import read_from_pgn
+from cchess import Game
 
 class TestPGN():
     def setup_method(self):
@@ -28,7 +28,7 @@ class TestPGN():
         pass
 
     def test_base(self):
-        game = read_from_pgn(Path("data", "test.pgn"))
+        game = Game.read_from(Path("data", "test.pgn"))
         moves = game.dump_text_moves()
         assert len(moves[0]) == 25
         move_line = ','.join(moves[0])
@@ -38,10 +38,10 @@ class TestPGN():
         assert game.verify_moves() is True
     
     
-    def test_base2(self):
+    def test_long_move(self):
         move_t ='相七进五,炮２平５,兵七进一,马２进３,马八进七,车１平２,车九平八,炮８平６,炮八进四,马８进７,马二进三,车９平８,车一平二,车８进４,炮二平一,车８进５,马三退二,卒７进１,仕四进五,卒５进１,马二进三,炮５进１,炮八进二,士４进５,兵三进一,卒７进１,相五进三,炮５平７,马三进四,炮７进６,马四进六,象３进５,马六进七,炮６平３,炮八退一,士５进４,炮一平五,士６进５,马七进六,将５平６,炮五进三,炮３进３,相三退五,炮３退１,炮五平四,马７进６,马六进四,炮７退８,兵五进一,车２进１,马四进三,将６平５,兵五进一,士５进６,马三退一,炮７平３,仕五进四,后炮退１,兵五平六,前炮进２,车八进三,前炮平１,兵六进一,炮１进３,仕六进五,炮３平２,兵六进一,炮２进２,车八进三,炮１退４,车八平九,炮１平２,车九退二,前炮退１,车九进五,车２退１,车九退四,前炮进１,马一进三,后炮进２,兵六进一,前炮平５,帅五平六,炮５退２,兵一进一,炮５平７,帅六平五,卒３进１,仕五退六,炮７平５,相五退七,卒３进１,马三进一,将５平６,车九进一,炮５平２,马一退三,将６进１,车九进一,后炮退１,车九退一,后炮进１'
         
-        game = read_from_pgn(Path("data", "test2.pgn"))
+        game = Game.read_from(Path("data", "test2.pgn"))
         moves_all = game.dump_text_moves()
         move_line = move_t.split(',')
         assert len(moves_all) == 1
@@ -52,9 +52,11 @@ class TestPGN():
             assert moves[i] == move_line[i]
         assert game.verify_moves() is True
         
-        game.save_to(Path("data", "test2_out.pgn"))
+        out_file = Path("data", "test2_out.pgn")
         
-        game2 = read_from_pgn(Path("data", "test2_out.pgn"))
+        game.save_to(out_file)
+        
+        game2 = Game.read_from(out_file)
         moves_all = game2.dump_text_moves()
         move_line = move_t.split(',')
         assert len(moves_all) == 1
@@ -63,4 +65,19 @@ class TestPGN():
         for i in range(len(moves)):
             assert moves[i] == move_line[i]
         assert game2.verify_moves() is True
-       
+        
+        os.remove(out_file)
+        
+    def test_read_endgame(self):
+        move_t ='马五进六,炮３平４,兵四进一,象５进７,帅五进一,象７退９,马六退四,象９进７,马四进三,象７退５,马三退四,象５进３,马四进六,象３退１,兵四平三,象１退３,马六退八,象３进１,兵三进一,象１退３,马八进七,象３进１,马七退六,炮４进１,马六进四'
+        
+        game = Game.read_from(Path("data", "endgame_test.pgn"))
+        assert game.init_board.to_fen() == '3aka3/2c1n4/4bP3/9/4N4/9/9/9/9/4K4 w'
+        moves_all = game.dump_text_moves()
+        move_line = move_t.split(',')
+        assert len(moves_all) == 1
+        moves = moves_all[0]
+        for i in range(len(moves)):
+            assert moves[i] == move_line[i]
+        assert game.verify_moves() is True
+        

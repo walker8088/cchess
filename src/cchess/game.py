@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+import pathlib
 import datetime as dt
 
 from .common import FULL_INIT_FEN
@@ -31,8 +31,11 @@ book_type_str = (u"未知", u"全局", u"开局", u"中局", u"残局")
 
 #-----------------------------------------------------#
 class Game(object):
-    def __init__(self, board=None, annotation=None):
-        self.init_board = board.copy()
+    def __init__(self, board = None, annotation = None):
+        if board is not None:
+            self.init_board = board.copy()
+        else:
+            self.init_board = ChessBoard()
         self.annotation = annotation
         self.first_move = None
         self.last_move = None
@@ -163,6 +166,21 @@ class Game(object):
         for key in self.info:
             print(key, self.info[key])
     
+    @staticmethod
+    def read_from(file_name):
+        #避免循环导入
+        from .read_xqf import read_from_xqf
+        from .read_pgn import read_from_pgn
+        from .read_cbf import read_from_cbf
+
+        ext = pathlib.Path(file_name).suffix.lower()
+        if ext == '.xqf':
+            return read_from_xqf(file_name)
+        if ext == '.pgn':
+            return read_from_pgn(file_name)
+        if ext == '.cbf':
+            return read_from_cbf(file_name)
+            
     def save_to(self, file_name):
         init_fen = self.init_board.to_fen()
         with open(file_name, 'w') as f:
@@ -171,7 +189,7 @@ class Game(object):
             f.write('[Red ""]\n')
             f.write('[Black ""]\n')
             if init_fen != FULL_INIT_FEN:
-                f.write(f'[FEN "{init_fen}"]\n')
+                f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
             moves = self.dump_text_moves()
             if len(moves) > 0:
                 move_line = moves[0]

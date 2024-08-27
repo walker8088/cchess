@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from pathlib import Path
 
-from cchess import read_from_xqf
+from cchess import Game
 
 #result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
@@ -41,14 +41,13 @@ class TestReaderXQF():
         pass
 
     def test_base(self):
-        game = read_from_xqf(Path("data", "game_test.xqf"))
+        game = Game.read_from(Path("data", "game_test.xqf"))
         moves = game.dump_iccs_moves()
         assert len(moves) == 1
         assert game.verify_moves() is True
     
-    
     def test_big_file(self):
-        game = read_from_xqf(Path("data", "WildHouse.xqf"))
+        game = Game.read_from(Path("data", "WildHouse.xqf"))
         moves = game.dump_iccs_moves()
         #assert len(moves) == 1
         try:
@@ -58,7 +57,7 @@ class TestReaderXQF():
             
     def test_k1(self):
         fen, moves, result = load_move_txt(Path("data", "test1_move.txt"))
-        game = read_from_xqf(Path("data", "test1.xqf"))
+        game = Game.read_from(Path("data", "test1.xqf"))
         assert game.init_board.to_fen() == fen
         assert game.info['result'] == result
         #game.print_init_board()

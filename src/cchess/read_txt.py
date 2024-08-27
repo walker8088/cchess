@@ -19,10 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from .exception import CChessException
 from .common import fench_to_species, FULL_INIT_FEN
 from .board import ChessBoard
-from .game import Game
 
 #-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):
+    #避免循环导入
+    from .game import Game
+    
     def decode_txt_pos(pos):
         return (int(pos[0]), 9 - int(pos[1]))
 

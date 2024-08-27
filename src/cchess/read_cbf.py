@@ -21,12 +21,14 @@ from xml.etree import ElementTree as et
 
 from .exception import CChessException
 from .board import ChessBoard
-from .game import Game
 
 #-----------------------------------------------------#
 
 
 def read_from_cbf(file_name):
+    #避免循环导入
+    from .game import Game
+    
     def decode_move(move_str):
         p_from = (int(move_str[0]), 9 - int(move_str[1]))
         p_to = (int(move_str[3]), 9 - int(move_str[4]))

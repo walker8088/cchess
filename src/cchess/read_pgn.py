@@ -15,19 +15,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+import re
 
 from .exception import CChessException
 from .common import FULL_INIT_FEN
 from .board import ChessBoard
-from .game import Game
+
 
 #读取PGN文件的简易版本
 
 #-----------------------------------------------------#
 def read_from_pgn(file_name):
+    #避免循环导入
+    from .game import Game
     
     board = ChessBoard(FULL_INIT_FEN)
+    game = Game(board)
     
     with open(file_name) as file:
         flines = file.readlines()
@@ -41,31 +44,40 @@ def read_from_pgn(file_name):
 
         lines.append(it)
 
-    lines = __get_headers(lines)
-    
-    game = Game(board)
-    
+    lines = __get_headers(game, lines)
     #lines, docs = __get_comments(lines)
     #infos["Doc"] = docs
-    __get_steps(lines, game)
+    __get_steps(game, lines)
     
     return game
     
-def __get_headers(lines):
+def __get_headers(game, lines):
 
     index = 0
     for it in lines:
         line = it.strip()
-        if line[0] != "[":
+        #匹配 [] 并取出包含的内容
+        pattern1 = r'\[([^\[\]]*)\]'
+        #匹配并捕获xxx和YYYY（不包括引号），且它们之间至少有一个空格  
+        pattern2 = r'(\w+)\s+"\s*([^"]+)"' 
+        matches = re.findall(pattern1, line) 
+        if len(matches) == 0: 
             return lines[index:]
-
-        if line[-1] != "]":
-            raise CChessException(f"Format Error on line {index + 1}")
-
-        items = line[1:-1].split("\"")
-
-        if len(items) < 3:
-            raise CChessException(f"Format Error on line {index + 1}")
+        for text in matches:
+            #print(text)
+            match = re.search(pattern2, text)    
+            if match:  
+                # match.groups()会返回一个包含所有捕获组的元组  
+                # 我们可以通过索引来访问它们  
+                name = match.group(1).lower()  
+                value = match.group(2)  
+                if name.lower() == 'fen':
+                    game.init_board = ChessBoard(value)
+                else:
+                    game.info[name] = value
+                
+        #if len(items) < 3:
+        #    raise CChessException(f"Format Error on line {index + 1}")
 
         #self.infos[str(items[0]).strip()] = items[1].strip()
 
@@ -98,7 +110,7 @@ def __get_comments(lines):
     raise CChessException("Comments not closed")
 
 
-def __get_steps(lines, game):
+def __get_steps(game, lines):
     
     steps = []
     
@@ -119,20 +131,6 @@ def __get_steps(lines, game):
                return game
             board.next_turn()
             game.append_next_move(move)
-            
-            #print(game.first_move.to_text(), game.last_move.to_text())
-            #print(move.next_move)
-            '''
-            count = 0
-            m = game.first_move
-            while m is not None:
-                print(count, m.to_text())
-                m = m.next_move
-                count += 1
-                if count > 10:
-                    break
-            '''
-            #steps.append(it)
-            
+                       
     return game
     
