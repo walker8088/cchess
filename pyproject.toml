@@ -1,20 +1,20 @@
 
 [tool.poetry]
 name = "cchess"
-version = "1.24.2"
+version = "1.24.3"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
-license = "GPL3"
+license = "LGPL3"
+readme = "README.md"
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 
 [project]
-license = "GPL3"
-keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 
 classifiers = [
 	"Intended Audience :: Developers",
-	"License :: OSI Approved :: Apache Software License",
-	"Natural Language :: English",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: LGPL-3.0-or-later",
+	"Natural Language :: Chinese",
 	"Operating System :: MacOS :: MacOS X",
 	"Operating System :: POSIX",
 	"Operating System :: POSIX :: BSD",
@@ -30,8 +30,8 @@ requires-python = ">=3.6"
 dependencies = []
 #dynamic = ["version"]
 
-[project.readme]
-file = "README.md"
+#[project.readme]
+#file = "README.md"
 #content-type = "text/x-rst"
 
 [project.urls]
