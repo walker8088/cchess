@@ -1,16 +1,46 @@
 
 [tool.poetry]
 name = "cchess"
-version = "1.24.1"
+version = "1.24.2"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
 license = "GPL3"
-readme = "README.md"
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
+
+[project]
+license = "GPL3"
+keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
+
+classifiers = [
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: Apache Software License",
+	"Natural Language :: English",
+	"Operating System :: MacOS :: MacOS X",
+	"Operating System :: POSIX",
+	"Operating System :: POSIX :: BSD",
+	"Operating System :: POSIX :: Linux",
+	"Operating System :: Microsoft :: Windows",
+	"Programming Language :: Python",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: Implementation :: CPython",
+]
+
+requires-python = ">=3.6"
+dependencies = []
+#dynamic = ["version"]
+
+[project.readme]
+file = "README.md"
+#content-type = "text/x-rst"
+
+[project.urls]
+Homepage = "https://github.com/walker8088/cchess"
+Source = "https://github.com/walker8088/cchess"
+#Documentation = "https://twine.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-
 
 [build-system]
 requires = ["poetry-core"]

@@ -31,12 +31,12 @@ book_type_str = (u"未知", u"全局", u"开局", u"中局", u"残局")
 
 #-----------------------------------------------------#
 class Game(object):
-    def __init__(self, board = None, annotation = None):
+    def __init__(self, board = None, annote = None):
         if board is not None:
             self.init_board = board.copy()
         else:
             self.init_board = ChessBoard()
-        self.annotation = annotation
+        self.annote = annote
         self.first_move = None
         self.last_move = None
 
@@ -129,6 +129,10 @@ class Game(object):
         return [[move.to_text() for move in move_line[1:]]
                 for move_line in self.dump_moves()]
     
+    def dump_text_moves_with_annote(self):
+        return [[(move.to_text(),move.annote) for move in move_line[1:]]
+                for move_line in self.dump_moves()]
+    
     def dump_moves_line(self):
 
         if not self.first_move:
@@ -143,18 +147,20 @@ class Game(object):
         for line in self.init_board.text_view():
             print(line)
 
-    def print_text_moves(self, steps_per_line = 2):
+    def print_text_moves(self, steps_per_line = 2, show_annote = False):
 
-        moves = self.dump_text_moves()
+        moves = self.dump_text_moves_with_annote()
         for index, line in enumerate(moves):
             if len(moves) > 1:
                 print(f'第 {index+1} 分支')
             line_move = '' 
-            for i, it in enumerate(line):
+            for i, (text, annote) in enumerate(line):
                 if (i % 2) == 0:
-                    line_move += f' {(i // 2 + 1):02d}.{it}'
+                    line_move += f' {(i // 2 + 1):02d}.{text}'
                 else:
-                    line_move += f' {it}'
+                    line_move += f' {text}'
+                if show_annote and annote:
+                    line_move += f'[{annote}]'
                 i += 1
                 if (i % (steps_per_line * 2)) == 0:
                     print(line_move)

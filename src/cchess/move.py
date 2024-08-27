@@ -38,7 +38,8 @@ class Move(object):
         self.is_checking = is_checking
         self.step_index = 0
         self.score = None
-
+        self.annote = ''
+        
         if self.is_checking:
             self.is_checkmate = self.board.is_checkmate()
         else:
@@ -133,6 +134,7 @@ class Move(object):
         if not self.next_move:
             return
 
+        #第一个元素是分支索引
         if len(self.branchs) > 0:
             curr_move_line[0].append(0)
 

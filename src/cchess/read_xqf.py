@@ -27,21 +27,17 @@ from .game import Game
 #result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
 result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
 
-
 def _decode_pos(man_pos):
     return (int(man_pos // 10), man_pos % 10)
-
 
 def _decode_pos2(man_pos):
     return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
                                                        man_pos[1] % 10))
 
-
 #-----------------------------------------------------#
 class XQFKey(object):
     def __init__(self):
         pass
-
 
 #-----------------------------------------------------#
 class XQFBuffDecoder(object):
@@ -265,7 +261,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if board.is_valid_move(move_from, move_to):
             #认为当前走子一方就是合理一方，避免过多走子方检查
             curr_move = board.move(move_from, move_to)
-            curr_move.note = annote
+            curr_move.annote = annote
             #print curr_move.move_str(), has_next_step, has_var_step
             if parent_move:
                 parent_move.append_next_move(curr_move)
