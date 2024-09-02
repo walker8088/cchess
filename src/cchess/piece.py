@@ -49,7 +49,13 @@ class Piece(object):
 
     def is_valid_move(self, pos_to):
         return True
-
+    
+    def get_color_fench(self):
+        if self.fench.islower():
+            return f'b{self.fench}'
+        else:
+            return f'r{self.fench.lower()}'
+            
     @staticmethod
     def create(board, fench, pos):
         p_type = fench.lower()

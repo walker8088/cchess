@@ -24,9 +24,11 @@ def opposite_color(color):
 
 
 #-----------------------------------------------------#
-FULL_INIT_FEN = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w'
 EMPTY_BOARD = '9/9/9/9/9/9/9/9/9/9'
+FULL_INIT_BOARD = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR'
+
 EMPTY_FEN = f'{EMPTY_BOARD} w'
+FULL_INIT_FEN = f'{FULL_INIT_BOARD} w'
 
 #-----------------------------------------------------#
 _h_dict = {

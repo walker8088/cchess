@@ -115,7 +115,12 @@ def __get_steps(game, lines):
     steps = []
     
     board = game.init_board.copy()
-      
+    
+    if 'format' in game.info and game.info['format'].lower() == 'iccs':
+        use_iccs = True
+    else:
+        use_iccs = False
+        
     for line in lines:
         if line in ["*", "1-0", "0-1", "1/2-1/2"]:
             return steps
@@ -125,8 +130,14 @@ def __get_steps(game, lines):
                 break
             if it.endswith('.'):
                 continue
-            
-            move = board.move_text(it)
+            if use_iccs:
+                if len(it) == 5:
+                    new_it = it[:2]+it[3:]
+                else:
+                    new_it = it
+                move = board.move_text(new_it.lower())   
+            else:
+                move = board.move_text(it)
             if move is None:
                return game
             board.next_turn()

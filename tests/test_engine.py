@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, sys, time
 from pathlib import Path
 
-from cchess import UcciEngine, UciEngine, ChessPlayer, RED, BLACK, read_from_xqf, iccs2pos, pos2iccs
+from cchess import UcciEngine, UciEngine, Game, ChessPlayer, RED, BLACK, read_from_xqf, iccs2pos, pos2iccs
 
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
@@ -46,11 +46,11 @@ class TestUCCI_BAD():
         assert self.engine.load("eleeye") is False 
 
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
-        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
+        game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
 
 
-class TestUCI():
+class TestUci():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
         self.engine = UciEngine()
@@ -63,7 +63,7 @@ class TestUCI():
         assert ret is True
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
-        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
+        game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
 
         assert game.init_board.to_fen() == fen
@@ -73,14 +73,14 @@ class TestUCI():
         dead = False
         while not dead:
             self.engine.stop_thinking()
-            self.engine.go_from(board.to_fen(), {'depth': 8})
+            self.engine.go_from(board.to_fen(), {'depth': 10})
             while True:
                 self.engine.handle_msg_once()
                 if self.engine.move_queue.empty():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                #print(output)
+                print(output)
                 action = output['action']
                 if action == 'bestmove':
                     p_from, p_to = iccs2pos(output["move"])
@@ -111,7 +111,7 @@ class TestUCI():
 
         time.sleep(0.5)
 
-class OTestUCCI():
+class TestUcci():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
         self.engine = UcciEngine()
@@ -124,7 +124,7 @@ class OTestUCCI():
         assert ret == True
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
-        game = read_from_xqf(Path('data', 'ucci_test1.xqf'))
+        game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
 
         assert game.init_board.to_fen() == fen
@@ -141,7 +141,7 @@ class OTestUCCI():
                     time.sleep(0.2)
                     continue
                 output = self.engine.move_queue.get()
-                #print(output)
+                print(output)
                 action = output['action']
                 if action == 'bestmove':
                     p_from, p_to = iccs2pos(output["move"])
