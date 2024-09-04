@@ -15,7 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-import os, sys, time
+import os
+import sys
+import time
 from pathlib import Path
 
 from cchess import UcciEngine, UciEngine, Game, ChessPlayer, RED, BLACK, read_from_xqf, iccs2pos, pos2iccs
@@ -61,7 +63,11 @@ class TestUci():
     def test_uci(self):
         ret = self.engine.load("bin\\pikafish")
         assert ret is True
-        
+    
+        for i in range(10):
+            self.engine.handle_msg_once()
+            time.sleep(0.3)
+    
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
@@ -123,6 +129,12 @@ class TestUcci():
         ret = self.engine.load("bin\\eleeye")
         assert ret == True
         
+        for i in range(10):
+            self.engine.handle_msg_once()
+            time.sleep(0.3)
+    
+        print(engine.engine_status)
+    
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)

@@ -1,0 +1,43 @@
+title, old_name, hint, fen, moves
+6步杀, 12步杀6738, 双车马士胜双车卒士双象, 3a3r1/8R/1r2k3b/9/3R2b2/4p1N2/9/9/4A4/3K5 w, d5e5 e7f7 e5f5 f7e7 f5f7 e7f7 g4e5 f7e7 e5g6 e7f7 i8f8
+7步杀, 10步杀8503, 双车马象胜双车马卒象, r5n2/9/4k4/9/1Rb3R2/2N6/9/B8/4p1r2/5K3 w, b5b7 e7e8 b7b8 e8e9 g5g1 g9f7 b8f8 e1f1 f0f1 f7g5 g1g5 a9c9 g5g9
+9步杀, 10步杀9058, 双车双马胜双车双马双炮双卒, 9/4k4/9/4n4/n1R1N4/2N2r1r1/9/9/2p1pc3/3Kc1R2 w, g0g8 f4f8 c5c8 e8e7 g8g7 f8f7 c8c7 e7e8 g7g8 f7f8 c4d6 e8d8 g8f8 e6f8 e5f7 d8d9 c7c9
+9步杀, 11步杀8228, 车马士双象胜车双卒, 9/2N1k4/9/9/9/3R2B2/9/3ABpr2/3p5/4K4 w, c8d6 e8e9 d6f7 e9e8 d4d8 e8e7 f7e5 g2g4 e2g4 f2f1 g4e2 f1e1 d2e1 d1c1 e5g6 e7f7 d8f8
+9步杀, 12步杀8504, 双车马双士象胜双车马卒双士双象, 2b2k3/3Ra4/3aN3b/9/9/9/9/2n1B1r2/2p2r3/3AKA1R1 w, e2g4 g2h2 d8d9 f9f8 e7g6 f8f7 d9i9 i7g5 i9g9 f1e1 d0e1 h2h6 g9g7 f7f8 g7g8 f8f9 g8g9
+9步杀, 13步杀8416, 车双马双士双象胜车双马炮卒双士象, 3a1k3/1N2a4/6R2/9/2b6/1nBN5/2n6/9/6pr1/1cBAKA3 w, g7g9 f9f8 g9g8 f8f9 d4e6 c5e7 e6g7 h1h7 g8g9 f9f8 b8d9 f8f7 g7f5 c3e4 f5h6 h7h6 g9g7
+10步杀, 10步杀8032, 双车马胜车马卒士, 5k3/4a4/8N/9/5r2n/9/6R2/9/4p4/3K2R2 w, g3g9 f9f8 g0g8 f8f7 g8g7 f7f8 g9g8 f8f9 g8f8 f9f8 i7h9 f8f9 g7g9 f9f8 g9a9 f8f7 a9a7 e8d7 a7d7
+10步杀, 10步杀8687, 车马胜双车双炮双卒士, 8r/4a4/3k5/8R/3N5/4c4/9/9/r2p1p3/4K2c1 w, i6d6 d7e7 d6a6 e7d7 d5f6 e4e6 a6d6 d7e7 d6e6 e7f7 e6e7 f7f8 e7e8 f8f9 e8e9 f9f8 f6h7 f8f7 e9e7
+10步杀, 10步杀8873, 车双马胜车马双炮双卒, 4c3n/5R3/2Nk5/8c/7N1/9/9/5p3/4p3r/5K3 w, h5f6 e9e6 f8f7 d7d8 c7b9 d8e8 f7i7 e8f8 i7i8 f8f7 b9d8 e6e8 i8i7 i9h7 i7h7 f7f8 f6d7 f8f9 h7h9
+10步杀, 10步杀8876, 车双马胜双车炮双卒象, 2b2k3/7c1/9/4R1NN1/9/3r5/9/3p5/r3p4/3K5 w, g6h8 f9f8 h8g6 f8f9 e6f6 f9e9 h6g8 e9d9 g6f8 d9d8 f8e6 d8e8 f6f8 e8e9 f8c8 e9f9 c8c9 d4d9 c9d9
+10步杀, 10步杀8877, 车双马胜双车双炮双士, 3k1a3/2R6/3a2N2/6N2/2cc5/9/9/9/rr7/3K5 w, g6e7 d7e8 c8c9 d9d8 e7c6 d8d7 c6e5 d7e7 c9c7 d5d7 g7f9 e8f9 c7d7 e7e8 d7d8 e8e7 e5g6 e7f7 d8f8
+10步杀, 10步杀8878, 车双马胜双车双马双炮多卒象, 2r2k1N1/9/7R1/2pN2p2/1nb6/9/9/2ncc4/2p2p3/3K1p1r1 w, h7f7 f9e9 f7e7 e9d9 h9f8 d9d8 e7e8 d8d7 e8e2 d7d8 e2e8 d8d7 e8a8 d7e7 f8g6 e7d7 g6e5 d7e7 d6f5
+10步杀, 10步杀8969, 双车马双象胜车马卒双士双象, 3ak4/4a4/4b4/9/6b2/1NB6/9/4B2R1/2r3pn1/3RK4 w, h2h9 e7g9 h9g9 e8f9 d0d9 e9d9 g9f9 d9d8 f9e9 d8d7 b4c6 c1e1 e0e1 g1f1 e1e0 f1f0 e0e1 g5e7 e9e7
+10步杀, 10步杀8970, 双车马双士胜车马炮双士象, 3a5/4ak3/4b2R1/2R1N4/2c6/9/9/3A5/1n1KA4/2r6 w, h7h8 f8f7 e6g5 e7g5 h8h7 f7f8 c6f6 e8f7 h7f7 f8e8 f7f8 e8e9 f6e6 g5e7 e6e7 d9e8 e7e8 e9d9 f8f9
+10步杀, 10步杀8972, 双车马胜车双马双炮双卒象, 2b2k3/9/2n1nN3/6Rc1/9/5R3/9/2rp5/6c2/3K1p3 w, g6g9 f9f8 g9g8 f8f9 f7h6 f9e9 h6f7 e9f9 f7g9 f9e9 g8e8 c7e8 g9f7 e9d9 f4d4 e7d5 d4d5 e8d6 d5d6
+10步杀, 10步杀8973, 双车马胜双车卒象, 5Nb1R/4k4/9/9/9/3R5/9/3p5/r7r/3K5 w, d4e4 e8f8 e4f4 f8e8 f9g7 e8e7 g7f5 e7e8 f5d6 e8d8 d6f7 d8d7 f7e5 d7e7 e5g6 e7e8 f4f8 e8e9 i9g9
+10步杀, 10步杀8974, 双车马胜双车双炮多卒双士象, 5a3/2R1a2rr/b3k4/2c1pc3/5N3/3R5/9/3p5/2p1p4/3K5 w, c8c7 e8d7 d4d7 e7e8 d7e7 e8f8 e7f7 f8e8 c7e7 e8d8 e7d7 d8e8 f7e7 e8f8 d7d8 f9e8 e7e8 f8f9 d8d9
+10步杀, 10步杀8975, 双车马双象胜双车马炮双卒双士双象, 3ak4/4a4/4b4/9/2b4R1/1N5n1/5p1r1/3RB4/2p1r4/2B2K1c1 w, h5h9 e7g9 h9g9 e8f9 d2d9 e9d9 g9f9 d9d8 f9e9 e1f1 f0e0 d8d7 b4c6 f1e1 e0f0 e1e0 f0e0 c1d1 e9d9
+10步杀, 10步杀8976, 双车马胜双车双马炮卒双士象, 3a1k3/4a1n2/4b2R1/9/2r1c1R2/5n2N/9/3p5/8r/3K5 w, h7h9 e7g9 h9g9 f9f8 g5g8 f8f7 i4g5 f7e7 g8g7 e8f7 g7f7 e7e8 g9g8 e8e9 f7e7 e9f9 g8g9 f9f8 g5h7
+10步杀, 10步杀9056, 双车双马胜车双马炮双卒双士双象, 4kab2/1N2a4/3cb3n/3NpR3/9/9/5R3/5nr2/4p4/5K3 w, b8d7 e9d9 d7b8 d9e9 d6c8 e9d9 c8e7 d9e9 e7c8 e9d9 f6f9 e8f9 f3f9 d9d8 f9f8 d8d9 c8e7 d9e9 b8d7
+10步杀, 10步杀9057, 双车双马象胜车双马双炮双卒双士双象, 4kab2/1N2a4/3cb3n/3NpR3/9/9/5R3/5n1rB/4p4/5K2c w, b8d7 e9d9 d7b8 d9e9 d6c8 e9d9 c8e7 d9e9 e7c8 e9d9 f6f9 e8f9 f3f9 d9d8 f9f8 d8d9 c8e7 d9e9 b8d7
+11步杀, 10步杀8967, 双车马胜车马卒双士象, 3ak4/4a4/4b4/2N6/9/9/6p2/5n3/4r4/3R1K1R1 w, h0h9 e7g9 h9g9 e8f9 d0d9 e9d9 g9f9 e1e9 c6b8 d9d8 f9e9 f2d1 f0e0 d1f2 e0f0 f2h1 f0f1 h1i3 b8c6 d8d7 e9d9
+11步杀, 10步杀8968, 双车马胜车马卒双士双象, 2bak4/4a4/4b4/2N6/9/9/6p2/5n3/4r4/3R1K1R1 w, h0h9 e7g9 h9g9 e8f9 d0d9 e9d9 g9f9 e1e9 c6b8 d9d8 f9e9 f2d1 f0e0 d1f2 e0f0 f2h1 f0f1 h1i3 b8c6 d8d7 e9d9
+11步杀, 11步杀9260, 车双马胜车双炮三卒, 3k2c2/5R3/9/2pN1N1c1/9/9/9/3p5/2r1p4/3K5 w, f8f9 d9d8 d6f7 d8e8 f7g9 e8d8 g9f7 d8e8 f7h6 e8d8 h6f7 d8e8 f9e9 e8f8 f6d7 f8f7 d7e5 f7f8 e5g6 f8f7 e9f9
+11步杀, 11步杀9261, 车双马胜车双炮三卒士象, 3N5/9/3kba3/1Rp3c2/2c6/3N5/9/5p3/4p1r2/5K3 w, d9f8 f7e8 b6b7 d7d8 d4c6 d8d9 b7b9 e7c9 c6b8 d9e9 b9c9 e8d9 f8d7 e9e8 d7f6 e8f8 b8d9 f8f9 d9e7 f9f8 c9f9
+11步杀, 11步杀9262, 车双马胜双车双炮双士, 5a3/3k5/2Ra2N2/6N2/2cc5/9/9/9/rr7/3K5 w, c7c8 d8d9 g6e7 d7e8 c8c9 d9d8 e7c6 d8d7 c6e5 d7e7 c9c7 d5d7 g7f9 e8f9 c7d7 e7e8 d7d8 e8e7 e5g6 e7f7 d8f8
+11步杀, 11步杀9328, 双车马双士双象胜双车炮双卒双士双象, 4ka3/4a4/4b4/9/2p3b2/1N7/R3p4/3AB4/2r3r2/1cBAKR3 w, a3a9 e7c9 a9c9 e8d9 c9d9 e9d9 f0f9 d9d8 f9e9 d8d7 b4c6 c1e1 d2e1 g1e1 e0e1 b0d0 e9a9 e3e2 c0e2 d0d6 a9a7
+11步杀, 11步杀9329, 双车马胜双车马双炮双卒士双象, 2b3cc1/4ak3/2R5b/1rNR5/2r6/5n3/9/3p5/9/3K1p3 w, d6f6 e8f7 c7c8 f8f9 c6d8 f9e9 d8f7 e9f9 c8f8 f9e9 f8g8 e9f9 f7h8 f9e9 g8g9 e9e8 g9g8 e8e9 f6f9 e9f9 g8e8
+11步杀, 11步杀9330, 双车马胜双车双马双炮多卒士象, 3k2r2/4a4/7nr/1Rp6/n1b6/3N5/9/1R3p3/c1c1p1p2/5K3 w, b6b9 d9d8 d4e6 c5e7 b2d2 e8d7 b9b8 d8d9 d2d7 d9e9 d7e7 e9f9 b8b9 f9f8 e7d7 f8e8 b9b8 e8e9 d7d9 e9d9 b8b9
+11步杀, 12步杀9510, 车双马双士胜双车卒士, 9/4ak3/9/2N3rN1/9/9/4R3p/9/4A3r/4KA3 w, c6d8 i1f1 e1f2 f1f0 e0f0 g6g0 f0f1 g0g1 f1f0 f8f9 e3e8 g1g0 f0f1 g0d0 h6f7 d0d1 f1f0 d1f1 f0f1 i3h3 f7h8
+12步杀, 10步杀8971, 双车马双象胜车马炮双卒双士双象, 4kab2/4a4/3cb3n/1R5N1/9/3R2B2/9/4B4/3p1p1r1/4K4 w, b6b9 e7c9 b9c9 d7d9 h6f7 e8f7 d4d9 e9e8 d9e9 e8f8 e9f9 f8e8 c9e9 e8d8 e9d9 d8e8 f9e9 e8f8 d9d8 f7e8 d8e8 f8f7 e9f9
+12步杀, 12步杀9508, 车双马胜双马双炮双卒, 2R6/4kn1N1/5N3/9/9/9/9/5pn2/4p1c2/5K1c1 w, f7d6 e8e7 c9c7 f8d7 d6f5 e7e8 c7c8 e8e9 h8f7 d7f8 c8c9 e9e8 f7d6 e8d8 c9c8 d8d7 c8c7 d7d8 d6f7 d8e8 f5d6 e8e9 c7c9
+12步杀, 12步杀9509, 车双马胜车马双炮双卒, 1N1kcR2n/9/9/8c/7N1/9/9/5p3/4p3r/5K3 w, b9c7 d9d8 f9f8 d8d7 h5f6 e9e6 f8f7 d7d8 c7b9 d8e8 f7i7 e8f8 i7i8 f8f7 b9d8 e6e8 i8i7 i9h7 i7h7 f7f8 f6d7 f8f9 h7h9
+12步杀, 12步杀9511, 车双马胜双车炮双卒象, 2b6/7cN/5k3/4R4/8N/3r5/9/3p5/r3p4/3K5 w, i8h6 f7f8 i5g6 f8f9 g6h8 f9f8 h8g6 f8f9 e6f6 f9e9 h6g8 e9d9 g6f8 d9d8 f8e6 d8e8 f6f8 e8e9 f8c8 e9f9 c8c9 d4d9 c9d9
+12步杀, 12步杀9512, 车双马胜双车马炮卒士, 6r2/1c7/4ka3/3R5/3N2r2/3N5/9/3n5/4p4/5K3 w, d6e6 e7d7 d5b6 d7d8 d4c6 d8d9 c6b8 d9d8 b8c6 d8d9 e6d6 d9e9 b6c8 e9e8 d6d8 e8e9 d8d7 e9e8 d7e7 e8f8 e7f7 f8e8 f7e7
+12步杀, 12步杀9513, 车双马胜双车马双炮三卒, n1c1N4/3R5/4k4/4pcp2/9/6N2/6r2/4r4/4p4/3K5 w, d8d7 e7e8 g4f6 e8f8 d7f7 f8e8 f7c7 e8f8 e9d7 f8f7 d7c9 f7f8 c9d7 f8f7 d7e9 f7f8 c7f7 f8e8 f7i7 e8f8 e9d7 f8f9 i7f7
+12步杀, 12步杀9565, 双车马胜车三卒双士双象, 2bak4/4a4/4b4/9/6NRR/9/9/3p5/r3p4/3K1p3 w, i5i9 e7g9 i9g9 e8f9 g5f7 e9e8 f7d6 e8d8 g9g8 d9e8 g8e8 f9e8 d6b7 d8d7 h5d5 d7e7 d5e5 e7d7 b7c9 d7d8 e5d5 e8d7 d5d7
+12步杀, 12步杀9567, 双车马胜双车双马双炮三卒象, 2b2k3/1n7/9/1n4p2/2rc4R/4N1r1R/9/5p3/4p4/5K2c w, i5f5 f9e9 i4i9 e9e8 e4d6 b8d7 i9i8 e8e9 d6f7 d7f8 f5e5 c9e7 e5e7 e9d9 i8i9 d9d8 e7e6 d8d7 e6d6 d7e7 i9e9 e7f7 d6f6
+12步杀, 12步杀9591, 双车双马胜双车双炮多卒双士象, 5a3/2R1a2rr/b3kc3/4pc3/9/1N1R5/6N2/3p5/2p1p4/3K5 w, b4c6 f6c6 g3f5 f7f6 c8c7 e8d7 d4d7 e7e8 d7e7 e8f8 e7f7 f8e8 c7e7 e8d8 e7d7 d8e8 f7e7 e8f8 d7d8 f9e8 e7e8 f8f9 d8d9
+13步杀, 10步杀8874, 车双马士双象胜车双马双卒, 4k4/7n1/1N6N/9/9/3p1R3/9/4B4/2nr1p3/2B1KA3 w, i7g8 e9e8 b7c9 e8d8 f4f8 d8d9 f8f9 d9d8 c9b7 d8e8 g8f6 h8f7 b7d6 e8d8 d6f7 d8e8 f9e9 e8f8 f6d7 f8f7 d7e5 f7f8 e5g6 f8f7 e9f9
+13步杀, 10步杀8875, 车双马士象胜车双马三卒, 4k4/7n1/1N2N4/9/9/3p1R3/9/2n1B4/3p1p3/4KA2r w, e7g8 e9e8 b7c9 e8d8 f4f8 d8d9 f8f9 d9d8 c9b7 d8e8 g8f6 h8f7 b7d6 e8d8 d6f7 d8e8 f9e9 e8f8 f6d7 f8f7 d7e5 f7f8 e5g6 f8f7 e9f9
+14步杀, 13步杀9423, 车马双士象胜车炮双卒双士双象, 4kab2/4a4/b8/4N1p2/9/1R7/9/3A5/2p3r2/4KAB1c w, e6d8 e9d9 d8c6 a7c9 b4b9 g9e7 c6e7 i0i6 b9c9 d9d8 c9c8 d8d9 c8c4 g1e1 e0e1 c1d1 e1e2 g6g5 c4c9 d9d8 e7c6 d8d7 c9c7 d7d8 c7a7 d8d9 a7a9

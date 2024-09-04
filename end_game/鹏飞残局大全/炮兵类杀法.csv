@@ -1,0 +1,4 @@
+title, old_name, hint, fen, moves
+5步杀, 10步杀4498, 炮三兵双士双象胜马炮卒双士象, 1Cbak4/2P2P3/3aP4/9/9/6B2/3c2n2/2p1BA3/4A4/4K4 w, e7d7 g3e4 c8d8 d3d8 d7d8 e4f2 e1f2 c2d2 d8d9
+6步杀, 10步杀5809, 炮兵胜双士, 4k4/4a1P2/5a3/9/9/9/9/3K5/9/5C3 w, g8f8 e8d7 f0b0 d7e8 b0b7 e8d7 b7f7 d7e8 d2e2 e9d9 f8e8
+6步杀, 10步杀5829, 双炮兵双士双象胜车卒双象, 3C1k3/4P2r1/1C2b3b/9/9/6p2/9/4B4/4A4/4KAB2 w, b7b9 e7c9 d9d8 c9a7 d8h8 g4g3 b9b4 g3f3 b4f4 a7c9 h8f8
