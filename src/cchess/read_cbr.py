@@ -50,10 +50,10 @@ def _decode_pos(p):
     return (p%9, 9-p//9)    
 
 def cut_bytes_to_str(buff):
-    #print(buff.hex())
-    zero_index = buff.find(b'\x00\x00\x00')
-    #print(zero_index)
-    return buff[:zero_index].decode(CODING_PAGE)    
+    buff_len = len(buff)
+    for index in range(0, buff_len, 2):
+        if buff[index : index+2] == b'\x00\x00':
+            return buff[:index].decode(CODING_PAGE)    
     
 #-----------------------------------------------------#
 class CbrBuffDecoder(object):
