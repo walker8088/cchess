@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+
 import sys
 import struct
 
@@ -22,6 +23,8 @@ from .exception import CChessException
 from .common import RED, BLACK, fench_to_species
 from .board import ChessPlayer, ChessBoard 
 from .game import Game
+
+CODING_PAGE = 'utf-16-le'
 
 #-----------------------------------------------------#
 piece_dict = {
@@ -44,21 +47,22 @@ piece_dict = {
 }
 
 def _decode_pos(p):
-    x = p % 9
-    y = 9 - p // 9
-    
-    return (x,y)    
-    
-def _decode_pos2(p_from, p_to):
-    return (_decode_pos(p_from), _decode_pos(p_to))
+    return (p%9, 9-p//9)    
+
+def cut_bytes_to_str(buff):
+    #print(buff.hex())
+    zero_index = buff.find(b'\x00\x00\x00')
+    #print(zero_index)
+    return buff[:zero_index].decode(CODING_PAGE)    
     
 #-----------------------------------------------------#
 class CbrBuffDecoder(object):
-    def __init__(self, buffer):
+    def __init__(self, buffer, coding):
         self.buffer = buffer
         self.index = 0
         self.length = len(buffer)
-
+        self.coding = coding
+        
     def __read(self, size):
 
         start = self.index
@@ -70,16 +74,10 @@ class CbrBuffDecoder(object):
         self.index = stop
         return self.buffer[start:stop]
 
-    def read_str(self, size, coding="GB18030"):
+    def read_str(self, size):
         buff = self.__read(size)
-
-        try:
-            ret = buff.decode(coding)
-        except Exception:
-            ret = None
-
-        return ret
-
+        return cut_bytes_to_str(buff)
+        
     def read_bytes(self, size):
         return bytearray(self.__read(size))
 
@@ -135,7 +133,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
     
     fench = board.get_fench(move_from)
     if not fench:
-        raise CChessException("bad move at %s %s" % (str(move_from), str(move_to)))
+        raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
         good_move = parent_move
     else:
         _, man_side = fench_to_species(fench)
@@ -146,7 +144,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
             #认为当前走子一方就是合理一方，避免过多走子方检查
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
-            print(step_info.hex(), curr_move.to_text(), has_var_step, annote_len)
+            #print(step_info.hex(), curr_move.to_text(), has_var_step, annote_len)
             #board.print_board()
             
             if parent_move:
@@ -155,35 +153,29 @@ def __read_steps(buff_decoder, game, parent_move, board):
                 game.append_first_move(curr_move)
             good_move = curr_move
         else:
-            board.print_board()
-            print ("bad move at", move_from, move_to)
+            raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
             good_move = parent_move
     
     if has_next_move:
         __read_steps(buff_decoder, game, good_move, board)
 
     if has_var_step:
-        print(parent_move.to_text(), 'read var moves')
+        #print(parent_move.to_text(), 'read var moves')
         __read_steps(buff_decoder, game, parent_move, board_bak)
     
-
-def read_from_cbr(file_name):
-
-    with open(file_name, "rb") as f:
-        contents = f.read()
     
-    magic, _i1, title, _i2, move_side, _i3, boards, _i4 = struct.unpack("<16s164s128s1804sB7s90s4s", contents[:2214])
+#-----------------------------------------------------#
+def read_from_cbr_buffer(contents):
+
+    bmagic, _i1, btitle, _i2, move_side, _i3, boards, _i4 = struct.unpack("<16s164s128s1804sB7s90s4s", contents[:2214])
     
-    #print(move_side)
-    #print(title[:10].decode("GBK"))
-    print(str(magic).rstrip('\x00'))                
-    #if magic != b"CCBridge Record":  
-    #    return None
+    if bmagic != b"CCBridge Record\x00":  
+        return None
 
     game_info = {}
     game_info["source"] = "CBR"
+    game_info['title'] =  cut_bytes_to_str(btitle)
     
-    buff_decoder = CbrBuffDecoder(contents[2214:])
     board = ChessBoard()
     if move_side == 1:    
         board.move_player = ChessPlayer(RED)
@@ -196,13 +188,24 @@ def read_from_cbr(file_name):
             if v in piece_dict:
                 board.put_fench(piece_dict[v], (x, y))
     
-    print(board.to_fen())
-    board.print_board()
+    #board.print_board()
     
+    buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE)
     game_annotation = __read_init_info(buff_decoder)
+    
     game = Game(board, game_annotation)
     game.info = game_info
+    
     __read_steps(buff_decoder, game, None, board)
     
     return game
 
+
+#-----------------------------------------------------#
+def read_from_cbr(file_name):
+
+    with open(file_name, "rb") as f:
+        contents = f.read()
+    
+    return read_from_cbr_buffer(contents)
+    

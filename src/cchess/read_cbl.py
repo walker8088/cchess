@@ -17,22 +17,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import struct
+from .read_cbr import read_from_cbr_buffer, CODING_PAGE 
 
-#from .exception import CChessException
-#from .board import ChessBoard
 
 #-----------------------------------------------------#
-
 def read_from_cbl(file_name):
 
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    magic, _i1, lib_name = struct.unpack("<16s48s512s",  contents[:576])
-    print(magic.decode("GB18030"))
-    print(lib_name[:19].decode("utf-8"))
+    bmagic, _i1, book_count, blib = struct.unpack("<16s44si512s",  contents[:576])
     
-    if magic != b"XQ":  
+    if bmagic != b'CCBridgeLibrary\x00':  
         return None
-
+    
+    lib_info = {}    
+    lib_name = blib.decode(CODING_PAGE)
+    
+    lib_info['name'] = lib_name
+    lib_info['games'] = []
+    
+    index = 101952
+    count = 0
+    while index < len(contents):
+        book_buffer = contents[index:]
+        game = read_from_cbr_buffer(book_buffer)
+        lib_info['games'].append(game)
+        count += 1
+        index += 4096
+        print(count+1, game.info['title'])
+        
+    return lib_info
+    
 #read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')
