@@ -19,7 +19,13 @@ class TestReaderCbr():
         moves = ','.join(game.dump_text_moves()[0])
         assert moves == '炮二平五,炮８平５'
     
-    def test_read_cbl(self):
+    def test_read_cbl1(self):
+        lib = Game.read_from_lib(Path("data", "1966年全国个人赛对局选.CBL"))
+        assert lib['name'] == '1966年全国个人赛对局选'
+        assert len(lib['games']) == 106
+    
+    def test_read_cbl2(self):
         lib = Game.read_from_lib(Path("data", "1956年全国象棋锦标赛93局.CBL"))
         assert lib['name'] == '1956年全国象棋锦标赛93局'
         assert len(lib['games']) == 93
+    

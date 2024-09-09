@@ -76,7 +76,10 @@ class CbrBuffDecoder(object):
 
         self.index = stop
         return self.buffer[start:stop]
-
+    
+    def is_end(self):
+        return (self.length - self.index - 1) == 0
+        
     def read_str(self, size):
         buff = self.__read(size)
         return cut_bytes_to_str(buff)
@@ -108,7 +111,10 @@ def __read_init_info(buff_decoder):
 def __read_steps(buff_decoder, game, parent_move, board):
     
     step_info = buff_decoder.read_bytes(4)
-    #print(step_info.hex())
+    
+    if step_info == b'\x00\x00\x00\x00':
+        return
+        
     step_mark, step_none, step_from, step_to = step_info
     
     #棋谱分支结束
@@ -170,10 +176,11 @@ def __read_steps(buff_decoder, game, parent_move, board):
 #-----------------------------------------------------#
 def read_from_cbr_buffer(contents):
 
-    magic, _is1, title, _is2, tournament, _is3, red, _is_red, black, _is_black, game_result, _is4, move_side, _is5, boards, _is6\
-                = struct.unpack("<16s164s128s384s64s320s64s160s64s712sB35sB7s90si", contents[:2214])
+    magic, _is1, title, _is2, tournament, _is3, red, _is_red, black, _is_black, game_result, _is4, step_start, _is5, move_side, _is6, boards, _is7\
+                = struct.unpack("<16s164s128s384s64s320s64s160s64s712sB35sB3sH2s90si", contents[:2214])
     
-    if magic != b"CCBridge Record\x00":  
+    if magic != b"CCBridge Record\x00": 
+        #print(magic)
         return None
 
     game_info = {}
@@ -183,6 +190,9 @@ def read_from_cbr_buffer(contents):
     game_info['red'] = cut_bytes_to_str(red)
     game_info['black'] = cut_bytes_to_str(black)
     game_info['result'] = result_dict[game_result]
+    #game_info['steps'] = steps
+    
+    #print(game_info)
     
     board = ChessBoard()
     if move_side == 1:    
@@ -202,7 +212,9 @@ def read_from_cbr_buffer(contents):
     game = Game(board, game_annotation)
     game.info = game_info
     
-    __read_steps(buff_decoder, game, None, board)
+    if not buff_decoder.is_end():
+        #print(buff_decoder.index, buff_decoder.length)
+        __read_steps(buff_decoder, game, None, board)
     
     return game
 
@@ -230,14 +242,27 @@ def read_from_cbl(file_name):
     lib_info = {}     
     lib_info['name'] = cut_bytes_to_str(lib_name)
     lib_info['games'] = []
+    if book_count <= 128:
+        index = 101952
+    else:
+        index = 349248
     
-    index = 101952
+    #print()
+    #print(book_count)
+    
     count = 0
+    game_index = 0
     while index < len(contents):
         book_buffer = contents[index:]
-        game = read_from_cbr_buffer(book_buffer)
-        game.info['index'] = count
-        lib_info['games'].append(game)
+        try:
+            game = read_from_cbr_buffer(book_buffer)
+            game.info['index'] = game_index
+            lib_info['games'].append(game)
+            game_index += 1
+            #print(game.info)
+        except Exception as e:
+            #print(file_name, count, index, len(contents), e)
+            pass
         count += 1
         index += 4096
         #print(count, game.info)
