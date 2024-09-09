@@ -195,7 +195,7 @@ class Game(object):
     @staticmethod
     def read_from_lib(file_name):
         #在函数开始时才导入以避免循环导入
-        from .read_cbl import read_from_cbl
+        from .read_cbr import read_from_cbl
         
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.cbl':

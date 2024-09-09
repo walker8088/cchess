@@ -215,3 +215,33 @@ def read_from_cbr(file_name):
     
     return read_from_cbr_buffer(contents)
     
+
+#-----------------------------------------------------#
+def read_from_cbl(file_name):
+
+    with open(file_name, "rb") as f:
+        contents = f.read()
+
+    magic, _i1, book_count, lib_name = struct.unpack("<16s44si512s",  contents[:576])
+    
+    if magic != b'CCBridgeLibrary\x00':  
+        return None
+    
+    lib_info = {}     
+    lib_info['name'] = cut_bytes_to_str(lib_name)
+    lib_info['games'] = []
+    
+    index = 101952
+    count = 0
+    while index < len(contents):
+        book_buffer = contents[index:]
+        game = read_from_cbr_buffer(book_buffer)
+        game.info['index'] = count
+        lib_info['games'].append(game)
+        count += 1
+        index += 4096
+        #print(count, game.info)
+        #print(game.dump_iccs_moves())
+    
+    return lib_info
+       
