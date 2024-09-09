@@ -1,32 +1,25 @@
 
-import sys
-
-sys.path.insert(0, '..\\src\\')
+import os
+from pathlib import Path
 
 import cchess
+from cchess import Game
 
-lib = cchess.read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')
+#lib = cchess.read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')
 
-#print(lib['name'])
-#for game in lib['games']:
-    #print('\n=====================================')
-    #print(game.info['title'])
-    #game.print_init_board()
-    #print('=====================================')
-    #if game.annote:
-    #    print(game.annote)
-    #    print('-------------------------------------')
-    #game.print_text_moves(steps_per_line = 1, show_annote = True)
+class TestReaderCbr():
+    def setup_method(self):
+        os.chdir(os.path.dirname(__file__))
 
-'''
-game = cchess.read_from_cbr('test2.cbr')
-print('\n=====================================')
-game.print_init_board()
-print('=====================================')
-if game.annote:
-    print(game.annote)
-print('-------------------------------------')
-
-game.print_text_moves(steps_per_line = 1, show_annote = True)
-print('李3'.encode('utf-16-le').hex())
-'''
+    def teardown_method(self):
+        pass
+    
+    def test_read_cbr(self):
+        game = Game.read_from(Path("data", "test2.cbr"))
+        moves = ','.join(game.dump_text_moves()[0])
+        assert moves == '炮二平五,炮８平５'
+    
+    def test_read_cbl(self):
+        lib = Game.read_from_lib(Path("data", "1956年全国象棋锦标赛93局.CBL"))
+        assert lib['name'] == '1956年全国象棋锦标赛93局'
+        assert len(lib['games']) == 93

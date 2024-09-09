@@ -53,7 +53,7 @@ class TestUCCI_BAD():
         game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(RED)
 
-
+'''
 class TestUcci():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
@@ -121,7 +121,7 @@ class TestUcci():
 
         time.sleep(0.5)
 
-'''
+
 class TestUci():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))

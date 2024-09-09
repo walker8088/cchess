@@ -1,0 +1,4 @@
+
+release v1.24.4 
+  * 目前可以读入 XQF, CBR, CBL, PNG(iccs格式和文本格式) 的棋谱
+    

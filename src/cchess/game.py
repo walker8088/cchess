@@ -174,19 +174,35 @@ class Game(object):
     
     @staticmethod
     def read_from(file_name):
-        #避免循环导入
+        #在函数开始时才导入以避免循环导入
         from .read_xqf import read_from_xqf
         from .read_pgn import read_from_pgn
         from .read_cbf import read_from_cbf
-
+        from .read_cbr import read_from_cbr
+        
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
             return read_from_xqf(file_name)
-        if ext == '.pgn':
+        elif ext == '.pgn':
             return read_from_pgn(file_name)
-        if ext == '.cbf':
+        elif ext == '.cbf':
             return read_from_cbf(file_name)
-            
+        elif ext == '.cbr':
+            return read_from_cbr(file_name)
+        else:
+            raise Exception(f"Unknown file format:{file_name}")
+    
+    @staticmethod
+    def read_from_lib(file_name):
+        #在函数开始时才导入以避免循环导入
+        from .read_cbl import read_from_cbl
+        
+        ext = pathlib.Path(file_name).suffix.lower()
+        if ext == '.cbl':
+            return read_from_cbl(file_name)
+        else:
+            raise Exception(f"Unknown lib file format:{file_name}")
+    
     def save_to(self, file_name):
         init_fen = self.init_board.to_fen()
         with open(file_name, 'w') as f:

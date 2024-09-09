@@ -24,9 +24,10 @@ from .common import RED, BLACK, fench_to_species
 from .board import ChessPlayer, ChessBoard 
 from .game import Game
 
-CODING_PAGE = 'utf-16-le'
+CODING_PAGE_CBR = 'utf-16-le'
 
 #-----------------------------------------------------#
+
 piece_dict = {
     #红方
     0x11:'r', #车
@@ -46,6 +47,8 @@ piece_dict = {
     0x27:'P', #卒
 }
 
+result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
+
 def _decode_pos(p):
     return (p%9, 9-p//9)    
 
@@ -53,7 +56,7 @@ def cut_bytes_to_str(buff):
     buff_len = len(buff)
     for index in range(0, buff_len, 2):
         if buff[index : index+2] == b'\x00\x00':
-            return buff[:index].decode(CODING_PAGE)    
+            return buff[:index].decode(CODING_PAGE_CBR)    
     
 #-----------------------------------------------------#
 class CbrBuffDecoder(object):
@@ -167,14 +170,19 @@ def __read_steps(buff_decoder, game, parent_move, board):
 #-----------------------------------------------------#
 def read_from_cbr_buffer(contents):
 
-    bmagic, _i1, btitle, _i2, move_side, _i3, boards, _i4 = struct.unpack("<16s164s128s1804sB7s90s4s", contents[:2214])
+    magic, _is1, title, _is2, tournament, _is3, red, _is_red, black, _is_black, game_result, _is4, move_side, _is5, boards, _is6\
+                = struct.unpack("<16s164s128s384s64s320s64s160s64s712sB35sB7s90si", contents[:2214])
     
-    if bmagic != b"CCBridge Record\x00":  
+    if magic != b"CCBridge Record\x00":  
         return None
 
     game_info = {}
     game_info["source"] = "CBR"
-    game_info['title'] =  cut_bytes_to_str(btitle)
+    game_info['title'] =  cut_bytes_to_str(title)
+    game_info['tournament'] = cut_bytes_to_str(tournament) 
+    game_info['red'] = cut_bytes_to_str(red)
+    game_info['black'] = cut_bytes_to_str(black)
+    game_info['result'] = result_dict[game_result]
     
     board = ChessBoard()
     if move_side == 1:    
@@ -188,9 +196,7 @@ def read_from_cbr_buffer(contents):
             if v in piece_dict:
                 board.put_fench(piece_dict[v], (x, y))
     
-    #board.print_board()
-    
-    buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE)
+    buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
     game_annotation = __read_init_info(buff_decoder)
     
     game = Game(board, game_annotation)

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import struct
-from .read_cbr import read_from_cbr_buffer, CODING_PAGE 
+from .read_cbr import read_from_cbr_buffer, cut_bytes_to_str # CODING_PAGE_CBR 
 
 
 #-----------------------------------------------------#
@@ -26,15 +26,13 @@ def read_from_cbl(file_name):
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    bmagic, _i1, book_count, blib = struct.unpack("<16s44si512s",  contents[:576])
+    magic, _i1, book_count, lib_name = struct.unpack("<16s44si512s",  contents[:576])
     
-    if bmagic != b'CCBridgeLibrary\x00':  
+    if magic != b'CCBridgeLibrary\x00':  
         return None
     
-    lib_info = {}    
-    lib_name = blib.decode(CODING_PAGE)
-    
-    lib_info['name'] = lib_name
+    lib_info = {}     
+    lib_info['name'] = cut_bytes_to_str(lib_name)
     lib_info['games'] = []
     
     index = 101952
@@ -42,11 +40,12 @@ def read_from_cbl(file_name):
     while index < len(contents):
         book_buffer = contents[index:]
         game = read_from_cbr_buffer(book_buffer)
+        game.info['index'] = count
         lib_info['games'].append(game)
         count += 1
         index += 4096
-        print(count+1, game.info['title'])
-        
-    return lib_info
+        #print(count, game.info)
+        #print(game.dump_iccs_moves())
     
-#read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')
+    return lib_info
+   
