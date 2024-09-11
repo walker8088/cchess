@@ -337,7 +337,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
 
     if ucTitleLen > 0:
         try:
-            game_info["name"] = szTitle[:ucTitleLen].decode("GB18030")
+            game_info["title"] = szTitle[:ucTitleLen].decode("GB18030")
         except Exception:
             pass
 

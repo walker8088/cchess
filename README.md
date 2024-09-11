@@ -71,8 +71,18 @@ print(board.no_moves())    #True
 
 ##读取xqf文件, 显示棋谱
 ```
-#8.读取xqf文件, 显示棋谱
-game = read_from_xqf("WildHouse.xqf")
+game = Game.read_from("WildHouse.xqf")
+game.init_board.print_board()
+board_strs = game.init_board.text_view()
+print()
+for s in board_strs:
+    print(s)
+    
+game.print_text_moves()
+```
+##读取cbr文件, 显示棋谱
+```
+game = Game.read_from("WildHouse.cbr")
 game.init_board.print_board()
 board_strs = game.init_board.text_view()
 print()
@@ -82,8 +92,19 @@ for s in board_strs:
 game.print_text_moves()
 ```
 
-以上参见demo/demo_base.py
+##读取cbl文件, 显示所有棋谱
+```
+lib = Game.read_from_lib("WildHouse.cbl")
+for game in lib['games']:
+    game.init_board.print_board()
+    board_strs = game.init_board.text_view()
+    print()
+    for s in board_strs:
+        print(s)
+        
+    game.print_text_moves()
+```
 
 ##加载引擎进行对弈
 
-参见demo/end_game.py
+参见demo/end_game_master.py

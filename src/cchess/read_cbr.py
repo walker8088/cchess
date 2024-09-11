@@ -186,7 +186,7 @@ def read_from_cbr_buffer(contents):
     game_info = {}
     game_info["source"] = "CBR"
     game_info['title'] =  cut_bytes_to_str(title)
-    game_info['tournament'] = cut_bytes_to_str(tournament) 
+    game_info['event'] = cut_bytes_to_str(tournament) 
     game_info['red'] = cut_bytes_to_str(red)
     game_info['black'] = cut_bytes_to_str(black)
     game_info['result'] = result_dict[game_result]
