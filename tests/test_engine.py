@@ -21,7 +21,8 @@ import time
 from pathlib import Path
 import logging
 
-from cchess import EngineStatus, UcciEngine, UciEngine, Game, ChessBoard, ChessPlayer, RED, BLACK, iccs2pos, pos2iccs
+import cchess
+from cchess import EngineStatus, UcciEngine, UciEngine, Game, ChessBoard, ChessPlayer, iccs2pos, pos2iccs
 
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
@@ -70,7 +71,7 @@ class TestUcci():
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = Game.read_from(Path('data', 'ucci_test1.xqf'))
-        game.init_board.move_player = ChessPlayer(RED)
+        game.init_board.move_player = ChessPlayer(cchess.RED)
 
         assert game.init_board.to_fen() == fen
         assert game.info['result'] == result
@@ -88,7 +89,7 @@ class TestUcci():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    print(output)
+                    #print(output)
                     p_from, p_to = iccs2pos(output["move"])
                     move_txt = board.move(p_from, p_to).to_text()
                     print(move_txt)
@@ -98,7 +99,7 @@ class TestUcci():
                     break
                 elif action == 'dead':
                     print(output)
-                    if board.move_player == RED:
+                    if board.move_player == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -119,10 +120,6 @@ class TestUci():
         os.chdir(os.path.dirname(__file__))
         self.engine = UciEngine()
         
-    def teardown_method(self):
-        pass
-
-    def test_uci(self):
         ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish.exe")
         assert ret is True
     
@@ -133,6 +130,11 @@ class TestUci():
                 break
                 
         assert self.engine.engine_status == EngineStatus.READY
+        
+    def teardown_method(self):
+        pass
+
+    def test_uci_endgame(self):
         
         fen, moves, result = load_iccs_txt(Path("data", "uci_test_move.txt"))
         #print(moves)
@@ -158,10 +160,13 @@ class TestUci():
                     last_player = board.move_player
                     board.next_turn()
                     break
+                elif action == 'info_move':
+                    print(output)
+                    
                 elif action == 'dead':
                     print(output)
                    
-                    if board.move_player == RED:
+                    if board.move_player == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result  == S_RED_WIN
@@ -172,7 +177,33 @@ class TestUci():
                     break
                 
             self.engine.stop_thinking()
-            
+
+    def test_uci_game(self):
+        
+        board = ChessBoard(cchess.FULL_INIT_FEN)
+
+        #self.engine.go_from(board.to_fen(), {'depth': 15})
+        steps = 1
+        while steps < 10:
+            self.engine.go_from(board.to_fen(), {'depth': 15})
+            while True:
+                self.engine.handle_msg_once()
+                if self.engine.move_queue.empty():
+                    time.sleep(0.2)
+                    continue
+                output = self.engine.move_queue.get()
+                #print(output)
+                action = output['action']
+                if action == 'bestmove':
+                    steps += 1
+                    print(output)
+                    p_from, p_to = iccs2pos(output["move"])
+                    move = board.move(p_from, p_to)
+                    print(move.to_text()) 
+                    board.next_turn()
+                    break
+            self.engine.stop_thinking()
+        
         self.engine.quit()
 
         time.sleep(0.5)

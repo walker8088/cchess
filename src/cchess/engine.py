@@ -15,8 +15,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
 import os
+import re  
 import time
 import enum
 import logging
@@ -24,9 +24,48 @@ import subprocess
 from pathlib import Path
 from threading import Thread
 from queue import Queue, Empty
+  
 
 #-----------------------------------------------------#
 logger = logging.getLogger(__name__)
+
+  
+#-----------------------------------------------------#
+def parse_engine_info_to_dict(s):  
+    result = {}  
+    current_key = None  
+    for part in s.split():  
+        if current_key is None and part != 'score': #, 'lowerbound', 'higherbound']:  
+            current_key = part  
+    
+        elif current_key is not None and part == 'score':  
+            current_key
+            continue  
+        
+        elif current_key is not None:  
+            result[current_key] = part  
+            current_key = None  
+      
+    # 注意：这个简单的实现没有处理'cp'后面没有值的情况，或者字符串格式不正确的情况  
+    # 在实际应用中，你可能需要添加更多的错误检查和处理逻辑  
+  
+    # 由于'cp'后面通常跟着值，但在这个例子中我们将其视为值的一部分，  
+    # 所以我们不需要对'cp'进行特殊处理（除了上面的跳过逻辑）  
+    # 但是，如果'cp'后面没有值，或者格式经常变化，你可能需要更复杂的逻辑  
+  
+    # 示例中'cp'已经隐含地作为'score'值的一部分处理了，所以不需要额外操作  
+    # 但如果'cp'应该作为一个独立的键或标记存在，你需要调整逻辑来适应  
+  
+    # 返回结果  
+    return result  
+  
+# 示例字符串  
+#s = "depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5"  
+# 调用函数并打印结果  
+# 注意：这个实现不会将'cp'作为独立的键，而是将其视为'score'值的一部分  
+#result = parse_special_string_to_dict(s)  
+# 由于'cp'被视为'score'值的一部分，这里我们不会直接看到'cp'，但'-58'将是'score'的值  
+#print(result)  # 输出可能不包括'cp'作为独立键，但'score'的值将是'-58'
 
 #-----------------------------------------------------#
 #Engine status
@@ -120,40 +159,26 @@ class Engine(Thread):
                     move_info["action"] = 'draw'
                 else:
                     move_info["action"] = 'bestmove'
-                    move_info['move'] = out_list[1]
-
+                    resp_dict = parse_engine_info_to_dict(output)
+                    move_info['move'] = resp_dict.pop('bestmove')
+                    move_info.update(resp_dict)
+                    
             elif resp_id == 'info' and out_list[1] == "depth":
                 #info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
                 #info depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
+               
                 move_info['action'] = 'info_move'
-                info_list = out_list[1:]
-
-                if len(info_list) < 5:
-                    return False
-
-                depth_index = info_list.index('depth')
-                if depth_index >= 0:
-                    move_info['depth'] = info_list[depth_index + 1]
-
-                score_index = info_list.index('score')
-                if score_index >= 0:
-                    score_type = info_list[score_index + 1]
-                    if score_type == 'cp':
-                        move_info['score'] = int(info_list[score_index + 2])
-                    elif score_type == 'mate':
-                        mate_steps = int(info_list[score_index + 2])
-                        move_info['mate'] = mate_steps
-                        #move_info['score'] = 9999 if mate_steps > 0 else -9999
-                    elif score_type == 'lowerbound':
-                        move_info['score'] = int(info_list[score_index + 2])
-                    elif score_type == 'upperbound':
-                        move_info['score'] = int(info_list[score_index + 2])
-
                 move_info["move"] = []
-                if 'pv' in info_list:
-                    pv_index = info_list.index('pv')
-                    move_info["move"] = info_list[pv_index + 1:]
-
+                
+                pv_index = output.find(' pv ')
+                if pv_index > 0:
+                    move_info["move"] = output[pv_index+4:].split(' ')
+                
+                resp_dict = parse_engine_info_to_dict(output[5:pv_index+1])
+                if 'cp' in resp_dict:
+                    move_info['score'] = resp_dict.pop('cp')
+                move_info.update(resp_dict)
+                
         if len(move_info) > 0:
             self.move_queue.put(move_info)
         
