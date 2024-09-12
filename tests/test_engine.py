@@ -78,7 +78,7 @@ class TestUcci():
 
         dead = False
         while not dead:
-            self.engine.go_from(board.to_fen(), {'depth': 5})
+            self.engine.go_from(board.to_fen(), {'depth': 2})
             while True:
                 self.engine.handle_msg_once()
                 if self.engine.move_queue.empty():
@@ -88,6 +88,7 @@ class TestUcci():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
+                    print(output)
                     p_from, p_to = iccs2pos(output["move"])
                     move_txt = board.move(p_from, p_to).to_text()
                     print(move_txt)
@@ -96,6 +97,7 @@ class TestUcci():
                     board.next_turn()
                     break
                 elif action == 'dead':
+                    print(output)
                     if board.move_player == RED:
                         assert result == S_BLACK_WIN
                     else:
@@ -157,6 +159,8 @@ class TestUci():
                     board.next_turn()
                     break
                 elif action == 'dead':
+                    print(output)
+                   
                     if board.move_player == RED:
                         assert result == S_BLACK_WIN
                     else:
