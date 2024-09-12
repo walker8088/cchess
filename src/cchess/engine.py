@@ -69,39 +69,44 @@ class Engine(Thread):
 
         while self.running:
             self.run_once()
-            
+    
+    #run_once 在线程中运行        
     def run_once(self):
+        #readline 会阻塞
         output = self.pout.readline().strip()
         if len(output) > 0:
             self.engine_out_queque.put(output)
-            
+    
+    #handle_msg_once 在前台运行        
     def handle_msg_once(self):
+        
         try:
             output = self.engine_out_queque.get_nowait()
         except Empty:
-            return
+            return False
 
         logger.debug(f"<-- {output}")
 
         if output in ['bye', '']:  #stop pipe
             self.process.terminate()
-            return
+            return True
 
         out_list = output.split()
         resp_id = out_list[0]
 
         move_info = {}
 
-        if self.enging_status == EngineStatus.BOOTING:
+        if self.engine_status == EngineStatus.BOOTING:
             if resp_id == "id":
                 self.ids[out_list[1]] = ' '.join(out_list[2:])
             elif resp_id == "option":
                 self.options.append(output)
             if resp_id == self.ok_resp():
-                self.enging_status = EngineStatus.READY
+                #print("GOT", resp_id)
+                self.engine_status = EngineStatus.READY
                 move_info["action"] = 'ready'
 
-        elif self.enging_status == EngineStatus.READY:
+        elif self.engine_status == EngineStatus.READY:
             move_info["fen_engine"] = self.last_fen
             move_info['raw_msg'] = output
             move_info["action"] = 'info'
@@ -151,7 +156,9 @@ class Engine(Thread):
 
         if len(move_info) > 0:
             self.move_queue.put(move_info)
-
+        
+        return True
+        
     def load(self, engine_path):
 
         self.engine_exec_path = engine_path
@@ -170,6 +177,7 @@ class Engine(Thread):
                                              text=True)
         except Exception as e:
             logger.warning(f"load engine {engine_path} ERROR: {e}")
+            self.engine_status = EngineStatus.ERROR
             return False
 
         time.sleep(0.5)
@@ -178,40 +186,37 @@ class Engine(Thread):
         self.pout = self.process.stdout
         self.perr = self.process.stderr
         self.engine_out_queque = Queue()
-        self.enging_status = EngineStatus.BOOTING
+        self.engine_status = EngineStatus.BOOTING
 
         #self._send_cmd('test')
         
         if not self._send_cmd(self.init_cmd()):
-            self.enging_status = EngineStatus.ERROR
+            self.engine_status = EngineStatus.ERROR
             return False
 
         self.start()
 
-        #while self.enging_status == EngineStatus.BOOTING:
+        #while self.engine_status == EngineStatus.BOOTING:
         #    self.handle_msg_once()
 
         return True
 
     def quit(self):
-
         self._send_cmd("quit")
         time.sleep(0.2)
 
     def stop_thinking(self):
         self._send_cmd('stop')
-
-    def go_from(self, fen, params={}):
-        #pass all output msg first
-        self._send_cmd('stop')
-        time.sleep(0.1)
         
-        while True:
-            try:
-                _ = self.engine_out_queque.get_nowait()
-            except Empty:
-                break
-
+        time.sleep(0.1)
+        self.handle_msg_once()
+        time.sleep(0.1)
+        self.handle_msg_once()
+        time.sleep(0.1)
+        self.handle_msg_once()
+        
+    def go_from(self, fen, params={}):
+        
         self._send_cmd(f'position fen {fen}')
         param_list = [f"{key} {value}" for key, value in params.items()]
         go_cmd = "go " + ' '.join(param_list)

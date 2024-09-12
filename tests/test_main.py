@@ -30,7 +30,7 @@ class TestReaderXQF():
         pass
     
     def test_main_entry(self):
-        testargs = ["-r data\\test.cbf"]
+        testargs = ["-r .\\data\\test.cbf"]
         with patch.object(sys, 'argv', testargs):
             rt_main.main()
             
