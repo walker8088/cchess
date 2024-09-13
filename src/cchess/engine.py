@@ -15,8 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-import os
-import re  
+import os 
 import time
 import enum
 import logging
@@ -33,39 +32,29 @@ logger = logging.getLogger(__name__)
 #-----------------------------------------------------#
 def parse_engine_info_to_dict(s):  
     result = {}  
-    current_key = None  
-    for part in s.split():  
-        if current_key is None and part != 'score': #, 'lowerbound', 'higherbound']:  
-            current_key = part  
-    
-        elif current_key is not None and part == 'score':  
-            current_key
-            continue  
-        
-        elif current_key is not None:  
-            result[current_key] = part  
-            current_key = None  
-      
-    # 注意：这个简单的实现没有处理'cp'后面没有值的情况，或者字符串格式不正确的情况  
-    # 在实际应用中，你可能需要添加更多的错误检查和处理逻辑  
-  
-    # 由于'cp'后面通常跟着值，但在这个例子中我们将其视为值的一部分，  
-    # 所以我们不需要对'cp'进行特殊处理（除了上面的跳过逻辑）  
-    # 但是，如果'cp'后面没有值，或者格式经常变化，你可能需要更复杂的逻辑  
-  
-    # 示例中'cp'已经隐含地作为'score'值的一部分处理了，所以不需要额外操作  
-    # 但如果'cp'应该作为一个独立的键或标记存在，你需要调整逻辑来适应  
-  
-    # 返回结果  
+    current_key = None
+    info = s.split()
+    for index, part in enumerate(info): 
+        if part in ['info','cp']: #略过这两个关键字,不影响分析结果
+            continue
+        elif part == 'pv': ##遇到pv就是到尾了，剩下的都是招法
+            result['moves'] = info[index+1:]
+            break
+            
+        if current_key is None: #TODO, 'lowerbound', 'higherbound']:  
+            current_key = part
+            #替换key
+            if current_key == 'bestmove':
+                current_key = 'move'
+        else:    
+            if part == 'mate': # score mate 这样的字符串，后滑一个关键字 
+                current_key = part
+                continue  
+            else:
+                result[current_key] = part  
+                current_key = None  
+
     return result  
-  
-# 示例字符串  
-#s = "depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5"  
-# 调用函数并打印结果  
-# 注意：这个实现不会将'cp'作为独立的键，而是将其视为'score'值的一部分  
-#result = parse_special_string_to_dict(s)  
-# 由于'cp'被视为'score'值的一部分，这里我们不会直接看到'cp'，但'-58'将是'score'的值  
-#print(result)  # 输出可能不包括'cp'作为独立键，但'score'的值将是'-58'
 
 #-----------------------------------------------------#
 #Engine status
@@ -102,88 +91,6 @@ class Engine(Thread):
     def init_cmd(self):
         return ""
     
-    def run(self):
-
-        self.running = True
-
-        while self.running:
-            self.run_once()
-    
-    #run_once 在线程中运行        
-    def run_once(self):
-        #readline 会阻塞
-        output = self.pout.readline().strip()
-        if len(output) > 0:
-            self.engine_out_queque.put(output)
-    
-    #handle_msg_once 在前台运行        
-    def handle_msg_once(self):
-        
-        try:
-            output = self.engine_out_queque.get_nowait()
-        except Empty:
-            return False
-
-        logger.debug(f"<-- {output}")
-
-        if output in ['bye', '']:  #stop pipe
-            self.process.terminate()
-            return True
-
-        out_list = output.split()
-        resp_id = out_list[0]
-
-        move_info = {}
-
-        if self.engine_status == EngineStatus.BOOTING:
-            if resp_id == "id":
-                self.ids[out_list[1]] = ' '.join(out_list[2:])
-            elif resp_id == "option":
-                self.options.append(output)
-            if resp_id == self.ok_resp():
-                #print("GOT", resp_id)
-                self.engine_status = EngineStatus.READY
-                move_info["action"] = 'ready'
-
-        elif self.engine_status == EngineStatus.READY:
-            move_info["fen_engine"] = self.last_fen
-            move_info['raw_msg'] = output
-            move_info["action"] = 'info'
-
-            if resp_id == 'nobestmove':
-                move_info["action"] = 'dead'
-            elif resp_id == 'bestmove':
-                if out_list[1] in ['null', 'resign', '(none)']:
-                    move_info["action"] = 'dead'
-                elif out_list[1] == 'draw':
-                    move_info["action"] = 'draw'
-                else:
-                    move_info["action"] = 'bestmove'
-                    resp_dict = parse_engine_info_to_dict(output)
-                    move_info['move'] = resp_dict.pop('bestmove')
-                    move_info.update(resp_dict)
-                    
-            elif resp_id == 'info' and out_list[1] == "depth":
-                #info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
-                #info depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
-               
-                move_info['action'] = 'info_move'
-                move_info["move"] = []
-                
-                pv_index = output.find(' pv ')
-                if pv_index > 0:
-                    move_info["move"] = output[pv_index+4:].split(' ')
-                
-                resp_dict = parse_engine_info_to_dict(output[5:pv_index+1])
-                if 'cp' in resp_dict:
-                    move_info['score'] = resp_dict.pop('cp')
-                move_info.update(resp_dict)
-                
-        if len(move_info) > 0:
-            self.move_queue.put(move_info)
-        
-        return True
-        
     def load(self, engine_path):
 
         self.engine_exec_path = engine_path
@@ -226,6 +133,100 @@ class Engine(Thread):
 
         return True
 
+    
+    def run(self):
+
+        self.running = True
+
+        while self.running:
+            self.run_once()
+    
+    #run_once 在线程中运行        
+    def run_once(self):
+        #readline 会阻塞
+        output = self.pout.readline().strip()
+        if len(output) > 0:
+            self.engine_out_queque.put(output)
+    
+    #handle_msg_once 在前台运行        
+    def handle_msg_once(self):
+        
+        try:
+            output = self.engine_out_queque.get_nowait()
+        except Empty:
+            return False
+
+        logger.debug(f"<-- {output}")
+
+        if output in ['bye', '']:  #stop pipe
+            self.process.terminate()
+            return True
+
+        out_list = output.split()
+        resp_id = out_list[0]
+
+        move_info = {}
+
+        if self.engine_status == EngineStatus.BOOTING:
+            if resp_id == "id":
+                self.ids[out_list[1]] = ' '.join(out_list[2:])
+            elif resp_id == "option":
+                self.options.append(output)
+            if resp_id == self.ok_resp():
+                self.engine_status = EngineStatus.READY
+                move_info["action"] = 'ready'
+
+        elif self.engine_status == EngineStatus.READY:
+            move_info["fen_engine"] = self.last_fen
+            move_info['raw_msg'] = output
+            move_info["action"] = 'info'
+
+            if resp_id == 'nobestmove':
+                move_info["action"] = 'dead'
+            elif resp_id == 'bestmove':
+                if out_list[1] in ['null', 'resign', '(none)']:
+                    move_info["action"] = 'dead'
+                elif out_list[1] == 'draw':
+                    move_info["action"] = 'draw'
+                else:
+                    move_info["action"] = 'bestmove'
+                    resp_dict = parse_engine_info_to_dict(output)
+                    move_info.update(resp_dict)
+                    move_key = move_info['move']
+                    if move_key in self.score_dict:
+                        for key in ['score', 'mate', 'moves', 'seldepth', 'time']:
+                            if key in self.score_dict[move_key]:
+                                move_info[key] = self.score_dict[move_key][key]
+                        
+            elif resp_id == 'info' and out_list[1] == "depth":
+                #info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
+                #info depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
+               
+                move_info['action'] = 'info_move'
+                resp_dict = parse_engine_info_to_dict(output)               
+                move_info.update(resp_dict)
+                if 'moves' in move_info:
+                    move_key = move_info['moves'][0]
+                    self.score_dict[move_key] = move_info
+                    
+        if len(move_info) > 0:
+            self.move_queue.put(move_info)
+        
+        return True
+    
+    def wait_for_ready(self, timeout = 10):
+    
+        start_time = time.time()
+        
+        while True:
+            self.handle_msg_once()
+            if self.engine_status == EngineStatus.READY:
+                return True
+                
+            if time.time() - start_time > timeout:
+                return False
+            time.sleep(0.2)
+            
     def quit(self):
         self._send_cmd("quit")
         time.sleep(0.2)
@@ -252,6 +253,7 @@ class Engine(Thread):
             
         self.last_fen = fen
         self.last_go = go_cmd
+        self.score_dict = {}
         
         return True
         

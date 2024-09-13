@@ -19,6 +19,7 @@ import pathlib
 import datetime as dt
 
 from .common import FULL_INIT_FEN
+from .board import ChessBoard
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)

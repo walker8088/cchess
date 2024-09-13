@@ -1,6 +1,7 @@
-import os
+
 import sys
 import argparse
+import pathlib
 
 from .game import Game
 
@@ -8,7 +9,7 @@ def print_game(game):
     
     print('\n=====================================')
     print(game.info)
-    ame.print_init_board()
+    game.print_init_board()
     print('-------------------------------------')
     if game.annote:
         print(game.annote)

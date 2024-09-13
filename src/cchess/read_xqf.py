@@ -283,8 +283,6 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 
 #-----------------------------------------------------#
 def read_from_xqf(full_file_name, read_annotation=True):
-    #避免循环导入
-    from .game import Game
     
     with open(full_file_name, "rb") as f:
         contents = f.read()

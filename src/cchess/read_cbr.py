@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import sys
 import struct
 
 from .exception import CChessException
@@ -256,13 +255,13 @@ def read_from_cbl(file_name):
         book_buffer = contents[index:]
         try:
             game = read_from_cbr_buffer(book_buffer)
-            game.info['index'] = game_index
-            lib_info['games'].append(game)
-            game_index += 1
-            #print(game.info)
+            if game is not None:
+                game.info['index'] = game_index
+                lib_info['games'].append(game)
+                game_index += 1
         except Exception as e:
-            #print(file_name, count, index, len(contents), e)
-            pass
+            raise Exception(f'{count}, {index}, {len(contents)}, {e}')
+            
         count += 1
         index += 4096
         #print(count, game.info)

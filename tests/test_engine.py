@@ -60,13 +60,7 @@ class TestUcci():
         assert self.engine.load("eleeye") is False 
 
         assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe") is True
-        
-        for i in range(30):
-            self.engine.handle_msg_once()
-            time.sleep(0.2)
-            if self.engine.engine_status == EngineStatus.READY:
-                break
-                
+        self.engine.wait_for_ready()
         assert self.engine.engine_status == EngineStatus.READY
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
@@ -89,7 +83,7 @@ class TestUcci():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    #print(output)
+                    print(output)
                     p_from, p_to = iccs2pos(output["move"])
                     move_txt = board.move(p_from, p_to).to_text()
                     print(move_txt)
@@ -98,7 +92,7 @@ class TestUcci():
                     board.next_turn()
                     break
                 elif action == 'dead':
-                    print(output)
+                    #print(output)
                     if board.move_player == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
@@ -122,13 +116,7 @@ class TestUci():
         
         ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish.exe")
         assert ret is True
-    
-        for i in range(30):
-            self.engine.handle_msg_once()
-            time.sleep(0.2)
-            if self.engine.engine_status == EngineStatus.READY:
-                break
-                
+        self.engine.wait_for_ready()
         assert self.engine.engine_status == EngineStatus.READY
         
     def teardown_method(self):
@@ -161,10 +149,11 @@ class TestUci():
                     board.next_turn()
                     break
                 elif action == 'info_move':
-                    print(output)
+                    #print(output)
+                    pass
                     
                 elif action == 'dead':
-                    print(output)
+                    #print(output)
                    
                     if board.move_player == cchess.RED:
                         assert result == S_BLACK_WIN
@@ -202,6 +191,10 @@ class TestUci():
                     print(move.to_text()) 
                     board.next_turn()
                     break
+                elif action == 'info_move':
+                    #print(output)
+                    pass
+                    
             self.engine.stop_thinking()
         
         self.engine.quit()
