@@ -75,12 +75,10 @@ class TestUcci():
         while not dead:
             self.engine.go_from(board.to_fen(), {'depth': 2})
             while True:
-                self.engine.handle_msg_once()
-                if self.engine.move_queue.empty():
+                output = self.engine.get_action()
+                if output is None:
                     time.sleep(0.2)
                     continue
-                output = self.engine.move_queue.get()
-                #print(output)
                 action = output['action']
                 if action == 'bestmove':
                     print(output)
@@ -132,11 +130,10 @@ class TestUci():
         while not dead:
             self.engine.go_from(board.to_fen(), {'depth': 15})
             while True:
-                self.engine.handle_msg_once()
-                if self.engine.move_queue.empty():
+                output = self.engine.get_action()
+                if output is None:
                     time.sleep(0.2)
                     continue
-                output = self.engine.move_queue.get()
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
@@ -176,12 +173,10 @@ class TestUci():
         while steps < 10:
             self.engine.go_from(board.to_fen(), {'depth': 15})
             while True:
-                self.engine.handle_msg_once()
-                if self.engine.move_queue.empty():
+                output = self.engine.get_action()
+                if output is None:
                     time.sleep(0.2)
                     continue
-                output = self.engine.move_queue.get()
-                #print(output)
                 action = output['action']
                 if action == 'bestmove':
                     steps += 1

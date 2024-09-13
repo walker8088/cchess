@@ -120,19 +120,64 @@ class Engine(Thread):
         self.engine_out_queque = Queue()
         self.engine_status = EngineStatus.BOOTING
 
-        #self._send_cmd('test')
-        
         if not self._send_cmd(self.init_cmd()):
             self.engine_status = EngineStatus.ERROR
             return False
 
         self.start()
-
-        #while self.engine_status == EngineStatus.BOOTING:
-        #    self.handle_msg_once()
-
+        
         return True
 
+    def go_from(self, fen, params={}):
+        
+        self._send_cmd(f'position fen {fen}')
+        param_list = [f"{key} {value}" for key, value in params.items()]
+        go_cmd = "go " + ' '.join(param_list)
+        
+        ok = self._send_cmd(go_cmd)
+        if not ok:
+            return False
+            
+        self.last_fen = fen
+        self.last_go = go_cmd
+        self.score_dict = {}
+        
+        return True
+
+    def get_action(self):
+        self._handle_msg_once()
+        if self.move_queue.empty():
+            return None           
+        return self.move_queue.get()
+                
+    def set_option(self, name, value):
+        cmd = f'setoption name {name} value {value}'
+        self._send_cmd(cmd)
+    
+    def wait_for_ready(self, timeout = 10):
+        start_time = time.time()
+        while True:
+            self._handle_msg_once()
+            if self.engine_status == EngineStatus.READY:
+                return True
+                
+            if time.time() - start_time > timeout:
+                return False
+            time.sleep(0.2)
+            
+    def quit(self):
+        self._send_cmd("quit")
+        time.sleep(0.2)
+
+    def stop_thinking(self):
+        self._send_cmd('stop')
+        
+        time.sleep(0.1)
+        self.get_action()
+        time.sleep(0.1)
+        self.get_action()
+        time.sleep(0.1)
+        self.get_action()
     
     def run(self):
 
@@ -149,7 +194,7 @@ class Engine(Thread):
             self.engine_out_queque.put(output)
     
     #handle_msg_once 在前台运行        
-    def handle_msg_once(self):
+    def _handle_msg_once(self):
         
         try:
             output = self.engine_out_queque.get_nowait()
@@ -213,54 +258,7 @@ class Engine(Thread):
             self.move_queue.put(move_info)
         
         return True
-    
-    def wait_for_ready(self, timeout = 10):
-    
-        start_time = time.time()
         
-        while True:
-            self.handle_msg_once()
-            if self.engine_status == EngineStatus.READY:
-                return True
-                
-            if time.time() - start_time > timeout:
-                return False
-            time.sleep(0.2)
-            
-    def quit(self):
-        self._send_cmd("quit")
-        time.sleep(0.2)
-
-    def stop_thinking(self):
-        self._send_cmd('stop')
-        
-        time.sleep(0.1)
-        self.handle_msg_once()
-        time.sleep(0.1)
-        self.handle_msg_once()
-        time.sleep(0.1)
-        self.handle_msg_once()
-        
-    def go_from(self, fen, params={}):
-        
-        self._send_cmd(f'position fen {fen}')
-        param_list = [f"{key} {value}" for key, value in params.items()]
-        go_cmd = "go " + ' '.join(param_list)
-        
-        ok = self._send_cmd(go_cmd)
-        if not ok:
-            return False
-            
-        self.last_fen = fen
-        self.last_go = go_cmd
-        self.score_dict = {}
-        
-        return True
-        
-    def set_option(self, name, value):
-        cmd = f'setoption name {name} value {value}'
-        self._send_cmd(cmd)
-
     def _send_cmd(self, cmd_str):
 
         logger.debug(f"--> {cmd_str}")

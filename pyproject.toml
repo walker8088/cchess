@@ -5,7 +5,7 @@ version = "1.24.4"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
 license = "LGPL3"
-readme = "README.rst"
+readme = "README.md"
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 
 [project]

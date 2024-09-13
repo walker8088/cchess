@@ -268,9 +268,8 @@ class GameTable():
         has_move = False
         engine = self.engine[self.board.get_move_color()]
         if engine:
-            engine.handle_msg_once()
-            if not engine.move_queue.empty():
-                output = engine.move_queue.get()
+            output = engine.get_action()
+            if output is not None:
                 action = output['action']
                 if action == 'bestmove':
                     iccs = output["move"]
@@ -286,7 +285,7 @@ class GameTable():
                 elif action in ['dead', 'draw', 'resign']:
                     print(action, self.board.get_move_color())
                     dead = True
-                    
+                        
         self.clock.tick(30)
 
         for event in pygame.event.get():
@@ -367,11 +366,7 @@ if __name__ == '__main__':
         sys.exit(-1)
     '''
     
-    for i in range(30):
-        engine.handle_msg_once()
-        time.sleep(0.3)
-    
-    print(engine.engine_status)
+    engine.wait_for_ready()
     
     table = GameTable()
 
