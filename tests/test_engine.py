@@ -60,7 +60,7 @@ class TestUcci():
         assert self.engine.load("eleeye") is False 
 
         assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe") is True
-        self.engine.wait_for_ready()
+        assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
         
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
@@ -114,7 +114,7 @@ class TestUci():
         
         ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish.exe")
         assert ret is True
-        self.engine.wait_for_ready()
+        assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
         
     def teardown_method(self):

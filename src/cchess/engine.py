@@ -30,6 +30,14 @@ logger = logging.getLogger(__name__)
 
   
 #-----------------------------------------------------#
+def is_int(s):
+    if s.isdigit():
+        return True
+    if s[0] == '-':
+        if s[1:].isdigit():
+            return True
+    return False
+    
 def parse_engine_info_to_dict(s):  
     result = {}  
     current_key = None
@@ -51,7 +59,10 @@ def parse_engine_info_to_dict(s):
                 current_key = part
                 continue  
             else:
-                result[current_key] = part  
+                if is_int(part):
+                    result[current_key] = int(part)  
+                else:
+                    result[current_key] = part  
                 current_key = None  
 
     return result  
@@ -155,7 +166,9 @@ class Engine(Thread):
         self._send_cmd(cmd)
     
     def wait_for_ready(self, timeout = 10):
+        
         start_time = time.time()
+        
         while True:
             self._handle_msg_once()
             if self.engine_status == EngineStatus.READY:
@@ -164,7 +177,9 @@ class Engine(Thread):
             if time.time() - start_time > timeout:
                 return False
             time.sleep(0.2)
-            
+        
+        return False
+        
     def quit(self):
         self._send_cmd("quit")
         time.sleep(0.2)
