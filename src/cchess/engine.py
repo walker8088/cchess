@@ -18,17 +18,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os 
 import time
 import enum
+import json
 import logging
 import subprocess
 from pathlib import Path
 from threading import Thread
 from queue import Queue, Empty
-  
+ 
+from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED, BLACK
 
+from .game import Game
+from .board import ChessBoard
+  
 #-----------------------------------------------------#
 logger = logging.getLogger(__name__)
 
-  
 #-----------------------------------------------------#
 def is_int(s):
     if s.isdigit():
@@ -43,13 +47,13 @@ def parse_engine_info_to_dict(s):
     current_key = None
     info = s.split()
     for index, part in enumerate(info): 
-        if part in ['info','cp']: #略过这两个关键字,不影响分析结果
+        if part in ['info', 'cp', 'lowerbound', 'upperbound']: #略过这些关键字,不影响分析结果
             continue
         elif part == 'pv': ##遇到pv就是到尾了，剩下的都是招法
             result['moves'] = info[index+1:]
             break
             
-        if current_key is None: #TODO, 'lowerbound', 'higherbound']:  
+        if current_key is None:  
             current_key = part
             #替换key
             if current_key == 'bestmove':
@@ -186,14 +190,11 @@ class Engine(Thread):
 
     def stop_thinking(self):
         self._send_cmd('stop')
+        time.sleep(0.1)
+        self.get_action()
+        time.sleep(0.1)
+        self.get_action()
         
-        time.sleep(0.1)
-        self.get_action()
-        time.sleep(0.1)
-        self.get_action()
-        time.sleep(0.1)
-        self.get_action()
-    
     def run(self):
 
         self.running = True
@@ -261,13 +262,14 @@ class Engine(Thread):
             elif resp_id == 'info' and out_list[1] == "depth":
                 #info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
                 #info depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
-               
                 move_info['action'] = 'info_move'
                 resp_dict = parse_engine_info_to_dict(output)               
                 move_info.update(resp_dict)
                 if 'moves' in move_info:
                     move_key = move_info['moves'][0]
                     self.score_dict[move_key] = move_info
+                else:
+                    logger.info(move_info)
                     
         if len(move_info) > 0:
             self.move_queue.put(move_info)
@@ -304,3 +306,202 @@ class UciEngine(Engine):
 
     def ok_resp(self):
         return "uciok"
+
+#------------------------------------------------------------------------------
+def action_mirror(action):
+    for key in action:
+        if key in ['move', 'ponder']:
+            action[key] = iccs_mirror(action[key])
+        if key in ['moves']:
+            action[key] = iccs_list_mirror(action[key])
+
+
+#------------------------------------------------------------------------------
+class FenCache():
+    def __init__(self):
+        self.fen_dict = {}
+        self.cache_file = ''
+        self.need_save = False
+        
+    def get(self, fen):
+        if fen in self.fen_dict:
+            return (self.fen_dict[fen], '')
+        
+        f_mirror = fen_mirror(fen)
+        if f_mirror in self.fen_dict:
+            return (self.fen_dict[f_mirror], 'mirror')
+        
+        return (None, None)
+    
+    def get_best_action(self, fen):
+        move_color = get_move_color(fen)
+        
+        info, state = self.get(fen)
+        if info is None:
+            return None
+            
+        actions = [v for v in sorted(info.values(), key=lambda item: item['score'])]
+        
+        if move_color == RED:
+            act = actions[0]
+        else:
+            act = actions[-1]
+        
+        if state == 'mirror':
+            #print('mirror')
+            return action_mirror(act)        
+        
+        return act
+        
+    def save_action(self, fen, action):
+        
+        iccs = action['move']
+        if fen in self.fen_dict:
+            self.fen_dict[fen][iccs] = move
+            return True
+            
+        f_mirror = fen_mirror(fen)
+        i_mirror = iccs_mirror(iccs)
+        if f_mirror in self.fen_dict:    
+            self.fen_dict[f_mirror][i_mirror] = action
+            return True
+       
+        self.fen_dict[fen]= {}
+        self.fen_dict[fen][iccs] = action
+        self.need_save = True
+        
+        return True
+                        
+    def load(self, cache_file):
+        
+        if not Path(cache_file).is_file():
+            self.fen_dict = {}
+        else:   
+            with open(cache_file, 'r') as f:
+                self.fen_dict = json.load(f)
+        
+        self.cache_file = cache_file
+        self.need_save = False
+        
+    def save(self): 
+        with open(self.cache_file, 'w') as f:
+            json.dump(self.fen_dict, f)
+        self.need_save = False
+        
+#------------------------------------------------------------------------------
+class EngineManager():
+    def __init__(self, fen_cache = FenCache()):
+        self.engine = None
+        self.cache = fen_cache
+        
+    def load_uci(self, engine_exec, options, go_params):
+        self.engine = UciEngine()
+        return self._load(engine_exec, options, go_params)
+        
+    def load_ucci(self, engine_exec, options, go_params):
+        self.engine = UcciEngine()
+        return self._load(engine_exec, options, go_params)
+        
+    def _load(self, engine_exec, options, go_params):
+        
+        ret = self.engine.load(engine_exec)
+        assert ret is True
+        assert self.engine.wait_for_ready() is True
+        
+        #self.engine_options = options
+        for name, value in options.items():
+            self.engine.set_option(name, value)
+            
+        self.go_params = go_params
+         
+    def get_fen_score(self, fen):
+   
+        action = self.cache.get_best_action(fen)
+        if action:
+            return action
+            
+        board = ChessBoard(fen)   
+        self.engine.go_from(fen, self.go_params)
+        print('go:', fen, self.go_params)
+        while True:
+            action = self.engine.get_action()
+            
+            if action is None:
+                time.sleep(0.2)
+                continue
+                
+            action_id = action['action']
+            if action_id == 'info_move':
+                #print(action['raw_msg'])
+                pass
+            elif action_id in ['dead', 'draw']:
+                print(action['raw_msg'])
+                return action
+                
+            elif action_id == 'bestmove':
+                iccs = action["move"]
+                move = board.move_iccs(iccs)
+                if move is None:
+                    continue
+                    
+                result = {}
+                
+                board.next_turn()
+                fen_next = board.to_fen()
+                #action['move_text'] = move.to_text()
+                
+                #先处理本步的得分是下一步的负值
+                for key in ['score', 'mate']:
+                    if key in action:
+                        action[key] = -action[key]
+                        
+                #再处理出现mate时，score没分的情况
+                if 'score' not in action:
+                    mate = 1 if action['mate'] > 0 else -1
+                    action['score'] = 39999 * mate
+                
+                #最后处理分数都换算到红方得分的情况
+                #move_color = board.get_move_color()
+                #if move_color == BLACK:
+                #    for key in ['score', 'mate']:
+                #        if key in action:
+                #            action[key] = -action[key]
+                
+                #for key in ['raw_msg', 'fen_engine', 'action', 'moves']:
+                #    action.pop(key)
+
+                self.cache.save_action(fen, action)    
+                
+                return action
+                 
+        #self.engine.stop_thinking()
+    
+    def quit(self):
+        self.engine.quit()
+        time.sleep(0.5)
+
+    def get_game_file_score(self, file_name):
+        game = Game.read_from(file_name)
+        moves = game.dump_fen_iccs_moves() 
+        for branch, move_line in enumerate(moves):
+            print(f'{file_name} 分支:{branch+1}/{len(moves)}')
+            for index, (fen, iccs) in enumerate(move_line):
+                board = ChessBoard(fen)
+                move = board.move_iccs(iccs)
+                
+                if board.is_checkmate():
+                    print(index + 1, fen, move.to_text(), "将死")
+                    break
+                
+                board.next_turn()
+                new_fen = board.to_fen()
+                result = self.get_fen_score(new_fen)
+                
+                if 'mate' in result:
+                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'mate:', result['mate'], 'depth', result['seldepth'])
+                else:
+                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'depth', result['seldepth'])  
+                    #print(result)            
+        #self.cache.save()
+                        
+#-----------------------------------------------------#

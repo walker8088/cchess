@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+
 from collections import OrderedDict
 
 #-----------------------------------------------------#
@@ -57,6 +58,7 @@ _v_dict = {
     '9': '0'
 }
 
+#-----------------------------------------------------#
 def pos2iccs(p_from, p_to):
     return chr(ord('a') + p_from[0]) + str(
         p_from[1]) + chr(ord('a') + p_to[0]) + str(p_to[1])
@@ -76,7 +78,9 @@ def iccs_flip(iccs):
 
 def iccs_swap(iccs):
     return f'{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}'
-
+    
+def iccs_list_mirror(iccs_list):
+    return [iccs_mirror(x) for x in iccs_list]
 
 #-----------------------------------------------------#
 _fench_name_dict = {
@@ -150,6 +154,12 @@ def fench_to_species(fen_ch):
 def get_move_color(fen):
     color = fen.rstrip().split(' ' )[1].lower()
     return RED if color == 'w' else BLACK
+
+def fen_mirror(fen):
+    from .board import ChessBoard
+    
+    b = ChessBoard(fen)
+    return b.mirror().to_fen()
 
 #-----------------------------------------------------#
 p_count_dict = {

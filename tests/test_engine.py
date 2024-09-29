@@ -22,7 +22,7 @@ from pathlib import Path
 import logging
 
 import cchess
-from cchess import EngineStatus, UcciEngine, UciEngine, Game, ChessBoard, ChessPlayer, iccs2pos, pos2iccs
+from cchess import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache, Game, ChessBoard, ChessPlayer, iccs2pos, pos2iccs
 
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
@@ -82,8 +82,8 @@ class TestUcci():
                 action = output['action']
                 if action == 'bestmove':
                     print(output)
-                    p_from, p_to = iccs2pos(output["move"])
-                    move_txt = board.move(p_from, p_to).to_text()
+                    iccs = output["move"]
+                    move_txt = board.move_iccs(iccs).to_text()
                     print(move_txt)
                     assert move_txt == moves.pop(0)
                     last_player = board.move_player
@@ -138,8 +138,8 @@ class TestUci():
                 action = output['action']
                 if action == 'bestmove':
                     print(output)
-                    p_from, p_to = iccs2pos(output["move"])
-                    move = board.move(p_from, p_to)
+                    iccs = output["move"]
+                    move = board.move_iccs(iccs)
                     print(move.to_text()) 
                     assert move.to_iccs() == moves.pop(0)
                     last_player = board.move_player
@@ -181,8 +181,8 @@ class TestUci():
                 if action == 'bestmove':
                     steps += 1
                     print(output)
-                    p_from, p_to = iccs2pos(output["move"])
-                    move = board.move(p_from, p_to)
+                    iccs = output["move"]
+                    move = board.move_iccs(iccs)
                     print(move.to_text()) 
                     board.next_turn()
                     break
@@ -195,3 +195,18 @@ class TestUci():
         self.engine.quit()
 
         time.sleep(0.5)
+
+class TestEngineManager():
+    def setup_method(self):
+        os.chdir(os.path.dirname(__file__))
+        self.mgr = EngineManager()
+        
+    def teardown_method(self):
+        self.mgr.quit()
+
+    def test_game_score(self):
+        options ={'LU_Output': 'false', 'Threads ':'8', 'Hash ':'2000'}
+        
+        go_params = {'depth': 15}
+        self.mgr.load_uci("..\\Engine\\pikafish_230408\\pikafish.exe", options, go_params)
+        self.mgr.get_game_file_score(Path('data', '030-黄松轩先胜冯敬如.XQF'))
