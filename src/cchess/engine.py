@@ -25,7 +25,7 @@ from pathlib import Path
 from threading import Thread
 from queue import Queue, Empty
  
-from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED, BLACK
+from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED
 
 from .game import Game
 from .board import ChessBoard
@@ -357,7 +357,7 @@ class FenCache():
         
         iccs = action['move']
         if fen in self.fen_dict:
-            self.fen_dict[fen][iccs] = move
+            self.fen_dict[fen][iccs] = action
             return True
             
         f_mirror = fen_mirror(fen)
@@ -443,11 +443,9 @@ class EngineManager():
                 move = board.move_iccs(iccs)
                 if move is None:
                     continue
-                    
-                result = {}
-                
+                   
                 board.next_turn()
-                fen_next = board.to_fen()
+                #fen_next = board.to_fen()
                 #action['move_text'] = move.to_text()
                 
                 #先处理本步的得分是下一步的负值
@@ -456,7 +454,7 @@ class EngineManager():
                         action[key] = -action[key]
                         
                 #再处理出现mate时，score没分的情况
-                if 'score' not in action:
+                if ('score' not in action) and ('mate' in action):
                     mate = 1 if action['mate'] > 0 else -1
                     action['score'] = 39999 * mate
                 

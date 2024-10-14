@@ -140,6 +140,11 @@ class TestBoard():
         move_it = board.move((1, 0), (3, 1))
         assert move_it.to_text() == '马八进六'
         
+        board.from_fen('1nbaka1nr/r8/1c2b2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N3CC1/9/R1BAKABNR w')
+        assert board.mirror().move_iccs('c2e2') is not None
+        board.from_fen('1rbakabnr/9/1cn6/p3p1p1p/2p6/6P2/P1P1P2cP/2N1C2C1/9/1RBAKABNR w')
+        assert board.mirror().move_iccs('b0c2').to_text() == '马八进七'
+
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w'
         assert get_move_color(fen) == RED
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w - - 0 1'
@@ -149,7 +154,7 @@ class TestBoard():
         assert get_move_color(fen) == BLACK
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b - - 0 1'
         assert get_move_color(fen) == BLACK
-
+        
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)
         assert board.count_x_line_in(0, 0, 8) == 7

@@ -109,11 +109,8 @@ class Game(object):
             return []
 
         move_list = []
-        curr_move = [
-            [],
-        ]
+        curr_move = [[],]
         move_list.append(curr_move)
-
         self.first_move.dump_moves(move_list, curr_move)
 
         return move_list
