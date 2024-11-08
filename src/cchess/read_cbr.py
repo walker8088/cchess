@@ -228,7 +228,17 @@ def read_from_cbr(file_name):
     
 
 #-----------------------------------------------------#
-def read_from_cbl(file_name):
+#131 102780
+#206 123480
+#224 128448
+#236 131760
+#266 140040
+#404 178128
+#454 191928
+#837 297636
+#2048 631872
+
+def read_from_cbl(file_name, verify = True):
 
     with open(file_name, "rb") as f:
         contents = f.read()
@@ -237,37 +247,105 @@ def read_from_cbl(file_name):
     
     if magic != b'CCBridgeLibrary\x00':  
         return None
+        
     
     lib_info = {}     
     lib_info['name'] = cut_bytes_to_str(lib_name)
     lib_info['games'] = []
+    
+    buff_start = 101952
+    
+    '''
     if book_count <= 128:
         index = 101952
+    elif book_count <= 256:
+        index = 137280
+    elif book_count <= 384:
+        index = 151080
+    elif book_count <= 512:
+        index = 207936
     else:
-        #index = 137280
-        index = len(contents) - book_count * 4096
-        print(len(contents), book_count, index)
-    #left_len = ((len(contents) - index) % 4096)
-    #if left_len != 0:
-    #    print("verify error", book_count, left_len)
-    #    return lib_info
+        index = 349248
+    '''
+    
+    game_buffer = contents[buff_start:]
+    game_buffer_len = len(game_buffer)
+    game_buffer_index = game_buffer.find(b'CCBridge Record')
+    if game_buffer_index < 0:
+        return lib_info
+        
+    if ((game_buffer_len - game_buffer_index) % 4096) != 0:
+       raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {count},  {len(contents)}, {game_buffer_index + buff_start}')     
     
     count = 0
     game_index = 0
-    while index < len(contents):
-        book_buffer = contents[index:]
+    while game_buffer_index < game_buffer_len:
+        book_buffer = game_buffer[game_buffer_index:]
         try:
             game = read_from_cbr_buffer(book_buffer)
             if game is not None:
                 game.info['index'] = game_index
                 lib_info['games'].append(game)
                 game_index += 1
-            #else:
-            #    print(count, "no game")
         except Exception as e:
-            raise Exception(f'{count}, {index}, {len(contents)}, {len(book_buffer)}, {e}')
+            raise Exception(f'{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}')
+
         count += 1
-        index += 4096
+        game_buffer_index += 4096
        
     return lib_info    
-       
+
+def read_from_cbl_progressing(file_name):
+
+    with open(file_name, "rb") as f:
+        contents = f.read()
+
+    magic, _i1, book_count, lib_name = struct.unpack("<16s44si512s",  contents[:576])
+    
+    if magic != b'CCBridgeLibrary\x00':  
+        return None
+        
+    lib_info = {}     
+    lib_info['name'] = cut_bytes_to_str(lib_name)
+    lib_info['games'] = []
+    
+    buff_start = 101952
+    
+    if book_count <= 128:
+        index = 101952
+    elif book_count <= 256:
+        index = 137280
+    elif book_count <= 384:
+        index = 151080
+    elif book_count <= 512:
+        index = 207936
+    else:
+        index = 349248
+    
+    game_buffer = contents[buff_start:]
+    game_buffer_len = len(game_buffer)
+    game_buffer_index = game_buffer.find(b'CCBridge Record')
+    if game_buffer_index < 0:
+        yield lib_info
+    else:    
+        if ((game_buffer_len - game_buffer_index) % 4096) != 0:
+           raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {count},  {len(contents)}, {game_buffer_index + buff_start}')     
+        
+        count = 0
+        game_index = 0
+        while index < game_buffer_len:
+            book_buffer = game_buffer[index:]
+            try:
+                game = read_from_cbr_buffer(book_buffer)
+                if game is not None:
+                    game.info['index'] = game_index
+                    lib_info['games'].append(game)
+                    game_index += 1
+                #else:
+                #    print(count, "no game")
+            except Exception as e:
+                raise Exception(f'{index}/{count}, {len(contents)}, {len(book_buffer)}, {e}')
+            count += 1
+            index += 4096
+            
+            yield lib_info
