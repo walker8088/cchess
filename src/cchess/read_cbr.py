@@ -244,10 +244,13 @@ def read_from_cbl(file_name):
     if book_count <= 128:
         index = 101952
     else:
-        index = 349248
-    
-    #print()
-    #print(book_count)
+        #index = 137280
+        index = len(contents) - book_count * 4096
+        print(len(contents), book_count, index)
+    #left_len = ((len(contents) - index) % 4096)
+    #if left_len != 0:
+    #    print("verify error", book_count, left_len)
+    #    return lib_info
     
     count = 0
     game_index = 0
@@ -259,13 +262,12 @@ def read_from_cbl(file_name):
                 game.info['index'] = game_index
                 lib_info['games'].append(game)
                 game_index += 1
+            #else:
+            #    print(count, "no game")
         except Exception as e:
-            raise Exception(f'{count}, {index}, {len(contents)}, {e}')
-            
+            raise Exception(f'{count}, {index}, {len(contents)}, {len(book_buffer)}, {e}')
         count += 1
         index += 4096
-        #print(count, game.info)
-        #print(game.dump_iccs_moves())
-    
-    return lib_info
+       
+    return lib_info    
        

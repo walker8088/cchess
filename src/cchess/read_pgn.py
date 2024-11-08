@@ -135,7 +135,7 @@ def __get_steps(game, lines):
                     new_it = it[:2]+it[3:]
                 else:
                     new_it = it
-                move = board.move_text(new_it.lower())   
+                move = board.move_iccs(new_it.lower())   
             else:
                 move = board.move_text(it)
             if move is None:
