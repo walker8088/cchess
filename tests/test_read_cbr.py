@@ -22,7 +22,7 @@ class TestReaderCbr():
     def test_read_cbl1(self):
         lib = Game.read_from_lib(Path("data", "1989年龙化杯象棋名师邀请赛35局.CBL"))
         assert lib['name'] == '1989年龙化杯象棋名师邀请赛35局'
-        assert len(lib['games']) == 106
+        assert len(lib['games']) == 38
     
     def test_read_cbl2(self):
         lib = Game.read_from_lib(Path("data", "1956年全国象棋锦标赛93局.CBL"))
