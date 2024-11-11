@@ -147,6 +147,12 @@ class ChessBoard(object):
         self._board[pos[1]][pos[0]] = None
 
     def get_fench(self, pos):
+        if pos[0] < 0 or pos[0] > 8 :
+            return None
+        
+        if pos[1] < 0 or pos[1] > 9:
+            return None
+            
         return self._board[pos[1]][pos[0]]
 
     def get_fench_color(self, pos):

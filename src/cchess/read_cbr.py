@@ -26,7 +26,7 @@ from .game import Game
 CODING_PAGE_CBR = 'utf-16-le'
 
 #-----------------------------------------------------#
-
+'''
 piece_dict = {
     #红方
     0x11:'r', #车
@@ -45,9 +45,29 @@ piece_dict = {
     0x26:'C', #炮
     0x27:'P', #卒
 }
+'''
+piece_dict = {
+    #红方
+    0x11:'R', #车
+    0x12:'N', #马
+    0x13:'B', #相
+    0x14:'A', #仕
+    0x15:'K', #帅
+    0x16:'C', #炮
+    0x17:'P', #兵
+    #黑方
+    0x21:'r', #车
+    0x22:'n', #马
+    0x23:'b', #相
+    0x24:'a', #仕
+    0x25:'k', #帅
+    0x26:'c', #炮
+    0x27:'p', #卒
+}
 
 result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
 
+#-----------------------------------------------------#
 def _decode_pos(p):
     return (p%9, 9-p//9)    
 
@@ -98,7 +118,7 @@ class CbrBuffDecoder(object):
 #-----------------------------------------------------#
 def __read_init_info(buff_decoder):
 
-    #注释长度长度, 为0则没有注释
+    #注释长度, 为0则没有注释
     a_len = buff_decoder.read_int()
     if a_len == 0:
         return ''
@@ -109,8 +129,14 @@ def __read_init_info(buff_decoder):
 #-----------------------------------------------------#
 def __read_steps(buff_decoder, game, parent_move, board):
     
+    if buff_decoder.is_end():
+        return
+    
     step_info = buff_decoder.read_bytes(4)
     
+    if len(step_info) == 0:
+        return
+        
     if step_info == b'\x00\x00\x00\x00':
         return
         
@@ -141,19 +167,15 @@ def __read_steps(buff_decoder, game, parent_move, board):
     
     fench = board.get_fench(move_from)
     if not fench:
-        raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
-        good_move = parent_move
+        return
+        #raise CChessException(f"move from pos is null: {step_info}, {board.to_fen()} {move_from}, {move_to}")
     else:
         _, man_side = fench_to_species(fench)
         board.move_player = ChessPlayer(man_side)
-        #print(fench, man_side)
         
         if board.is_valid_move(move_from, move_to):
-            #认为当前走子一方就是合理一方，避免过多走子方检查
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
-            #print(step_info.hex(), curr_move.to_text(), has_var_step, annote_len)
-            #board.print_board()
             
             if parent_move:
                 parent_move.append_next_move(curr_move)
@@ -168,30 +190,26 @@ def __read_steps(buff_decoder, game, parent_move, board):
         __read_steps(buff_decoder, game, good_move, board)
 
     if has_var_step:
-        #print(parent_move.to_text(), 'read var moves')
         __read_steps(buff_decoder, game, parent_move, board_bak)
     
     
 #-----------------------------------------------------#
 def read_from_cbr_buffer(contents):
 
-    magic, _is1, title, _is2, tournament, _is3, red, _is_red, black, _is_black, game_result, _is4, step_start, _is5, move_side, _is6, boards, _is7\
+    magic, _is1, title, _is2, event, _is3, red, _is_red, black, _is_black, game_result, _is4, steps, _is5, move_side, _is6, boards, _is7\
                 = struct.unpack("<16s164s128s384s64s320s64s160s64s712sB35sB3sH2s90si", contents[:2214])
     
     if magic != b"CCBridge Record\x00": 
-        #print(magic)
         return None
 
     game_info = {}
     game_info["source"] = "CBR"
     game_info['title'] =  cut_bytes_to_str(title)
-    game_info['event'] = cut_bytes_to_str(tournament) 
+    game_info['event'] = cut_bytes_to_str(event) 
     game_info['red'] = cut_bytes_to_str(red)
     game_info['black'] = cut_bytes_to_str(black)
     game_info['result'] = result_dict[game_result]
     #game_info['steps'] = steps
-    
-    #print(game_info)
     
     board = ChessBoard()
     if move_side == 1:    
@@ -203,7 +221,7 @@ def read_from_cbr_buffer(contents):
         for y in range(10):
             v = boards[y*9+x]
             if v in piece_dict:
-                board.put_fench(piece_dict[v], (x, y))
+                board.put_fench(piece_dict[v], (x, 9-y))
     
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
     game_annotation = __read_init_info(buff_decoder)
@@ -212,7 +230,6 @@ def read_from_cbr_buffer(contents):
     game.info = game_info
     
     if not buff_decoder.is_end():
-        #print(buff_decoder.index, buff_decoder.length)
         __read_steps(buff_decoder, game, None, board)
     
     return game
