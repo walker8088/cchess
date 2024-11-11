@@ -183,9 +183,10 @@ def __read_steps(buff_decoder, game, parent_move, board):
                 game.append_first_move(curr_move)
             good_move = curr_move
         else:
-            raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
-            good_move = parent_move
-    
+            #raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
+            #good_move = parent_move
+            return
+            
     if has_next_move:
         __read_steps(buff_decoder, game, good_move, board)
 
