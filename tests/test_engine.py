@@ -132,7 +132,7 @@ class TestUci():
         os.chdir(os.path.dirname(__file__))
         self.engine = UciEngine()
         
-        ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish.exe")
+        ret = self.engine.load("..\\Engine\\pikafish_32bit\\pikafish-sse41.exe")
         assert ret is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
