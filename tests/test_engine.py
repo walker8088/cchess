@@ -22,7 +22,7 @@ from pathlib import Path
 import logging
 
 import cchess
-from cchess import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache, Game, ChessBoard, ChessPlayer, iccs2pos, pos2iccs
+from cchess import EngineStatus, UcciEngine, UciEngine, EngineManager, EngineErrorException, FenCache, Game, ChessBoard, ChessPlayer, iccs2pos, pos2iccs
 
 result_dict = {'红胜': '1-0', '黑胜': '0-1', '和棋': '1/2-1/2'}
 S_RED_WIN = '1-0'
@@ -46,10 +46,30 @@ def load_iccs_txt(txt_file):
     return (fen, iccs_list, result)
 
 
+class TestEngineException():
+    def setup_method(self):
+        os.chdir(os.path.dirname(__file__))
+        
+    def teardown_method(self):
+        pass
+
+    def test_engine_error(self):
+        self.engine = UciEngine()
+        ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafishh.exe")
+        assert ret == False
+        assert self.engine.engine_status == EngineStatus.ERROR
+
+    def test_engine_exception(self):
+        self.engine = UciEngine()
+        ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
+        print(ret)
+        print(self.engine.engine_status)
+        #assert self.engine.engine_status == EngineStatus.ERROR
+
+
 class TestUcci():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
-        #self.engine = UcciEngine()
         
     def teardown_method(self):
         pass
@@ -196,6 +216,7 @@ class TestUci():
 
         time.sleep(0.5)
 
+    
 class TestEngineManager():
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))

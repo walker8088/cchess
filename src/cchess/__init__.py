@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .exception import CChessException # noqa: F401
+from .exception import CChessException, EngineErrorException # noqa: F401
 from .common import NO_COLOR, RED, BLACK, fench_to_species, fench_to_text, iccs2pos, pos2iccs, iccs_mirror, \
 			iccs_flip, iccs_swap, fen_mirror, get_move_color, get_fen_type, get_fen_type_detail,\
             FULL_INIT_BOARD, FULL_INIT_FEN, EMPTY_BOARD, EMPTY_FEN # noqa: F401# noqa: F401

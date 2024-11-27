@@ -29,6 +29,7 @@ from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, R
 
 from .game import Game
 from .board import ChessBoard
+from .exception import EngineErrorException
   
 #-----------------------------------------------------#
 logger = logging.getLogger(__name__)
@@ -123,7 +124,7 @@ class Engine(Thread):
                                                 self.engine_exec_path).parent,
                                              text=True)
         except Exception as e:
-            logger.warning(f"load engine {engine_path} ERROR: {e}")
+            logger.error(f"load engine {engine_path} ERROR: {e}")
             self.engine_status = EngineStatus.ERROR
             return False
 
@@ -135,10 +136,8 @@ class Engine(Thread):
         self.engine_out_queque = Queue()
         self.engine_status = EngineStatus.BOOTING
 
-        if not self._send_cmd(self.init_cmd()):
-            self.engine_status = EngineStatus.ERROR
-            return False
-
+        self._send_cmd(self.init_cmd())
+        
         self.start()
         
         return True
@@ -279,15 +278,22 @@ class Engine(Thread):
     def _send_cmd(self, cmd_str):
 
         logger.debug(f"--> {cmd_str}")
-
+        
+        if self.process.returncode is not None:
+            self.engine_status = EngineStatus.ERROR
+            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+     
         try:
             cmd_bytes = f'{cmd_str}\r\n'
             self.pin.write(cmd_bytes)
             self.pin.flush()
         except Exception as e:
-            logger.warning(f"Send cmd [{cmd_str}] ERROR: {e}")
-            return False
-
+            logger.error(f"Send cmd [{cmd_str}] ERROR: {e}")
+     
+        if self.process.returncode is not None:
+            self.engine_status = EngineStatus.ERROR
+            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+         
         return True
 
 
