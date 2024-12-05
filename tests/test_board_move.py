@@ -446,7 +446,12 @@ class TestBoard():
 
         assert move.to_text() == '车九进一'
         #assert move.from_text(board, '车九进一') == ((0,0), (0,1))
-
+    
+    def test_qianhou_move(self):
+        board = ChessBoard('r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w')
+        move = board.copy().move_text('前炮退二')
+        assert move.move_player == RED
+        
     def test_board_text(self):
         board = ChessBoard(FULL_INIT_FEN)
         board_txt = board.text_view()

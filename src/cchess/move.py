@@ -374,7 +374,7 @@ class Move(object):
             if man_index > 2:
                 multi_lines = True
             man_name = move_str[1]
-
+            
         else:
             man_name = move_str[0]
         
@@ -392,7 +392,7 @@ class Move(object):
             #单子移动
             x = _h_level_index[move_player].index(move_str[1])
             poss = board.get_fenchs_x(x, fench)
-
+            
             #无子可走
             if len(poss) == 0:
                 return None
@@ -411,10 +411,15 @@ class Move(object):
 
         else:
             #多选一移动
-            if move_str[0] in ['前', '后']:
+            if move_str[0] in ['前','中','后']:
                 poss = board.get_fenchs(fench)
-                move_indexs = {"前": 0, "后": -1}
+                if move_player == BLACK:
+                    poss.reverse()
+                
+                move_indexs = {"前": -1, "中": 1, "后": 0}
                 pos = poss[move_indexs[move_str[0]]]
+   
+                #print(man_kind, move_player, pos, move_str[2:])
                 move = Move.text_move_to_std_move(man_kind, move_player, pos,
                                                   move_str[2:])
                 if move:

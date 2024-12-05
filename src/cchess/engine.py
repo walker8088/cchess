@@ -168,6 +168,28 @@ class Engine(Thread):
         cmd = f'setoption name {name} value {value}'
         self._send_cmd(cmd)
     
+    def _send_cmd(self, cmd_str):
+
+        logger.debug(f"--> {cmd_str}")
+        
+        if self.process.returncode is not None:
+            self.engine_status = EngineStatus.ERROR
+            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+     
+        try:
+            cmd_bytes = f'{cmd_str}\r\n'
+            self.pin.write(cmd_bytes)
+            self.pin.flush()
+        except Exception as e:
+            logger.error(f"Send cmd [{cmd_str}] ERROR: {e}")
+     
+        if self.process.returncode is not None:
+            self.engine_status = EngineStatus.ERROR
+            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+         
+        return True
+
+
     def wait_for_ready(self, timeout = 10):
         
         start_time = time.time()
@@ -275,28 +297,6 @@ class Engine(Thread):
         
         return True
         
-    def _send_cmd(self, cmd_str):
-
-        logger.debug(f"--> {cmd_str}")
-        
-        if self.process.returncode is not None:
-            self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
-     
-        try:
-            cmd_bytes = f'{cmd_str}\r\n'
-            self.pin.write(cmd_bytes)
-            self.pin.flush()
-        except Exception as e:
-            logger.error(f"Send cmd [{cmd_str}] ERROR: {e}")
-     
-        if self.process.returncode is not None:
-            self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
-         
-        return True
-
-
 #-----------------------------------------------------#
 class UcciEngine(Engine):
     def init_cmd(self):
