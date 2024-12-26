@@ -79,26 +79,29 @@ class Piece(object):
 #王
 class King(Piece):
     def is_valid_pos(self, pos):
-        #因为存在王杀王的情况,王可以放到对方的九宫中,所以不再根据红黑判断王的九宫在哪一边
+        #放置棋子要把各自的王放到自己一方
         if not super().is_valid_pos(pos):
             return False
 
         if pos[0] < 3 or pos[0] > 5:
             return False
 
-        if (pos[1] > 2) and (pos[1] < 7):
+        if (self.color == RED) and (pos[1] > 2):
+            return False
+            
+        if (self.color == BLACK) and (pos[1] < 7):
             return False
 
         return True
 
     def is_valid_move(self, pos_to):
 
-        #face to face
+        #首先判断“白脸将”条件
         k2 = self.board.get_king(opposite_color(self.color))
         if (self.x == k2.x) and (pos_to[1]
                                  == k2.y) and (self.board.count_y_line_in(
                                      self.x, self.y, k2.y) == 0):
-            #白脸将,王杀王
+            #白脸将
             return True
 
         if not self.is_valid_pos(pos_to):

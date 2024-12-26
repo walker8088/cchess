@@ -175,14 +175,15 @@ class Engine(Thread):
         if self.process.returncode is not None:
             self.engine_status = EngineStatus.ERROR
             raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
-     
+        
         try:
             cmd_bytes = f'{cmd_str}\r\n'
             self.pin.write(cmd_bytes)
             self.pin.flush()
         except Exception as e:
             logger.error(f"Send cmd [{cmd_str}] ERROR: {e}")
-     
+            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+            
         if self.process.returncode is not None:
             self.engine_status = EngineStatus.ERROR
             raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
@@ -462,7 +463,7 @@ class EngineManager():
                 #再处理出现mate时，score没分的情况
                 if ('score' not in action) and ('mate' in action):
                     mate = 1 if action['mate'] > 0 else -1
-                    action['score'] = 39999 * mate
+                    action['score'] = 29999 * mate
                 
                 #最后处理分数都换算到红方得分的情况
                 #move_color = board.get_move_color()

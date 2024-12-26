@@ -143,9 +143,12 @@ class ChessBoard(object):
     def put_fench(self, fench, pos):
         self._board[pos[1]][pos[0]] = fench
 
-    def remove_fench(self, pos):
+    def pop_fench(self, pos):
+        fench = self._board[pos[1]][pos[0]]
         self._board[pos[1]][pos[0]] = None
-
+        
+        return fench
+        
     def get_fench(self, pos):
         if pos[0] < 0 or pos[0] > 8 :
             return None
