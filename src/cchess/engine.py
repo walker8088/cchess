@@ -25,7 +25,7 @@ from pathlib import Path
 from threading import Thread
 from queue import Queue, Empty
  
-from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED
+from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED, FULL_INIT_FEN
 
 from .game import Game
 from .board import ChessBoard
@@ -72,7 +72,7 @@ def parse_engine_info_to_dict(s):
 
     return result  
 
-#-----------------------------------------------------#
+#------------------------------------------------------------------------------
 #Engine status
 class EngineStatus(enum.IntEnum):
     ERROR = 0,
@@ -87,7 +87,8 @@ class EngineStatus(enum.IntEnum):
 
 
 #ON_POSIX = 'posix' in sys.builtin_module_names
-#-----------------------------------------------------#
+
+#------------------------------------------------------------------------------
 class Engine(Thread):
     def __init__(self, exec_path=''):
         super().__init__()
@@ -298,7 +299,7 @@ class Engine(Thread):
         
         return True
         
-#-----------------------------------------------------#
+#------------------------------------------------------------------------------
 class UcciEngine(Engine):
     def init_cmd(self):
         return "ucci"
@@ -421,15 +422,19 @@ class EngineManager():
             
         self.go_params = go_params
          
+    def get_best_cache(self, fen):
+        return self.cache.get_best_action(fen)
+        
     def get_fen_score(self, fen):
-   
-        action = self.cache.get_best_action(fen)
-        if action:
-            return action
-            
+        action = self.get_best_cache(fen)
+        return action or self.run_engine(fen)
+        
+    def run_engine(self, fen):
+  
         board = ChessBoard(fen)   
         self.engine.go_from(fen, self.go_params)
-        print('go:', fen, self.go_params)
+        
+        #print('go:', fen, self.go_params)
         while True:
             action = self.engine.get_action()
             
@@ -455,58 +460,23 @@ class EngineManager():
                 #fen_next = board.to_fen()
                 #action['move_text'] = move.to_text()
                 
-                #先处理本步的得分是下一步的负值
+                #本步的得分是下一步的负值
                 for key in ['score', 'mate']:
                     if key in action:
                         action[key] = -action[key]
                         
                 #再处理出现mate时，score没分的情况
                 if ('score' not in action) and ('mate' in action):
-                    mate = 1 if action['mate'] > 0 else -1
-                    action['score'] = 29999 * mate
-                
-                #最后处理分数都换算到红方得分的情况
-                #move_color = board.get_move_color()
-                #if move_color == BLACK:
-                #    for key in ['score', 'mate']:
-                #        if key in action:
-                #            action[key] = -action[key]
-                
-                #for key in ['raw_msg', 'fen_engine', 'action', 'moves']:
-                #    action.pop(key)
-
+                    mate_v = action['mate']
+                    mate_flag = 1 if mate_v > 0 else -1
+                    action['score'] = (30000-abs(mate_v)) * mate_flag
+     
                 self.cache.save_action(fen, action)    
                 
                 return action
-                 
-        #self.engine.stop_thinking()
-    
+   
     def quit(self):
         self.engine.quit()
         time.sleep(0.5)
 
-    def get_game_file_score(self, file_name):
-        game = Game.read_from(file_name)
-        moves = game.dump_fen_iccs_moves() 
-        for branch, move_line in enumerate(moves):
-            print(f'{file_name} 分支:{branch+1}/{len(moves)}')
-            for index, (fen, iccs) in enumerate(move_line):
-                board = ChessBoard(fen)
-                move = board.move_iccs(iccs)
-                
-                if board.is_checkmate():
-                    print(index + 1, fen, move.to_text(), "将死")
-                    break
-                
-                board.next_turn()
-                new_fen = board.to_fen()
-                result = self.get_fen_score(new_fen)
-                
-                if 'mate' in result:
-                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'mate:', result['mate'], 'depth', result['seldepth'])
-                else:
-                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'depth', result['seldepth'])  
-                    #print(result)            
-        #self.cache.save()
-                        
-#-----------------------------------------------------#
+#------------------------------------------------------------------------------

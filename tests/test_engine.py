@@ -230,4 +230,27 @@ class TestEngineManager():
         
         go_params = {'depth': 15}
         self.mgr.load_uci("..\\Engine\\pikafish_230408\\pikafish.exe", options, go_params)
-        self.mgr.get_game_file_score(Path('data', '030-黄松轩先胜冯敬如.XQF'))
+        file_name = Path('data', '030-黄松轩先胜冯敬如.XQF')
+        game = Game.read_from(file_name)
+        moves = game.dump_fen_iccs_moves() 
+        for branch, move_line in enumerate(moves):
+            print(f'{file_name} 分支:{branch+1}/{len(moves)}')
+            for index, (fen, iccs) in enumerate(move_line):
+                board = ChessBoard(fen)
+                move = board.move_iccs(iccs)
+                
+                if board.is_checkmate():
+                    print(index + 1, fen, move.to_text(), "将死")
+                    break
+                
+                board.next_turn()
+                new_fen = board.to_fen()
+                result = self.mgr.get_fen_score(new_fen)
+                
+                if 'mate' in result:
+                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'mate:', result['mate'])
+                else:
+                    print(index + 1, fen, move.to_text(), "score:", result['score'])  
+                    #print(result)            
+        #self.cache.save()
+        #self.mgr.get_game_file_score(Path('data', '030-黄松轩先胜冯敬如.XQF'))

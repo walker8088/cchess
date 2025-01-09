@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 
 [project]
-
+name = "cchess"
 classifiers = [
 	"Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
