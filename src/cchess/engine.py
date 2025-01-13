@@ -291,6 +291,9 @@ class Engine(Thread):
                 if 'moves' in move_info:
                     move_key = move_info['moves'][0]
                     self.score_dict[move_key] = move_info
+                elif 'currmove' in move_info:
+                    #暂时不处理
+                    pass
                 else:
                     logger.info(move_info)
                     
