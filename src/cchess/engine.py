@@ -415,16 +415,22 @@ class EngineManager():
         
     def _load(self, engine_exec, options, go_params):
         
-        ret = self.engine.load(engine_exec)
-        assert ret is True
-        assert self.engine.wait_for_ready() is True
+        ok = self.engine.load(engine_exec)
+        if not ok:
+            return False
+        
+        ok = self.engine.wait_for_ready()
+        if not ok:
+            return False
         
         #self.engine_options = options
         for name, value in options.items():
             self.engine.set_option(name, value)
             
         self.go_params = go_params
-         
+        
+        return True
+        
     def get_best_cache(self, fen):
         return self.cache.get_best_action(fen)
         
