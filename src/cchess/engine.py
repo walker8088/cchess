@@ -457,6 +457,8 @@ class EngineManager():
                 pass
             elif action_id in ['dead', 'draw']:
                 print(action['raw_msg'])
+                action['score'] = 30000
+                action['mate'] = 0
                 return action
                 
             elif action_id == 'bestmove':
