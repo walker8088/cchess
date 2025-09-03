@@ -162,6 +162,28 @@ def fen_mirror(fen):
     return b.mirror().to_fen()
 
 #-----------------------------------------------------#
+def full2half(text):
+    # 全角到半角的映射
+    fullwidth_map = {
+        '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+        '６': '6', '７': '7', '８': '8', '９': '9'
+    }
+    
+    # 使用 translate 方法进行批量替换
+    translation_table = str.maketrans(fullwidth_map)
+    return text.translate(translation_table)
+
+def half2full(text):
+    # 半角到全角的映射
+    halfwidth_map = {
+        '1': '１', '2': '２', '3': '３', '4': '４', '5': '５',
+        '6': '６', '7': '７', '8': '８', '9': '９'
+    }
+    
+    # 使用 translate 方法进行批量替换
+    translation_table = str.maketrans(halfwidth_map)
+    return text.translate(translation_table)
+#-----------------------------------------------------#
 p_count_dict = {
     "R1":'车',
     "R2":'双车',

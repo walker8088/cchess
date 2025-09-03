@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from copy import deepcopy
 
-from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs
+from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs, half2full
 
 #-----------------------------------------------------#
 #TODO 英文全角半角统一识别
@@ -363,6 +363,9 @@ class Move(object):
     @staticmethod
     def from_text(board, move_str):
 
+        move_str = half2full(move_str)
+
+        #TODO测试黑方
         move_indexs = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
         multi_mans = False
