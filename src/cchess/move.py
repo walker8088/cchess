@@ -39,7 +39,8 @@ class Move(object):
         self.step_index = 0
         self.score = None
         self.annote = ''
-        
+        self.parent = None
+
         if self.is_checking:
             self.is_checkmate = self.board.is_checkmate()
         else:
@@ -48,15 +49,17 @@ class Move(object):
         self.captured = self.board.get_fench(p_to)
         self.board_done = board.copy()
         self.board_done._move_piece(p_from, p_to)
-        self.board_done.next_turn()  ##TODO fix
+        self.board_done.next_turn()  #TODO 默认红走一步，黑走一步，对于让先的处理后续考虑
         self.next_move = None
 
-        self.branchs = []
-
-        self.branch_index = 0
-
+        self.sibling_next = None
+        
         self.move_list_for_engine = []
         self.fen_for_engine = None
+
+    @property
+    def move_player(self):
+        return self.board.move_player
 
     def mirror(self):
         self.board.mirror()
@@ -64,7 +67,7 @@ class Move(object):
         self.p_to = (8 - self.p_to[0], self.p_to[1])
         self.board_done.mirror()
 
-        for move in self.branchs:
+        for move in self.get_siblings():
             move.mirror()
 
         if self.next_move:
@@ -76,7 +79,7 @@ class Move(object):
         self.p_to = (self.p_to[0], 9 - self.p_to[1])
         self.board_done.flip()
 
-        for move in self.branchs:
+        for move in self.get_siblings():
             move.flip()
 
         if self.next_move:
@@ -86,7 +89,7 @@ class Move(object):
         self.board.swap()
         self.board_done.swap()
 
-        for move in self.branchs:
+        for move in self.get_siblings():
             move.swap()
 
         if self.next_move:
@@ -100,62 +103,85 @@ class Move(object):
             return True
         return False
 
-    @property
-    def move_player(self):
-        return self.board.move_player
+    def len_siblings(self):
+        node = self
+        count = 0 
+        while node.sibling_next is not None:
+            count += 1
+            node = node.sibling_next
+        return count
+    
+    def get_siblings(self):
+        if self.sibling_next is not None:
+            node = self
+            while node.sibling_next is not None:
+                node = node.sibling_next
+                yield node        
+        
+    def last_sibling(self):
+        node = self
+        while node.sibling_next is not None:
+            node = node.sibling_next
+        return node        
+    
+    def add_sibling(self, chess_move):
+        chess_move.parent = self.parent
+        chess_move.step_index = self.step_index
+        last = self.last_sibling()
+        
+        assert last.sibling_next is None
 
+        last.sibling_next = chess_move
+ 
     def append_next_move(self, chess_move):
         chess_move.parent = self
         chess_move.step_index = self.step_index + 1
         if not self.next_move:
             self.next_move = chess_move
         else:
-            self.next_move.branchs.append(chess_move)
+            self.next_move.add_sibling(chess_move)
+    
+    def dump_moves(self, game, move_list, curr_move_line, is_tree_mode, curr_sibling_index = 0):
 
-    def branchs(self):
-        return len(self.branchs)
+        backup_move_line = curr_move_line['moves'][:] 
+        curr_move_line['moves'].append(self)
+        
+        curr_line_index = curr_move_line['index']
 
-    def get_branch(self, index):
-        return self.branchs[index]
-
-    def select_branch(self, index):
-        self.branch_index = index
-
-    def get_all_branchs(self):
-        return [self].extent(self.branchs)
-
-    def dump_moves(self, move_list, curr_move_line):
-
-        backup_move_line = curr_move_line[:]
-        index_save = backup_move_line[0][:]
-
-        curr_move_line.append(self)
-
-        if not self.next_move:
+        if self.next_move:
+            self.next_move.dump_moves(game, move_list, curr_move_line, is_tree_mode, 0)
+        
+        #curr_sibling_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
+        #所以就不能在分支中再找兄弟了，否则会重复输出分支
+        if curr_sibling_index > 0:
             return
+        
+        '''
+        #只有主分支（index == 0）才会遍历兄弟分支
+        siblings = list(self.get_siblings())
+        if len(siblings) > 0:
+            txt = [f'*{self.to_text()}']
+            txt.extend([m.to_text() for m in siblings])
+            print(curr_line_index, self.step_index, txt)
+        '''
+        
+        for index, move in enumerate(self.get_siblings()):
+            slibling_index = index + 1
+            new_line_index = len(move_list)
+            new_line = game.new_move_line(curr_line_index, new_line_index, self.step_index, slibling_index)
+            if not is_tree_mode:
+                new_line['moves'].extend(backup_move_line)
+            move_list.append(new_line)
+            move.dump_moves(game, move_list, new_line, is_tree_mode, slibling_index)
 
-        #第一个元素是分支索引
-        if len(self.branchs) > 0:
-            curr_move_line[0].append(0)
-
-        self.next_move.dump_moves(move_list, curr_move_line)
-
-        if len(self.branchs) > 0:
-            for index, move in enumerate(self.branchs):
-                new_line = backup_move_line[:]
-                indexs = index_save[:]
-                indexs.append(index + 1)
-                new_line[0] = indexs
-                move_list.append(new_line)
-                move.dump_moves(move_list, new_line)
-
+    '''
     def dump_moves_line(self, move_list):
 
-        if self.branch_index == 0:
+        if self.sibling_index == 0:
             sel_move = self
 
-        elif self.branch_index <= len(self.branchs):
-            sel_move = self.branchs[self.branch_index - 1]
+        elif self.sibling_index <= len(self.siblings):
+            sel_move = self.siblings[self.sibling_index - 1]
         else:
             sel_move = None
 
@@ -169,7 +195,7 @@ class Move(object):
         sel_move.next_move.dump_moves_line(move_list)
 
     #对move分支进行标记
-    def tag_move_branch(self, move_list, curr_move_line):
+    def tag_move_sibling(self, move_list, curr_move_line):
 
         backup_move_line = deepcopy(curr_move_line)
 
@@ -177,11 +203,12 @@ class Move(object):
         #print curr_move_line
         if self.next_move:
             self.next_move.dump_moves(move_list, curr_move_line)
-        if len(self.branchs) > 0:
+        if self.len_siblings() > 0:
             #print self.move, 'has right', self.right.move
             move_list.append(backup_move_line)
-            for move in self.branchs:
+            for move in self.get_siblings():
                 move.dump_moves(move_list, backup_move_line)
+    '''
 
     def __str__(self):
         return self.to_iccs()

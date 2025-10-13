@@ -229,7 +229,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if (step_info[2] & 0x0F):
             has_var_step = True  #有变着
         annote_len = buff_decoder.read_int()
-
+        #走子起点，落点
         step_info[0] = (step_info[0] - 0x18) & 0xFF
         step_info[1] = (step_info[1] - 0x20) & 0xFF
 
@@ -243,6 +243,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if (step_info[2] & 0x20):  #有注释
             annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
+        #走子起点，落点
         step_info[0] = (step_info[0] - 0x18 - keys.KeyXYf) & 0xFF
         step_info[1] = (step_info[1] - 0x20 - keys.KeyXYt) & 0xFF
 
@@ -279,7 +280,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     if has_var_step:
         #print Move.to_iccs(parent.next_move.move), 'has var'
         __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
-
+        game.info['branchs'] += 1
 
 #-----------------------------------------------------#
 def read_from_xqf(full_file_name, read_annotation=True):
@@ -311,7 +312,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game_info["source"] = "XQF"
     game_info["version"] = version
     game_info["type"] = ucType + 1
-
+    
     if ucRes <= 4:  #It's really some file has value 4
         game_info["result"] = result_dict[ucRes]
     else:
@@ -377,7 +378,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game_annotation = __read_init_info(step_base_buff, version, keys)
 
     game = Game(board, game_annotation)
-    game.info = game_info
+    game.info.update(game_info)
 
     __read_steps(step_base_buff, version, keys, game, None, board)
 

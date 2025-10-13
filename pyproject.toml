@@ -28,7 +28,7 @@ classifiers = [
 
 requires-python = ">=3.6"
 dependencies = []
-#dynamic = ["version"]
+dynamic = ["version"]
 
 #[project.readme]
 #file = "README.md"

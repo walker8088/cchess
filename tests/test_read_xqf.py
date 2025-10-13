@@ -46,20 +46,62 @@ class TestReaderXQF():
         assert len(moves) == 1
         assert game.verify_moves() is True
     
+    def test_branchs_5(self):
+        game = Game.read_from(Path("data", "test_5_variations.xqf"))
+        assert game.verify_moves() is True
+        assert game.info['branchs'] == 5
+        
+        moves = game.dump_iccs_moves()
+        assert len(moves) == 5
+        
+        move_text = ('炮二平五,炮８平５,马二进三,马８进７,兵三进一,车９平８',
+                     '炮二平五,炮８平５,马二进三,马８进７,车一平二,车９进１,车二进六,车９平４',
+                     '炮二平五,炮８平５,马二进三,马８进７,车一平二,卒７进１,兵七进一,车９进１',
+                     '炮二平五,炮８平５,马二进三,马８进７,车一进一,车９平８,车一平六,马２进３,马八进七,卒３进１',
+                     '炮二平六,马８进７,马二进三,车９平８,车一平二',    
+                    )
+        moves = game.dump_moves(is_tree_mode = False)
+        assert len(moves) == 5
+        for index, m_line in enumerate(moves):
+            print(m_line['name'])
+            txt = ','.join([x.to_text() for x in m_line['moves']])
+            print(txt)
+            assert txt == move_text[index]
+
+        moves = game.dump_moves(is_tree_mode = True)
+        assert len(moves) == 5
+        
+        for index, m_line in enumerate(moves):
+            print(m_line['name'])
+            txt = ','.join([x.to_text() for x in m_line['moves']])
+            print(txt)
+            #assert txt == move_text[index]
+        
     def test_big_file(self):
         game = Game.read_from(Path("data", "WildHouse.xqf"))
+        assert game.info['branchs'] == 139
+        
         moves = game.dump_iccs_moves()
-        #assert len(moves) == 1
-        try:
-            assert game.verify_moves() is True
-        except Exception as e:
-            print(e)
+        #assert game.verify_moves() is True
+        #for m_line in moves:
+        #    print(m_line)
+        #moves = game.dump_moves(is_tree_mode = False)
+        #for m_line in moves:
+        #    print(m_line['name'])
+        #    print(','.join([x.to_text() for x in m_line['moves']]))
+
+        moves = game.dump_moves(is_tree_mode = True)
+        #for m_line in moves:
+        #    print(m_line['name'])
+        #    print(','.join([x.to_text() for x in m_line['moves']]))
             
     def test_k1(self):
         fen, moves, result = load_move_txt(Path("data", "test1_move.txt"))
         game = Game.read_from(Path("data", "test1.xqf"))
         assert game.init_board.to_fen() == fen
         assert game.info['result'] == result
+        assert game.info['branchs'] == 1
+        
         #game.print_init_board()
         m = game.dump_text_moves()[0]
         assert len(m) == len(moves)

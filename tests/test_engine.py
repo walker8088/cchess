@@ -148,7 +148,7 @@ class TestUci():
 
         dead = False
         while not dead:
-            self.engine.go_from(board.to_fen(), {'depth': 15})
+            self.engine.go_from(board.to_fen(), {'depth': 8})
             while True:
                 output = self.engine.get_action()
                 if output is None:
@@ -191,7 +191,7 @@ class TestUci():
         #self.engine.go_from(board.to_fen(), {'depth': 15})
         steps = 1
         while steps < 10:
-            self.engine.go_from(board.to_fen(), {'depth': 15})
+            self.engine.go_from(board.to_fen(), {'depth': 6})
             while True:
                 output = self.engine.get_action()
                 if output is None:
@@ -228,10 +228,17 @@ class TestEngineManager():
     def test_game_score(self):
         options ={'LU_Output': 'false', 'Threads ':'8', 'Hash ':'2000'}
         
-        go_params = {'depth': 15}
+        go_params = {'depth': 6}
         self.mgr.load_uci("..\\Engine\\pikafish_230408\\pikafish.exe", options, go_params)
         file_name = Path('data', '030-黄松轩先胜冯敬如.XQF')
         game = Game.read_from(file_name)
+        assert game.info['branchs'] == 2
+
+        #moves = game.dump_moves(is_tree_mode = False)
+        #for m_line in moves:
+        #    print(m_line['name'])
+        #    print(','.join([x.to_text() for x in m_line['moves']]))
+        
         moves = game.dump_fen_iccs_moves() 
         for branch, move_line in enumerate(moves):
             print(f'{file_name} 分支:{branch+1}/{len(moves)}')

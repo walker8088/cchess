@@ -38,34 +38,43 @@ class Game(object):
         else:
             self.init_board = ChessBoard()
         self.annote = annote
+        #初始节点
         self.first_move = None
+        #最后节点，追加新的move时，从这个节点后追加
         self.last_move = None
 
         self.info = {}
+        #默认一个分支
+        self.info['branchs'] = 1
 
     def __str__(self):
         return str(self.info)
-
+    
+    #当第一步走法就有变招的时候，需多次调用这个函数
     def append_first_move(self, chess_move):
+        chess_move.parent = self
+        
         if not self.first_move:
             self.first_move = chess_move
             self.last_move = self.first_move
         else:
-            self.first_move.branchs.append(chess_move)
+            self.first_move.add_sibling(chess_move)
+        
         return chess_move
-    
+
+    #给当前的最后招法节点增加后续节点，如果已经有后续节点了，则增加后续节点的兄弟节点    
     def append_next_move(self, chess_move):
-    
         if not self.first_move:
+            chess_move.parent = self
             self.first_move = chess_move
             self.last_move = self.first_move
-            return
+            return chess_move
             
         self.last_move.append_next_move(chess_move)
         self.last_move = chess_move
-        
-        return self
-        
+
+        return chess_move
+
     def verify_moves(self):
         move_list = self.dump_iccs_moves()
         for index, move_line in enumerate(move_list):
@@ -103,34 +112,40 @@ class Game(object):
     def dump_init_board(self):
         return self.init_board.dump_board()
 
-    def dump_moves(self):
+    def dump_moves(self, is_tree_mode = False):
 
-        if not self.first_move:
-            return []
+        curr_line = self.new_move_line(0, 0)
+        move_list = [curr_line, ]
 
-        move_list = []
-        curr_move = [[],]
-        move_list.append(curr_move)
-        self.first_move.dump_moves(move_list, curr_move)
-
+        if self.first_move:
+            self.first_move.dump_moves(self, move_list, curr_line, is_tree_mode)
+            
         return move_list
-    
+
+    def new_move_line(self, old_line, new_line, step_index = None, branch_index = None):
+        if step_index is not None:
+            line_name = f'{old_line}.{step_index}.{branch_index}_{new_line}'    
+        else:
+            line_name = f'{old_line}'    
+        return {'index': new_line, 'from_index': (old_line, step_index), 'name':line_name, 'moves':[]}
+
     def dump_iccs_moves(self):
-        return [[str(move) for move in move_line[1:]]
+        return [[str(move) for move in move_line['moves']]
                 for move_line in self.dump_moves()]
     
     def dump_fen_iccs_moves(self):
-        return [[ [move.board.to_fen(), str(move)] for move in move_line[1:] ]
+        return [[ [move.board.to_fen(), str(move)] for move in move_line['moves'] ]
                 for move_line in self.dump_moves()]
 
     def dump_text_moves(self):
-        return [[move.to_text() for move in move_line[1:]]
+        return [[move.to_text() for move in move_line['moves']]
                 for move_line in self.dump_moves()]
     
     def dump_text_moves_with_annote(self):
-        return [[(move.to_text(),move.annote) for move in move_line[1:]]
+        return [[(move.to_text(),move.annote) for move in move_line['moves']]
                 for move_line in self.dump_moves()]
     
+    '''
     def dump_moves_line(self):
 
         if not self.first_move:
@@ -140,6 +155,7 @@ class Game(object):
         self.first_move.dump_moves_line(move_line)
 
         return move_line
+    '''
 
     def print_init_board(self):
         for line in self.init_board.text_view():
