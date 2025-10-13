@@ -4,7 +4,7 @@ name = "cchess"
 version = "1.25.5"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
-license = "LGPL3"
+license = "LGPL-3.0-or-later"
 readme = "README.md"
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 
@@ -13,8 +13,6 @@ name = "cchess"
 classifiers = [
 	"Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "License :: OSI Approved :: LGPL-3.0-or-later",
-	"Natural Language :: Chinese",
 	"Operating System :: MacOS :: MacOS X",
 	"Operating System :: POSIX",
 	"Operating System :: POSIX :: BSD",
