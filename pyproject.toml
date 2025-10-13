@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "cchess"
-version = "1.25.1"
+version = "1.25.5"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
 license = "LGPL3"
