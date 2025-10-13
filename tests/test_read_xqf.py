@@ -77,6 +77,19 @@ class TestReaderXQF():
             print(txt)
             #assert txt == move_text[index]
         
+        game.make_branchs_tag()
+        moves = game.dump_text_moves(show_branch = True)
+        assert len(moves) == 5
+        for index, m_line in enumerate(moves):
+            #print(m_line['name'])
+            txt = ','.join(m_line)
+            print(txt)
+            #assert txt == move_text[index]
+        
+        txt = ','.join([f'{m.to_text()}_{m.branch_index}.{m.len_siblings()}' for m in game.move_line_to_list()])
+        print(txt)
+        #assert txt == '炮二平五,炮８平５,马二进三,马８进７,兵三进一,车９平８'
+        
     def test_big_file(self):
         game = Game.read_from(Path("data", "WildHouse.xqf"))
         assert game.info['branchs'] == 139

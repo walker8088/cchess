@@ -74,6 +74,14 @@ class Game(object):
         self.last_move = chess_move
 
         return chess_move
+    
+    def get_children(self):
+        if not self.first_move:
+            return []
+        
+        siblings = list(self.first_move.get_siblings(include_me = True))
+        print(siblings)
+        return siblings
 
     def verify_moves(self):
         move_list = self.dump_iccs_moves()
@@ -114,20 +122,14 @@ class Game(object):
 
     def dump_moves(self, is_tree_mode = False):
 
-        curr_line = self.new_move_line(0, 0)
-        move_list = [curr_line, ]
+        move_list = []
 
         if self.first_move:
-            self.first_move.dump_moves(self, move_list, curr_line, is_tree_mode)
+            curr_line = self.first_move.init_move_line()
+            move_list.append(curr_line)            
+            self.first_move.dump_moves(move_list, curr_line, is_tree_mode)
             
         return move_list
-
-    def new_move_line(self, old_line, new_line, step_index = None, branch_index = None):
-        if step_index is not None:
-            line_name = f'{old_line}.{step_index}.{branch_index}_{new_line}'    
-        else:
-            line_name = f'{old_line}'    
-        return {'index': new_line, 'from_index': (old_line, step_index), 'name':line_name, 'moves':[]}
 
     def dump_iccs_moves(self):
         return [[str(move) for move in move_line['moves']]
@@ -137,26 +139,30 @@ class Game(object):
         return [[ [move.board.to_fen(), str(move)] for move in move_line['moves'] ]
                 for move_line in self.dump_moves()]
 
-    def dump_text_moves(self):
-        return [[move.to_text() for move in move_line['moves']]
+    def dump_text_moves(self, show_branch = False, show_annote = False):
+        if not show_branch:
+            return [[move.to_text() for move in move_line['moves']]
+                for move_line in self.dump_moves()]
+        else:
+            return [[move.to_text_with_branchs() for move in move_line['moves']]
                 for move_line in self.dump_moves()]
     
-    def dump_text_moves_with_annote(self):
-        return [[(move.to_text(),move.annote) for move in move_line['moves']]
-                for move_line in self.dump_moves()]
-    
-    '''
-    def dump_moves_line(self):
-
-        if not self.first_move:
-            return []
-
+    def move_line_to_list(self, move = None):
+        if not move:
+            move = self.first_move
+        
         move_line = []
-        self.first_move.dump_moves_line(move_line)
-
-        return move_line
-    '''
-
+        while move:
+            move_line.append(move)
+            move = move.next_move
+        
+        return move_line    
+        
+    def make_branchs_tag(self):
+        if not self.first_move:
+            return
+        self.first_move.make_branchs_tag(0, 0)            
+            
     def print_init_board(self):
         for line in self.init_board.text_view():
             print(line)

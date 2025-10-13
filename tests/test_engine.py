@@ -62,7 +62,6 @@ class TestEngineException():
     def test_engine_exception(self):
         self.engine = UciEngine()
         ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
-        print(ret)
         print(self.engine.engine_status)
         #assert self.engine.engine_status == EngineStatus.ERROR
 
@@ -234,10 +233,10 @@ class TestEngineManager():
         game = Game.read_from(file_name)
         assert game.info['branchs'] == 2
 
-        #moves = game.dump_moves(is_tree_mode = False)
-        #for m_line in moves:
-        #    print(m_line['name'])
-        #    print(','.join([x.to_text() for x in m_line['moves']]))
+        moves = game.dump_moves(is_tree_mode = False)
+        for m_line in moves:
+            print(m_line['name'])
+            print(','.join([x.to_text() for x in m_line['moves']]))
         
         moves = game.dump_fen_iccs_moves() 
         for branch, move_line in enumerate(moves):
