@@ -127,7 +127,7 @@ class Engine(Thread):
         except Exception as e:
             logger.error(f"load engine {engine_path} ERROR: {e}")
             self.engine_status = EngineStatus.ERROR
-            return False
+            return (False, str(e)) 
 
         time.sleep(0.5)
         
@@ -141,7 +141,7 @@ class Engine(Thread):
         
         self.start()
         
-        return True
+        return (True, None)
 
     def go_from(self, fen, params={}):
         

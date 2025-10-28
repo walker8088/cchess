@@ -38,7 +38,7 @@ class Move(object):
         self.is_checking = is_checking
         self.step_index = 0
         self.score = None
-        self.annote = ''
+        self.comment = ''
         self.parent = None
 
         if self.is_checking:
@@ -53,7 +53,7 @@ class Move(object):
         self.next_move = None
 
         self.sibling_next = None
-        self.siblings_all_list = [self]
+        self.variations_all = [self]
 
         self.move_list_for_engine = []
         self.fen_for_engine = None
@@ -108,23 +108,23 @@ class Move(object):
         return False
 
     def len_siblings(self):
-        return len(self.siblings_all_list)
+        return len(self.variations_all)
     
     def get_siblings(self, include_me = False):
         if include_me:
-            return self.siblings_all_list
+            return self.variations_all
         
-        sibs = self.siblings_all_list[:]
+        sibs = self.variations_all[:]
         sibs.remove(self)
 
         return sibs 
 
     def last_sibling(self):
-        return self.siblings_all_list[-1]        
+        return self.variations_all[-1]        
     
     def get_silbing_index(self):
-        slibling_count = len(self.siblings_all_list)
-        for index, m in enumerate(self.siblings_all_list):
+        slibling_count = len(self.variations_all)
+        for index, m in enumerate(self.variations_all):
             if m == self:
                 return (index, slibling_count)
 
@@ -137,16 +137,18 @@ class Move(object):
 
         last.sibling_next = chess_move
         
-        self.siblings_all_list.append(chess_move)
+        self.variations_all.append(chess_move)
         for node in self.get_siblings():
-            node.siblings_all_list = self.siblings_all_list
-                    
+            node.variations_all = self.variations_all
+        
+        return chess_move
+
     def remove_sibling(self, chess_move):
-        if chess_move not in self.siblings_all_list:
+        if chess_move not in self.variations_all:
             return
         
         #先移出兄弟表
-        self.siblings_all_list.remove(chess_move)
+        self.variations_all.remove(chess_move)
         
         #从链上摘下
         node = self
@@ -158,7 +160,7 @@ class Move(object):
 
         #更新兄弟表到所有的兄弟        
         for node in self.get_siblings():
-            node.siblings_all_list = self.siblings_all_list
+            node.variations_all = self.variations_all
                 
     def append_next_move(self, chess_move):
         chess_move.parent = self
@@ -319,16 +321,27 @@ class Move(object):
 
         return man_name + _h_level_index[man_side][pos[0]]
 
-    def to_text_with_branchs(self):
+    def to_text_detail(self, show_branch, show_comment):
         
-        assert len(self.siblings_all_list) > 0
+        if show_branch:
+            txt = self.to_text_branch()
+        else:
+            txt = self.to_text()    
+        
+        comment = self.comment if show_comment else ''
+
+        return (txt,  '')
+    
+    def to_text_branch(self):
+        
+        assert len(self.variations_all) > 0
         
         #父节点只有一个孩子，那就是自己
-        if len(self.siblings_all_list) == 1:
+        if len(self.variations_all) == 1:
             return self.to_text()
         
         txts = []
-        for index, m in enumerate(self.siblings_all_list):
+        for index, m in enumerate(self.variations_all):
             if m == self:
                txts.append(f'{m.to_text()}') 
             else:

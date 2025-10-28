@@ -55,13 +55,13 @@ class TestEngineException():
 
     def test_engine_error(self):
         self.engine = UciEngine()
-        ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafishh.exe")
+        ret, err_msg = self.engine.load("..\\Engine\\pikafish_230408\\pikafishh.exe")
         assert ret == False
         assert self.engine.engine_status == EngineStatus.ERROR
 
     def test_engine_exception(self):
         self.engine = UciEngine()
-        ret = self.engine.load("..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
+        ret, err_msg = self.engine.load("..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
         print(self.engine.engine_status)
         #assert self.engine.engine_status == EngineStatus.ERROR
 
@@ -76,9 +76,9 @@ class TestUcci():
     def test_ucci(self):
         
         self.engine = UcciEngine()
-        assert self.engine.load("eleeye") is False 
+        assert self.engine.load("eleeye")[0] is False 
 
-        assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe") is True
+        assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe")[0] is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
         
@@ -131,7 +131,7 @@ class TestUci():
         os.chdir(os.path.dirname(__file__))
         self.engine = UciEngine()
         
-        ret = self.engine.load("..\\Engine\\pikafish_32bit\\pikafish-sse41.exe")
+        ret, err_msg = self.engine.load("..\\Engine\\pikafish_32bit\\pikafish-sse41.exe")
         assert ret is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
