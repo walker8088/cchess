@@ -19,7 +19,7 @@ import pathlib
 import datetime as dt
 from collections import defaultdict
 
-from .common import FULL_INIT_FEN
+from .common import FULL_INIT_FEN, parse_dhtmlxq
 from .board import ChessBoard
 
 # 比赛结果
@@ -253,4 +253,45 @@ class Game(object):
             return writer.save(file_name)
         elif ext == '.pgn':
             return self.save_to_pgn(file_name)
-            
+           
+    def from_ubb_dhtml(self, html_str):
+    
+        def decode_txt_pos(pos):
+            return (int(pos[0]), 9 - int(pos[1]))
+
+        self.info = parse_dhtmlxq(html_str)
+        
+        if 'binit' not in self.info:
+            board = ChessBoard(FULL_INIT_FEN)
+        else:
+            board = ChessBoard()
+            pos_txt = self.info['binit']
+            chessman_kinds = 'RNBAKABNRCCPPPPP'
+            for side in range(2):
+                for man_index in range(16):
+                    pos_index = (side * 16 + man_index) * 2
+                    man_pos = pos_txt[pos_index:pos_index + 2]
+                    if man_pos == '99':
+                        continue
+                    pos = decode_txt_pos(man_pos)
+                    fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
+                    board.put_fench(fen_ch, pos)
+        
+        self.init_board = board.copy()
+        
+        if 'movelist' not in self.info:
+            return
+
+        moves_txt = self.info['movelist']
+        step_no = 0
+        while step_no * 4 < len(moves_txt):
+            move_from = decode_txt_pos(moves_txt[step_no * 4:step_no * 4 + 2])
+            move_to = decode_txt_pos(moves_txt[step_no * 4 + 2:step_no * 4 + 4])
+            if board.is_valid_move(move_from, move_to):
+                new_move = board.move(move_from, move_to)
+                self.append_next_move(new_move)
+                board.next_turn()
+            else:
+                raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
+            step_no += 1
+        

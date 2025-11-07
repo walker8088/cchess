@@ -28,7 +28,6 @@ from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache
 
 from .io_xqf import read_from_xqf  # noqa: F401
 from .read_pgn import read_from_pgn # noqa: F401
-from .read_txt import read_from_txt # noqa: F401
 from .read_cbf import read_from_cbf # noqa: F401
 from .read_cbr import read_from_cbr, read_from_cbl # noqa: F401
 
