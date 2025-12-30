@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright (C) 2014  walker li <walker8088@gmail.com>
+Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,6 +33,14 @@ book_type_str = (u"未知", u"全局", u"开局", u"中局", u"残局")
 #-----------------------------------------------------#
 class Game(object):
     def __init__(self, board = None, annote = None):
+        """创建一个 `Game` 实例。
+
+        参数:
+            board (ChessBoard|None): 初始棋盘；若为 None 则使用默认初始棋盘。
+            annote (str|None): 比赛注释或元信息。
+
+        初始化走子链的头尾指针以及信息字典 `info`。
+        """
         if board is not None:
             self.init_board = board.copy()
         else:
@@ -44,9 +52,15 @@ class Game(object):
         self.info = {}
 
     def __str__(self):
+        """返回游戏信息的字符串表示（通常用于调试）。"""
         return str(self.info)
 
     def append_first_move(self, chess_move):
+        """将 `chess_move` 添加为游戏的第一个走子节点或作为分支加入。
+
+        若当前没有 `first_move`，则设为首步并更新 `last_move`；否则
+        将其作为 `first_move` 的一个分支追加。返回传入的 `chess_move`。
+        """
         if not self.first_move:
             self.first_move = chess_move
             self.last_move = self.first_move
@@ -55,7 +69,13 @@ class Game(object):
         return chess_move
     
     def append_next_move(self, chess_move):
-    
+        """将 `chess_move` 作为当前游戏的下一个走子追加。
+
+        若游戏尚无首步，则将其设为首步并更新 `last_move`；否则委托给
+        `last_move.append_next_move` 并更新 `last_move`。返回 self，
+        便于链式调用。
+        """
+        
         if not self.first_move:
             self.first_move = chess_move
             self.last_move = self.first_move
@@ -67,6 +87,12 @@ class Game(object):
         return self
         
     def verify_moves(self):
+        """验证已记录的走子序列在初始棋盘上是否都合法。
+
+        遍历通过 `dump_iccs_moves` 获取的每条走子线路，逐步执行每个
+        ICCS 走法并检查是否返回有效 `Move` 对象；若发现无效走法会
+        抛出异常，全部通过则返回 True。
+        """
         move_list = self.dump_iccs_moves()
         for index, move_line in enumerate(move_list):
             board = self.init_board.copy()
@@ -79,21 +105,28 @@ class Game(object):
         return True
 
     def mirror(self):
-        self.init_board.mirror()
+        """对游戏进行水平镜像：镜像初始棋盘并镜像所有走子。"""
+        self.init_board = self.init_board.mirror()
         if self.first_move:
             self.first_move.mirror()
 
     def flip(self):
-        self.init_board.flip()
+        """对游戏进行垂直翻转：翻转初始棋盘并翻转所有走子。"""
+        self.init_board = self.init_board.flip()
         if self.first_move:
             self.first_move.flip()
 
     def swap(self):
-        self.init_board.swap()
+        """交换棋子颜色视角：交换初始棋盘并对所有走子执行 swap 操作。"""
+        self.init_board = self.init_board.swap()
         if self.first_move:
             self.first_move.swap()
 
     def iter_moves(self, move=None):
+        """按线性顺序迭代走子，从 `move`（或 `first_move`）开始。
+
+        只会沿 `next_move` 链迭代，不会进入分支列表。
+        """
         if move is None:
             move = self.first_move
         while move:
@@ -101,10 +134,15 @@ class Game(object):
             move = move.next_move
 
     def dump_init_board(self):
-        return self.init_board.dump_board()
+        """返回初始棋盘的文本视图（用于打印）。"""
+        return self.init_board.text_view()
 
     def dump_moves(self):
+        """序列化游戏中记录的所有走子线路。
 
+        返回一个列表，每个元素表示一条走子线路（包含分支索引和顺序），
+        由 `Move.dump_moves` 完成具体递归构造。
+        """
         if not self.first_move:
             return []
 
@@ -116,23 +154,27 @@ class Game(object):
         return move_list
     
     def dump_iccs_moves(self):
+        """以 ICCS 字符串形式返回所有走子线路（去掉路径前缀）。"""
         return [[str(move) for move in move_line[1:]]
-                for move_line in self.dump_moves()]
+            for move_line in self.dump_moves()]
     
     def dump_fen_iccs_moves(self):
+        """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
         return [[ [move.board.to_fen(), str(move)] for move in move_line[1:] ]
-                for move_line in self.dump_moves()]
+            for move_line in self.dump_moves()]
 
     def dump_text_moves(self):
+        """以中文可读文本形式返回所有走子线路。"""
         return [[move.to_text() for move in move_line[1:]]
-                for move_line in self.dump_moves()]
+            for move_line in self.dump_moves()]
     
     def dump_text_moves_with_annote(self):
+        """返回 (走法文本, 注释) 元组的列表，用于显示含注释的走子。"""
         return [[(move.to_text(),move.annote) for move in move_line[1:]]
-                for move_line in self.dump_moves()]
+            for move_line in self.dump_moves()]
     
     def dump_moves_line(self):
-
+        """返回沿当前选定分支的一条走子线路（线性，不含分支信息）。"""
         if not self.first_move:
             return []
 
@@ -142,11 +184,17 @@ class Game(object):
         return move_line
 
     def print_init_board(self):
+        """将初始棋盘的文本视图打印到标准输出。"""
         for line in self.init_board.text_view():
             print(line)
 
     def print_text_moves(self, steps_per_line = 2, show_annote = False):
+        """以格式化方式打印走子文本，支持每行若干步并显示注释。
 
+        参数:
+            steps_per_line (int): 每行显示的步数（每步包含红黑双方，共计 2 个走子）
+            show_annote (bool): 是否显示每步的注释
+        """
         moves = self.dump_text_moves_with_annote()
         for index, line in enumerate(moves):
             if len(moves) > 1:
@@ -167,11 +215,24 @@ class Game(object):
                 print(line_move)
                 
     def dump_info(self):
+        """打印存储在 `info` 字典中的游戏元信息键值对。"""
         for key in self.info:
             print(key, self.info[key])
     
     @staticmethod
+    def from_ubb_dhtml(txt):
+        """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
+        from .read_txt import read_from_ubb_dhtml
+        
+        return read_from_ubb_dhtml(txt)
+
+    @staticmethod
     def read_from(file_name):
+        """从文件中读取棋谱并返回 Game 对象，自动根据文件后缀选择解析器。
+
+        支持的后缀包括 .xqf, .pgn, .cbf, .cbr；函数内部延迟导入对应解析
+        模块以避免循环依赖。
+        """
         #在函数开始时才导入以避免循环导入
         from .read_xqf import read_from_xqf
         from .read_pgn import read_from_pgn
@@ -192,6 +253,7 @@ class Game(object):
     
     @staticmethod
     def read_from_lib(file_name):
+        """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
         #在函数开始时才导入以避免循环导入
         from .read_cbr import read_from_cbl
         
@@ -202,6 +264,13 @@ class Game(object):
             raise Exception(f"Unknown lib file format:{file_name}")
     
     def save_to(self, file_name):
+        """将当前游戏保存为文本格式的棋谱文件。
+
+        简单写出比赛头信息、可选的初始 FEN，以及按行列出的走子文本表示。
+
+        参数:
+            file_name (str): 输出文件路径
+        """
         init_fen = self.init_board.to_fen()
         with open(file_name, 'w') as f:
             f.write('[Game "Chinese Chess"]\n')

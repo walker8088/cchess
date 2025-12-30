@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "cchess"
-version = "1.25.1"
+version = "1.26.0"
 description = "ChineseChess (AKA XiangQi) library"
 authors = ["walker8088 <walker8088@gmail.com>"]
 license = "LGPL3"
@@ -28,16 +28,16 @@ classifiers = [
 
 requires-python = ">=3.6"
 dependencies = []
-#dynamic = ["version"]
+dynamic = ["version"]
 
-#[project.readme]
-#file = "README.md"
-#content-type = "text/x-rst"
+[project.readme]
+file = "README.md"
+content-type = "text/x-rst"
 
 [project.urls]
 Homepage = "https://github.com/walker8088/cchess"
 Source = "https://github.com/walker8088/cchess"
-#Documentation = "https://twine.readthedocs.io/en/latest/"
+
 
 [tool.poetry.dependencies]
 python = "^3.6"

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright (C) 2014  walker li <walker8088@gmail.com>
+Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,18 +15,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+import re
 
 from .exception import CChessException
 from .common import fench_to_species, FULL_INIT_FEN
 from .board import ChessBoard
 
 #-----------------------------------------------------#
+def decode_txt_pos(pos):
+        return (int(pos[0]), 9 - int(pos[1]))
+
+
+#-----------------------------------------------------#
 def read_from_txt(moves_txt, pos_txt=None):
     #避免循环导入
     from .game import Game
-    
-    def decode_txt_pos(pos):
-        return (int(pos[0]), 9 - int(pos[1]))
 
     #车马相士帅士相马车炮炮兵兵兵兵兵
     #车马象士将士象马车炮炮卒卒卒卒卒
@@ -52,6 +55,7 @@ def read_from_txt(moves_txt, pos_txt=None):
     last_move = None
     if not moves_txt:
         return Game(board)
+    
     step_no = 0
     while step_no * 4 < len(moves_txt):
         #steps = moves_txt[step_no * 4:step_no * 4 + 4]
@@ -77,4 +81,89 @@ def read_from_txt(moves_txt, pos_txt=None):
     if step_no == 0:
         game = Game(board)
 
+    return game
+
+#-----------------------------------------------------#
+def ubb_to_dict(ubb_text):
+    # 先提取整个 [DhtmlXQHTML] ... [/DhtmlXQHTML] 块的内容（去掉外层标签）
+    block_match = re.search(r'\[DhtmlXQHTML\](.*?)\[/DhtmlXQHTML\]', ubb_text, re.DOTALL)
+    if not block_match:
+        return "{}"
+    
+    content = block_match.group(1)
+    
+    # 正则匹配所有 [DhtmlXQ_xxx]value[/DhtmlXQ_xxx]
+    pattern = r'\[DhtmlXQ_([^]]+)\](.*?)\[/DhtmlXQ_\1\]'
+    matches = re.findall(pattern, content, re.DOTALL)
+    
+    result = {}
+    for key, value in matches:
+        cleaned_value = value.strip()
+        result[key] = cleaned_value
+    
+    return result
+
+#-----------------------------------------------------#
+def txt_to_board(pos_txt):
+    
+    #车马相士帅士相马车炮炮兵兵兵兵兵
+    #车马象士将士象马车炮炮卒卒卒卒卒
+    chessman_kinds = 'RNBAKABNRCCPPPPP'
+
+    if not pos_txt:
+        board = ChessBoard(FULL_INIT_FEN)
+    else:
+        if len(pos_txt) != 64:
+            raise CChessException("bad pos_txt")
+
+        board = ChessBoard()
+        for side in range(2):
+            for man_index in range(16):
+                pos_index = (side * 16 + man_index) * 2
+                man_pos = pos_txt[pos_index:pos_index + 2]
+                if man_pos == '99':
+                    continue
+                pos = decode_txt_pos(man_pos)
+                fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
+                board.put_fench(fen_ch, pos)
+    
+    return board 
+
+#-----------------------------------------------------#
+def txt_to_moves(board, moves_txt):
+    moves = []
+    step_no = 0
+    while step_no * 4 < len(moves_txt):
+        move_from = decode_txt_pos(moves_txt[step_no * 4:step_no * 4 + 2])
+        move_to = decode_txt_pos(moves_txt[step_no * 4 + 2:step_no * 4 + 4])
+
+        if board.is_valid_move(move_from, move_to):
+
+            if len(moves) == 0:
+                _, man_side = fench_to_species(board.get_fench(move_from))
+                board.move_side = man_side
+                
+            new_move = board.move(move_from, move_to)
+            moves.append(new_move)
+            board.next_turn()
+        else:
+            raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
+        step_no += 1
+    
+    return moves
+
+#-----------------------------------------------------#
+def read_from_ubb_dhtml(ubb_text):
+    #避免循环导入
+    from .game import Game
+
+    info = ubb_to_dict(ubb_text)
+    board = txt_to_board(info['binit'])
+    moves = txt_to_moves(board, info['movelist'])
+    
+    game= Game(board)
+    game.info = info
+    for move in moves:
+        game.append_next_move(move)
+    
     return game

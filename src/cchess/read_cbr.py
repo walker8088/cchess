@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright (C) 2014  walker li <walker8088@gmail.com>
+Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct
 
-from .exception import CChessException
 from .common import RED, BLACK, fench_to_species
 from .board import ChessPlayer, ChessBoard 
 from .game import Game
+#from .exception import CChessException
 
 CODING_PAGE_CBR = 'utf-16-le'
 
@@ -293,7 +293,7 @@ def read_from_cbl(file_name, verify = True):
         return lib_info
         
     if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-       raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {count},  {len(contents)}, {game_buffer_index + buff_start}')     
+       raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}')     
     
     count = 0
     game_index = 0
@@ -347,7 +347,7 @@ def read_from_cbl_progressing(file_name):
         yield lib_info
     else:    
         if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-           raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {count},  {len(contents)}, {game_buffer_index + buff_start}')     
+           raise Exception(f'文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}')     
         
         count = 0
         game_index = 0

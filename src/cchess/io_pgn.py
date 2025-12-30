@@ -1,13 +1,29 @@
+# -*- coding: utf-8 -*-
+'''
+Copyright (C) 2024  walker li <walker8088@gmail.com>
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
 
 import re
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
-from .exception import CChessException
-from .common import FULL_INIT_FEN
-from .board import ChessBoard
+#from .exception import CChessException
+#from .common import FULL_INIT_FEN
+#from .board import ChessBoard
 
 #-----------------------------------------------------#
 
@@ -261,8 +277,8 @@ class PGNParser:
         return game
 
     def read_file(self, file_name):
-        with open(file_name, 'r') as f:
-            txts =  f.read()
+        with open(file_name, 'r', encoding='utf-8') as f:
+            txts = f.read()
             self.parser(txts)
             
 #-----------------------------------------------------#
@@ -278,7 +294,7 @@ class PGNWriter:
         lines = []
         standard_headers = ['Event', 'Date', 'Round', 'Red', 'Black', 'Result']
         
-        lines.append(f'[Game "Chinese Chess"]')
+        lines.append('[Game "Chinese Chess"]')
         # 先写入标准头信息
         for header in standard_headers:
             if header in self.game.info:

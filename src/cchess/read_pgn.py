@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Copyright (C) 2014  walker li <walker8088@gmail.com>
+Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ def read_from_pgn(file_name):
     board = ChessBoard(FULL_INIT_FEN)
     game = Game(board)
     
-    with open(file_name) as file:
+    with open(file_name, 'r') as file:
         flines = file.readlines()
 
     lines = []
