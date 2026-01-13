@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # -*- coding: utf-8 -*-
 '''
 Copyright (C) 2024  walker li <walker8088@gmail.com>
@@ -15,15 +16,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+=======
+
+>>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
 
 import re
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
+<<<<<<< HEAD
 #from .exception import CChessException
 #from .common import FULL_INIT_FEN
 #from .board import ChessBoard
+=======
+from .exception import CChessException
+from .common import FULL_INIT_FEN
+from .board import ChessBoard
+>>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
 
 #-----------------------------------------------------#
 
@@ -277,8 +287,13 @@ class PGNParser:
         return game
 
     def read_file(self, file_name):
+<<<<<<< HEAD
         with open(file_name, 'r', encoding='utf-8') as f:
             txts = f.read()
+=======
+        with open(file_name, 'r') as f:
+            txts =  f.read()
+>>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
             self.parser(txts)
             
 #-----------------------------------------------------#
@@ -294,7 +309,11 @@ class PGNWriter:
         lines = []
         standard_headers = ['Event', 'Date', 'Round', 'Red', 'Black', 'Result']
         
+<<<<<<< HEAD
         lines.append('[Game "Chinese Chess"]')
+=======
+        lines.append(f'[Game "Chinese Chess"]')
+>>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
         # 先写入标准头信息
         for header in standard_headers:
             if header in self.game.info:

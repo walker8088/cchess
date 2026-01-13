@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import re
 from collections import OrderedDict
 
 #-----------------------------------------------------#
@@ -131,6 +132,7 @@ _fench_txt_name_dict = {
     'p': "卒"
 }
 
+#-----------------------------------------------------#
 def fench_to_txt_name(fench):    
     if fench not in _fench_txt_name_dict:
         return None
@@ -162,6 +164,28 @@ def fen_mirror(fen):
     return b.mirror().to_fen()
 
 #-----------------------------------------------------#
+def full2half(text):
+    # 全角到半角的映射
+    fullwidth_map = {
+        '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
+        '６': '6', '７': '7', '８': '8', '９': '9'
+    }
+    
+    # 使用 translate 方法进行批量替换
+    translation_table = str.maketrans(fullwidth_map)
+    return text.translate(translation_table)
+
+def half2full(text):
+    # 半角到全角的映射
+    halfwidth_map = {
+        '1': '１', '2': '２', '3': '３', '4': '４', '5': '５',
+        '6': '６', '7': '７', '8': '８', '9': '９'
+    }
+    
+    # 使用 translate 方法进行批量替换
+    translation_table = str.maketrans(halfwidth_map)
+    return text.translate(translation_table)
+#-----------------------------------------------------#
 p_count_dict = {
     "R1":'车',
     "R2":'双车',
@@ -189,6 +213,7 @@ p_dict = {
     'B':'象',    
 }
 
+#-----------------------------------------------------#
 def get_fen_pieces(fen):
     pieces = OrderedDict()
     fen_base = fen.split(' ')[0]
@@ -218,6 +243,7 @@ def get_fen_type(fen):
         
     return title
 
+#-----------------------------------------------------#
 def get_fen_type_detail(fen):
     pieces = get_fen_pieces(fen)
     
@@ -257,3 +283,39 @@ def get_fen_type_detail(fen):
         title_black = '将'
     
     return (title_red, title_black)
+
+#-----------------------------------------------------#
+def parse_dhtmlxq(html_str):
+    """
+    解析 DhtmlXQHTML 格式的象棋谱字符串，返回一个字典。
+    
+    示例输入:
+        [DhtmlXQHTML]
+        [DhtmlXQ_init]500,350[/DhtmlXQ_init]
+        ...
+        [/DhtmlXQHTML]
+    
+    返回:
+        {
+            "init": "500,350",
+            "binit": "8979695949392919097717866646260600102030405060708012720323436383",
+            "title": "中炮对左三步虎",
+            ...
+        }
+    """
+    result = {}
+    
+    # 使用正则表达式匹配所有 [DhtmlXQ_xxx]content[/DhtmlXQ_xxx]
+    pattern = r'\[DhtmlXQ_([^]]+)\](.*?)\[/DhtmlXQ_\1\]'
+    matches = re.findall(pattern, html_str, re.DOTALL)
+    
+    for key, value in matches:
+        # 去除内容中的换行和多余空白
+        cleaned_value = value.strip()
+        # 恢复原始字段名（去掉 DhtmlXQ_ 前缀）
+        field_name = key.lower()
+        result[field_name] = cleaned_value
+    
+    # 特殊处理：如果有 [DhtmlXQHTML] 开头和结尾，可以忽略
+    return result
+

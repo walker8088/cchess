@@ -52,7 +52,8 @@ class TestReaderCbr():
         for k,v in game.info.items():
             print(f"{k}:{v}")
 
-        moves = game.dump_moves()
+        moves = game.dump_moves(is_tree_mode = False)
+
         for index, m_line in enumerate(moves):
             txt = ','.join([x.to_text() for x in m_line['moves']])
             print("招法：", txt)

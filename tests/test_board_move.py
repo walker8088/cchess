@@ -484,6 +484,8 @@ class TestBoard():
 
     def test_text(self):
         board = ChessBoard(FULL_INIT_FEN)
+        assert board.copy().move_text('炮二平五').to_text() == '炮二平五'
+        
         assert board.copy().move((7, 2), (4, 2)).to_text() == '炮二平五'
         assert board.copy().move((1, 2), (1, 1)).to_text() == '炮八退一'
         assert board.copy().move((7, 2), (7, 6)).to_text() == '炮二进四'
@@ -494,6 +496,8 @@ class TestBoard():
         assert board.copy().move((5, 0), (4, 1)).to_text() == '仕四进五'
         assert board.copy().move((7, 0), (6, 2)).to_text() == '马二进三'
         board.next_turn()
+        assert board.copy().move_text('炮８平５').to_text() == '炮８平５'
+        assert board.copy().move_text('炮8平5').to_text()   == '炮８平５'
         assert board.copy().move((7, 7), (4, 7)).to_text() == '炮８平５'
         assert board.copy().move((7, 7), (7, 3)).to_text() == '炮８进４'
         assert board.copy().move((0, 9), (0, 8)).to_text() == '车１进１'

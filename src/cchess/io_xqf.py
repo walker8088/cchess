@@ -29,26 +29,37 @@ from .game import Game
 result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
 
 def _decode_pos(man_pos):
+    """将单个压缩的棋子位置整数解码为 (x, y) 坐标。
+
+    XQF 中棋子位置一般以十进制编码，函数将其拆为列和行。
+    """
     return (int(man_pos // 10), man_pos % 10)
 
 def _decode_pos2(man_pos):
+    """将包含两个压缩位置的元组解码为 ((from_x,from_y),(to_x,to_y))。"""
     return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
                                                        man_pos[1] % 10))
 
 #-----------------------------------------------------#
 class XQFKey(object):
     def __init__(self):
+        """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
         pass
 
 #-----------------------------------------------------#
 class XQFBuffDecoder(object):
+    """对 XQF 中走子数据区的字节流提供顺序读取辅助。
+
+    提供按字节读取、按长度解码字符串以及读取 4 字节整数的便利方法，
+    以便在解析走子（steps）时按顺序消费缓冲区。
+    """
     def __init__(self, buffer):
         self.buffer = buffer
         self.index = 0
         self.length = len(buffer)
 
     def __read(self, size):
-
+        """内部方法：从当前索引读 `size` 字节并推进索引。"""
         start = self.index
         stop = self.index + size
 
@@ -59,6 +70,8 @@ class XQFBuffDecoder(object):
         return self.buffer[start:stop]
 
     def read_str(self, size, coding="GB18030"):
+        """读取指定字节并按给定编码尝试解码为字符串，失败返回 None。"""
+
         buff = self.__read(size)
 
         try:
@@ -72,12 +85,14 @@ class XQFBuffDecoder(object):
         return bytearray(self.__read(size))
 
     def read_int(self):
+        """读取 4 字节并按小端序返回一个整数。"""
         bytes = self.read_bytes(4)
         return bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24)
 
 
 #-------------------------------------------------
 def __init_decrypt_key(buff_str):
+    """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。"""
 
     keys = XQFKey()
 
@@ -156,7 +171,12 @@ def __init_decrypt_key(buff_str):
 
 #-----------------------------------------------------#
 def __init_chess_board(man_str, version, keys=None):
+   """根据文件中存放的棋子布局字节串构造内部的 32 长度数组。
 
+    如果 `keys` 提供了解密因子则按版本和密钥做位置解密与字节变换，
+    否则直接拷贝原始布局。
+    返回一个长度为 32 的 bytearray，值为 0xFF 表示该位置无子。
+    """
     tmpMan = bytearray([0 for x in range(32)])
     man_buff = bytearray(man_str)
 
@@ -181,7 +201,7 @@ def __init_chess_board(man_str, version, keys=None):
 
 #-----------------------------------------------------#
 def __decode_buff(keys, buff):
-
+    """使用 `keys` 中的 F32Keys 对缓冲区做逐字节的解密变换并返回解密后的 bytes。"""
     nPos = 0x400
     de_buff = bytearray(buff)
 
@@ -194,7 +214,11 @@ def __decode_buff(keys, buff):
 
 #-----------------------------------------------------#
 def __read_init_info(buff_decoder, version, keys):
+    """读取并返回记录区的注释信息（若存在）。
 
+    对应 XQF 中走子前的初始化注释，低版本和高版本通过不同方式
+    存放注释长度，因此对此进行兼容解析。返回注释字符串或 None。
+    """
     step_info = buff_decoder.read_bytes(4)
 
     comment_len = 0
@@ -212,7 +236,12 @@ def __read_init_info(buff_decoder, version, keys):
 
 #-----------------------------------------------------#
 def __read_steps(buff_decoder, version, keys, game, parent_move, board):
+    """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
 
+    解析单个走子记录，根据版本与 keys 解码起点/终点、注释和分支标志，
+    对合法走子调用 `board.move` 并插入到游戏树；若检测到变招或后续走
+    子，则递归读取相应子区块(深度优先遍历)。
+    """
     step_info = buff_decoder.read_bytes(4)
 
     if len(step_info) == 0:
@@ -284,9 +313,21 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         game.info['branchs'] += 1
 
 #-----------------------------------------------------#
-def read_from_xqf(file_name, read_annotation=True):
-    
-    with open(file_name, "rb") as f:
+def read_from_xqf(full_file_name, read_annotation=True):
+    """从 `.xqf` 文件读取并解析为 `Game` 对象。
+
+    该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
+    读取游戏注释并递归解析走子数据块，最终返回填充完毕的 `Game`。
+
+    参数:
+        full_file_name (str): XQF 文件路径
+        read_annotation (bool): 是否读取注释
+
+    返回:
+        Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
+    """
+
+    with open(full_file_name, "rb") as f:
         contents = f.read()
 
     magic, version,  crypt_keys, ucBoard,\
@@ -577,7 +618,6 @@ class XQFWriter:
     
 
     def save(self, file_name):
-
         with open(file_name, 'wb') as f:
             move_lines = []
             lines = self.game.dump_moves(is_tree_mode = True)

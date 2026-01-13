@@ -59,7 +59,7 @@ def read_from_cbf(file_name):
             if last_move is not None:
                 last_move.append_next_move(new_move)
             else:
-                game.append_first_move(new_move)
+                game.append_next_move(new_move)
             last_move = new_move
             board.next_turn()
         else:

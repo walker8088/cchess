@@ -1,4 +1,9 @@
 
+release v1.24.6 
+  * 读写带xqf格式棋谱，支持变招和注释
+  * 读取东萍UBB dhtml格式棋谱（不支持变招和注释）
+  * 读写pgn格式棋谱，支持变招和注释
+  
 release v1.24.4 
   * 目前可以读入 XQF, CBR, CBL, PNG(iccs格式和文本格式) 的棋谱
     
