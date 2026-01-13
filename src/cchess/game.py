@@ -279,15 +279,23 @@ class Game(object):
             f.write('[Black ""]\n')
             if init_fen != FULL_INIT_FEN:
                 f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
-            moves = self.dump_text_moves()
+
+            if self.annote:
+                f.write(f'{{ {self.annote} }}\n')
+                
+            moves = self.dump_moves()
             if len(moves) > 0:
-                move_line = moves[0]
+                move_line = moves[0][1:]
                 for index, m in enumerate(move_line):
                     if (index % 2) == 0:
                         pre_str = f" {index//2+1}."
                     else:
                         pre_str = "    "
-                    f.write(f'{pre_str} {m}\n')
+                    if m.annote:
+                        f.write(f'{pre_str} {m.to_text()} {{ {m.annote} }}\n')
+                    else:    
+                        f.write(f'{pre_str} {m.to_text()}\n')
+
             f.write('   *\n')
             f.write('  =========\n')
             

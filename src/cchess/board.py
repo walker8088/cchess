@@ -329,7 +329,7 @@ class ChessBoard(object):
 
         return fench
 
-    def move(self, pos_from, pos_to):
+    def move(self, pos_from, pos_to, check = True):
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
 
         返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
@@ -340,25 +340,26 @@ class ChessBoard(object):
         board = self.copy()
         self._move_piece(pos_from, pos_to)
         move = Move(board, pos_from, pos_to)
-        if self.is_checking():
-            move.is_checking = True
-            if self.is_checkmate():
-                move.is_checkmate = True
+        if check:
+            if self.is_checking():
+                move.is_checking = True
+                if self.is_checkmate():
+                    move.is_checkmate = True
 
         return move
 
-    def move_iccs(self, move_str):
+    def move_iccs(self, move_str, check = True):
         """根据 ICCS 格式的字符串执行走子，返回 `Move` 或 None。"""
         move_from, move_to = iccs2pos(move_str)
-        return self.move(move_from, move_to)
+        return self.move(move_from, move_to, check)
 
-    def move_text(self, move_str):
+    def move_text(self, move_str, check = True):
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
         ret = Move.from_text(self, move_str)
         if not ret:
             return None
         move_from, move_to = ret
-        return self.move(move_from, move_to)
+        return self.move(move_from, move_to, check)
 
     def next_turn(self):
         """切换到下一个走子方并返回新的 `ChessPlayer` 实例（工具方法）。"""

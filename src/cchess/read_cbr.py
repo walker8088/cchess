@@ -26,26 +26,6 @@ from .game import Game
 CODING_PAGE_CBR = 'utf-16-le'
 
 #-----------------------------------------------------#
-'''
-piece_dict = {
-    #红方
-    0x11:'r', #车
-    0x12:'n', #马
-    0x13:'b', #相
-    0x14:'a', #仕
-    0x15:'k', #帅
-    0x16:'c', #炮
-    0x17:'p', #兵
-    #黑方
-    0x21:'R', #车
-    0x22:'N', #马
-    0x23:'B', #相
-    0x24:'A', #仕
-    0x25:'K', #帅
-    0x26:'C', #炮
-    0x27:'P', #卒
-}
-'''
 piece_dict = {
     #红方
     0x11:'R', #车
@@ -72,11 +52,15 @@ def _decode_pos(p):
     return (p%9, 9-p//9)    
 
 def cut_bytes_to_str(buff):
-    buff_len = len(buff)
-    for index in range(0, buff_len, 2):
-        if buff[index : index+2] == b'\x00\x00':
-            return buff[:index].decode(CODING_PAGE_CBR)    
-    
+    end_index = buff.find(b'\x00\x00')
+    #TODO 探查一下error原因
+    if end_index >= 0:
+        annote = buff[:end_index].decode(CODING_PAGE_CBR, errors = 'ignore')
+    else:
+        annote = buff.decode(CODING_PAGE_CBR, errors = 'ignore')
+    #print(end_index, len(buff), annote) 
+    return annote
+
 #-----------------------------------------------------#
 class CbrBuffDecoder(object):
     def __init__(self, buffer, coding):
@@ -117,7 +101,6 @@ class CbrBuffDecoder(object):
         
 #-----------------------------------------------------#
 def __read_init_info(buff_decoder):
-
     #注释长度, 为0则没有注释
     a_len = buff_decoder.read_int()
     if a_len == 0:
@@ -183,9 +166,8 @@ def __read_steps(buff_decoder, game, parent_move, board):
                 game.append_first_move(curr_move)
             good_move = curr_move
         else:
-            #raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
-            #good_move = parent_move
             return
+            #raise CChessException(f"bad move: {board.to_fen()} {move_from}, {move_to}")
             
     if has_next_move:
         __read_steps(buff_decoder, game, good_move, board)
@@ -211,7 +193,6 @@ def read_from_cbr_buffer(contents):
     game_info['black'] = cut_bytes_to_str(black)
     game_info['result'] = result_dict[game_result]
     #game_info['steps'] = steps
-    
     board = ChessBoard()
     if move_side == 1:    
         board.move_player = ChessPlayer(RED)
@@ -246,16 +227,6 @@ def read_from_cbr(file_name):
     
 
 #-----------------------------------------------------#
-#131 102780
-#206 123480
-#224 128448
-#236 131760
-#266 140040
-#404 178128
-#454 191928
-#837 297636
-#2048 631872
-
 def read_from_cbl(file_name, verify = True):
 
     with open(file_name, "rb") as f:
@@ -272,19 +243,6 @@ def read_from_cbl(file_name, verify = True):
     lib_info['games'] = []
     
     buff_start = 101952
-    
-    '''
-    if book_count <= 128:
-        index = 101952
-    elif book_count <= 256:
-        index = 137280
-    elif book_count <= 384:
-        index = 151080
-    elif book_count <= 512:
-        index = 207936
-    else:
-        index = 349248
-    '''
     
     game_buffer = contents[buff_start:]
     game_buffer_len = len(game_buffer)
