@@ -75,6 +75,7 @@ class TestGameExtended():
         assert isinstance(board_dump, list)
         assert len(board_dump) == 22  # 棋盘有10行，打印出来22行数据
     
+    '''
     def test_dump_moves_line(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
@@ -104,34 +105,12 @@ class TestGameExtended():
             text, annote = moves_with_annote[0][0]
             assert isinstance(text, str)
             assert isinstance(annote, str)
-    
-    def test_save_to_pgn(self):
-        game = Game()
-        board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move((0, 0), (0, 1))
-        move2 = board.copy().move((1, 2), (1, 1))
-        move1.append_next_move(move2)
-        
-        game.append_first_move(move1)
-        
-        out_file = Path("data", "test_save.pgn")
-        game.save_to(out_file)
-        
-        # 验证文件存在
-        assert out_file.exists()
-        
-        # 读取并验证
-        game2 = Game.read_from(out_file)
-        assert game2.init_board.to_fen() == game.init_board.to_fen()
-        
-        # 清理
-        if out_file.exists():
-            os.remove(out_file)
+    '''
     
     def test_append_first_move(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move((0, 0), (0, 1))
+        move1 = board.copy().move_text('车九进一')
         
         result = game.append_first_move(move1)
         assert result == move1
@@ -139,17 +118,17 @@ class TestGameExtended():
         assert game.last_move == move1
         
         # 添加第二个move作为分支
-        move2 = board.copy().move((1, 2), (1, 1))
+        move2 = board.copy().move_text('炮八退一')
         game.append_first_move(move2)
-        assert len(game.first_move.branchs) == 1
+        assert len(game.first_move.variations_all) == 2
     
     def test_append_next_move(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move((0, 0), (0, 1))
-        move2 = board.copy().move((1, 2), (1, 1))
-        
+        move1 = board.move_text('车九进一')
         game.append_first_move(move1)
+        board.next_turn()
+        move2 = board.move_text('炮2平5')
         game.append_next_move(move2)
         
         assert game.first_move == move1

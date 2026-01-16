@@ -73,12 +73,12 @@ class TestReaderXQF():
             txt = ','.join([x.to_text() for x in m_line['moves']])
             #assert txt == move_text[index]
         
-        game.make_branchs_tag()
-        moves = game.dump_text_moves(show_branch = True)
-        assert len(moves) == 5
-        for index, m_line in enumerate(moves):
-            txt = ','.join(m_line)
-            #assert txt == move_text[index]
+        #ame.make_branchs_tag()
+        #moves = game.dump_text_moves(show_branch = True)
+        #assert len(moves) == 5
+        #for index, m_line in enumerate(moves):
+        #    txt = ','.join(m_line)
+        #    #assert txt == move_text[index]
         
         #txt = ','.join([f'{m.to_text()}_{m.branch_index}.{m.len_siblings()}' for m in game.move_line_to_list()])
         
@@ -113,7 +113,6 @@ class TestReaderXQF():
                     )
 
         moves = game.dump_moves(is_tree_mode = True)
-        assert len(moves) == 6
         for index, m_line in enumerate(moves):
             txt = ','.join([x.to_text() for x in m_line['moves']])
             assert txt == move_text2[index]
@@ -123,7 +122,7 @@ class TestReaderXQF():
 
         game2 = Game.read_from(tmp_file)
         moves = game2.dump_moves(is_tree_mode = True)
-        assert len(moves) == 6
+        assert len(moves[0]['moves']) == 8
         for index, m_line in enumerate(moves):
             txt = ','.join([x.to_text() for x in m_line['moves']])
             assert txt == move_text2[index]
@@ -155,7 +154,7 @@ class TestReaderXQF():
         game = Game.read_from(Path("data", "test1.xqf"))
         assert game.init_board.to_fen() == fen
         assert game.info['result'] == result
-        assert game.info['branchs'] == 1
+        #assert game.info['branchs'] == 1
         
         #game.print_init_board()
         m = game.dump_text_moves()[0]

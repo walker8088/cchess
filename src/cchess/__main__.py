@@ -31,11 +31,11 @@ def print_game(game):
 
     game.print_init_board()
     print('-------------------------------------')
-    if game.comment:
-        print(game.comment)
+    if game.annote:
+        print(game.annote)
         print('-------------------------------------')
     
-    game.print_text_moves(steps_per_line = 5, show_comment = True)
+    game.print_text_moves(steps_per_line = 5, show_annote = True)
 
 def main():
     parser = argparse.ArgumentParser(prog='python -m cchess')

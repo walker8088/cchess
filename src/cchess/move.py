@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs
+from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs, half2full
 
 #-----------------------------------------------------#
 #TODO 英文全角半角统一识别
@@ -43,7 +43,7 @@ class Move(object):
         self.is_checking = is_checking
         self.step_index = 0
         self.score = None
-        self.comment = ''
+        self.annote = ''
         self.parent = None
 
         if self.is_checking:
@@ -57,7 +57,7 @@ class Move(object):
         self.board_done.next_turn()  #TODO 默认红走一步，黑走一步，对于让先的处理后续考虑
         self.next_move = None
 
-        self.sibling_next = None
+        self.variation_next = None
         self.variations_all = [self]
 
         self.move_list_for_engine = []
@@ -65,9 +65,11 @@ class Move(object):
 
     @property
     def move_player(self):
-        return self.board.move_player
+        """返回执行此走子的玩家（当前棋盘的 `move_player`）。"""
+        return self.board.move_player    
 
     def __str__(self):
+        """返回此走子的 ICCS 格式字符串表示。"""
         return self.to_iccs()
 
     def mirror(self):
@@ -82,7 +84,7 @@ class Move(object):
         self.p_to = (8 - self.p_to[0], self.p_to[1])
         self.board_done = self.board_done.mirror()
 
-        for move in self.get_siblings():
+        for move in self.get_variations():
             move.mirror()
 
         if self.next_move:
@@ -100,7 +102,7 @@ class Move(object):
         self.p_to = (self.p_to[0], 9 - self.p_to[1])
         self.board_done = self.board_done.flip()
 
-        for move in self.get_siblings():
+        for move in self.get_variations():
             move.flip()
 
         if self.next_move:
@@ -115,7 +117,7 @@ class Move(object):
         self.board = self.board.swap()
         self.board_done = self.board_done.swap()
 
-        for move in self.get_siblings():
+        for move in self.get_variations():
             move.swap()
 
         if self.next_move:
@@ -138,15 +140,10 @@ class Move(object):
             return True
         return False
 
-    @property
-    def move_player(self):
-        """返回执行此走子的玩家（当前棋盘的 `move_player`）。"""
-        return self.board.move_player
-
-    def len_siblings(self):
+    def len_variations(self):
         return len(self.variations_all)
     
-    def get_siblings(self, include_me = False):
+    def get_variations(self, include_me = False):
         if include_me:
             return self.variations_all
         
@@ -155,31 +152,31 @@ class Move(object):
 
         return sibs 
 
-    def last_sibling(self):
+    def last_variation(self):
         return self.variations_all[-1]        
     
-    def get_silbing_index(self):
+    def get_variation_index(self):
         slibling_count = len(self.variations_all)
         for index, m in enumerate(self.variations_all):
             if m == self:
                 return (index, slibling_count)
 
-    def add_sibling(self, chess_move):
+    def add_variation(self, chess_move):
         chess_move.parent = self.parent
         chess_move.step_index = self.step_index
-        last = self.last_sibling()
+        last = self.last_variation()
         
-        assert last.sibling_next is None
+        assert last.variation_next is None
 
-        last.sibling_next = chess_move
+        last.variation_next = chess_move
         
         self.variations_all.append(chess_move)
-        for node in self.get_siblings():
+        for node in self.get_variations():
             node.variations_all = self.variations_all
         
         return chess_move
 
-    def remove_sibling(self, chess_move):
+    def remove_variation(self, chess_move):
         if chess_move not in self.variations_all:
             return
         
@@ -188,14 +185,14 @@ class Move(object):
         
         #从链上摘下
         node = self
-        while node.sibling_next :
-            if node.sibling_next == chess_move:
-                next_node = node.sibling_next.slibling_next
-                node.sibling_next = next_node
-                chess_move.sibling_next = None
+        while node.variation_next :
+            if node.variation_next == chess_move:
+                next_node = node.variation_next.slibling_next
+                node.variation_next = next_node
+                chess_move.variation_next = None
 
         #更新兄弟表到所有的兄弟        
-        for node in self.get_siblings():
+        for node in self.get_variations():
             node.variations_all = self.variations_all
                 
     def append_next_move(self, chess_move):
@@ -209,8 +206,9 @@ class Move(object):
         if not self.next_move:
             self.next_move = chess_move
         else:
-            self.next_move.branchs.append(chess_move)
+            self.next_move.variations_all.append(chess_move)
 
+    '''
     def branch_count(self):
         """返回当前分支数量（避免与实例属性 `branchs` 名称冲突）。"""
         return len(self.branchs)
@@ -234,34 +232,7 @@ class Move(object):
         res = [self]
         res.extend(self.branchs)
         return res
-
-    def dump_moves(self, move_list, curr_move_line):
-        """将从当前节点开始的走子线路序列化并追加到 `move_list`。
-
-        `curr_move_line` 表示当前遍历路径，本方法会在递归过程中
-        扩展路径并将每条线（含分支索引）追加到 `move_list`。
-        """
-
-        backup_move_line = curr_move_line[:]
-        index_save = backup_move_line[0][:]
-
-        curr_move_line.append(self)
-
-        #第一个元素是分支索引
-        if len(self.branchs) > 0:
-            curr_move_line[0].append(0)
-
-        self.next_move.dump_moves(move_list, curr_move_line)
-
-        if len(self.branchs) > 0:
-            for index, move in enumerate(self.branchs):
-                new_line = backup_move_line[:]
-                indexs = index_save[:]
-                indexs.append(index + 1)
-                new_line[0] = indexs
-                move_list.append(new_line)
-                move.dump_moves(move_list, new_line)
-
+        
     def dump_moves_line(self, move_list):
         """沿选定的分支收集一条走子线路并追加到 `move_list`。
 
@@ -285,26 +256,27 @@ class Move(object):
             return
 
         sel_move.next_move.dump_moves_line(move_list)
-    
-
-    def __str__(self):
-        """返回此走子的 ICCS 格式字符串表示。"""
-        return self.to_iccs()
 
         if self.next_move:
-            self.next_move.make_branchs_tag(branch_index, 0)
+            self.next_move.make_branchs_tag(self.branch_index, 0)
         
-        #curr_sibling_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
+        #curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
         #所以就不能在分支中再找兄弟了，否则会重复输出分支
-        if curr_sibling_index > 0:
+        if curr_variation_index > 0:
             return
 
-        for index, sibling_move in enumerate(self.get_siblings()):
+        for index, variation_move in enumerate(self.get_variations()):
             branch_index += 1
-            sibling_index = index + 1
-            sibling_move.make_branchs_tag(branch_index, sibling_index)
+            variation_index = index + 1
+            variation_move.make_branchs_tag(branch_index, variation_index)
+    '''
+    
+    def dump_moves(self, move_list, curr_move_line, is_tree_mode, curr_variation_index = 0):
+        """将从当前节点开始的走子线路序列化并追加到 `move_list`。
 
-    def dump_moves(self, move_list, curr_move_line, is_tree_mode, curr_sibling_index = 0):
+        `curr_move_line` 表示当前遍历路径，本方法会在递归过程中
+        扩展路径并将每条线（含分支索引）追加到 `move_list`。
+        """
 
         backup_move_line = curr_move_line['moves'][:] 
         curr_move_line['moves'].append(self)
@@ -314,24 +286,24 @@ class Move(object):
         if self.next_move:
             self.next_move.dump_moves(move_list, curr_move_line, is_tree_mode, 0)
         
-        #curr_sibling_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
+        #curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
         #所以就不能在分支中再找兄弟了，否则会重复输出分支
-        #assert curr_sibling_index == self.get_silbing_index()
-        if curr_sibling_index > 0:
+        #assert curr_variation_index == self.get_variation_index()
+        if curr_variation_index > 0:
             return
         
         #只有主分支（index == 0）才会遍历兄弟分支
 
-        for index, sibling_move in enumerate(self.get_siblings()):
-            sibling_index = index + 1
+        for index, variation_move in enumerate(self.get_variations()):
+            variation_index = index + 1
             new_line_index = len(move_list)
-            line_name = f'{curr_line_index}.{self.step_index}.{sibling_index}_{new_line_index}'    
+            line_name = f'{curr_line_index}.{self.step_index}.{variation_index}_{new_line_index}'    
             new_line = {
                     'index': new_line_index, 
                     'name':line_name,  
-                     #'siblings':siblings, 
-                    'sibling_index':sibling_index, 
-                    'from_line': (curr_line_index, self.step_index, sibling_index), 
+                     #'variations':variations, 
+                    'variation_index':variation_index, 
+                    'from_line': (curr_line_index, self.step_index, variation_index), 
                     'moves':[]
                     }
     
@@ -339,10 +311,10 @@ class Move(object):
                 new_line['moves'].extend(backup_move_line)
 
             move_list.append(new_line)
-            sibling_move.dump_moves(move_list, new_line, is_tree_mode, sibling_index)
+            variation_move.dump_moves(move_list, new_line, is_tree_mode, variation_index)
 
     def init_move_line(self):
-        return {'index': 0, 'name':'0', 'siblings':[], 'moves':[] }
+        return {'index': 0, 'name':'0', 'variations':[], 'moves':[] }
             
     def to_text(self, detailed=False):
         """返回此走子的中文可读文本表示。
@@ -441,18 +413,18 @@ class Move(object):
 
         return man_name + _h_level_index[man_side][pos[0]]
 
-    def to_text_detail(self, show_branch, show_comment):
+    def to_text_detail(self, show_variation, show_annote):
         
-        if show_branch:
-            txt = self.to_text_branch()
+        if show_variation:
+            txt = self.to_text_variation()
         else:
             txt = self.to_text()    
         
-        comment = self.comment if show_comment else ''
+        annote = self.annote if show_annote else ''
 
-        return (txt,  '')
+        return (txt,  annote)
     
-    def to_text_branch(self):
+    def to_text_variation(self):
         
         assert len(self.variations_all) > 0
         
@@ -701,4 +673,4 @@ class Move(object):
             #多兵选一移动
             else:
                 pass
-
+                #TODO fix

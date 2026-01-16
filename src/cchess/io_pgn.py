@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # -*- coding: utf-8 -*-
 '''
 Copyright (C) 2024  walker li <walker8088@gmail.com>
@@ -16,24 +15,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-=======
-
->>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
-
 import re
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
-<<<<<<< HEAD
 #from .exception import CChessException
 #from .common import FULL_INIT_FEN
 #from .board import ChessBoard
-=======
-from .exception import CChessException
-from .common import FULL_INIT_FEN
-from .board import ChessBoard
->>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
+
 
 #-----------------------------------------------------#
 
@@ -45,7 +35,7 @@ class Color(Enum):
 class Move:
     """表示一个棋步"""
     san: str  
-    comment: Optional[str] = None
+    annote: Optional[str] = None
     variations: List['MoveNode'] = None
     
     def __post_init__(self):
@@ -74,9 +64,9 @@ class PGNGame:
         """设置头信息"""
         self.headers[key] = value
     
-    def add_move(self, san: str, comment: Optional[str] = None) -> MoveNode:
+    def add_move(self, san: str, annote: Optional[str] = None) -> MoveNode:
         """添加主变招的棋步"""
-        move = Move(san, comment)
+        move = Move(san, annote)
         new_node = MoveNode(move)
         
         if self.moves is None:
@@ -113,12 +103,12 @@ class PGNParser:
             
             # 注释
             if char == '{':
-                comment_end = text.find('}', i + 1)
-                if comment_end == -1:
+                annote_end = text.find('}', i + 1)
+                if annote_end == -1:
                     raise ValueError("未匹配的注释结束符 '}'")
-                comment = text[i+1:comment_end]
-                tokens.append({'type': 'comment', 'value': comment})
-                i = comment_end + 1
+                annote = text[i+1:annote_end]
+                tokens.append({'type': 'annote', 'value': annote})
+                i = annote_end + 1
                 continue
             
             # 变招开始
@@ -212,9 +202,9 @@ class PGNParser:
                 
                 current_line.append(new_node)
             
-            elif token['type'] == 'comment':
+            elif token['type'] == 'annote':
                 if current_node != root:
-                    current_node.move.comment = token['value']
+                    current_node.move.annote = token['value']
             
             elif token['type'] == 'variation_start':
                 # 保存当前主线
@@ -287,13 +277,8 @@ class PGNParser:
         return game
 
     def read_file(self, file_name):
-<<<<<<< HEAD
         with open(file_name, 'r', encoding='utf-8') as f:
             txts = f.read()
-=======
-        with open(file_name, 'r') as f:
-            txts =  f.read()
->>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
             self.parser(txts)
             
 #-----------------------------------------------------#
@@ -309,11 +294,7 @@ class PGNWriter:
         lines = []
         standard_headers = ['Event', 'Date', 'Round', 'Red', 'Black', 'Result']
         
-<<<<<<< HEAD
         lines.append('[Game "Chinese Chess"]')
-=======
-        lines.append(f'[Game "Chinese Chess"]')
->>>>>>> 1cd8c506af597b444270b9eaa8780646d63bbf62
         # 先写入标准头信息
         for header in standard_headers:
             if header in self.game.info:
@@ -349,12 +330,12 @@ class PGNWriter:
             lines.append(current.to_text())
             
             # 添加注释
-            if current.comment:
-                lines.append(f"{{{current.comment}}}")
+            if current.annote:
+                lines.append(f"{{{current.annote}}}")
             
             #只有主变才处理变招，避免循环递归
             if curr_sibling_index == 0:
-                for index, variation in enumerate(current.get_siblings(include_me = False)):
+                for index, variation in enumerate(current.get_variations()):
                     lines.append("\n(")
                     variation_text = self.write_moves(variation, index+1)
                     lines.append(variation_text.strip())
@@ -383,10 +364,11 @@ class PGNWriter:
         # 添加结果
         if 'result' in self.game.info:
             lines.append(self.game.info['result'])
-        
+            lines.append('  =========')
+            
         return '\n'.join(lines)
 
-    def write_file(self, file_name):
+    def save(self, file_name):
         with open(file_name, 'w') as f:
             lines = self.write_lines()
             f.write(lines)

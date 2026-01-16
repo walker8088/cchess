@@ -171,7 +171,7 @@ def __init_decrypt_key(buff_str):
 
 #-----------------------------------------------------#
 def __init_chess_board(man_str, version, keys=None):
-   """根据文件中存放的棋子布局字节串构造内部的 32 长度数组。
+    """根据文件中存放的棋子布局字节串构造内部的 32 长度数组。
 
     如果 `keys` 提供了解密因子则按版本和密钥做位置解密与字节变换，
     否则直接拷贝原始布局。
@@ -221,17 +221,17 @@ def __read_init_info(buff_decoder, version, keys):
     """
     step_info = buff_decoder.read_bytes(4)
 
-    comment_len = 0
+    annote_len = 0
     if version <= 0x0A:
         #低版本在走子数据后紧跟着注释长度，长度为0则没有注释
-        comment_len = buff_decoder.read_int()
+        annote_len = buff_decoder.read_int()
     else:
         #高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
         step_info[2] &= 0xE0
         if (step_info[2] & 0x20):  #有注释
-            comment_len = buff_decoder.read_int() - keys.KeyRMKSize
+            annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
-    return buff_decoder.read_str(comment_len) if (comment_len > 0) else None
+    return buff_decoder.read_str(annote_len) if (annote_len > 0) else None
 
 
 #-----------------------------------------------------#
@@ -247,7 +247,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     if len(step_info) == 0:
         return
 
-    comment_len = 0
+    annote_len = 0
     has_next_step = False
     has_var_step = False
     board_bak = board.copy()
@@ -258,7 +258,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
             has_next_step = True
         if (step_info[2] & 0x0F):
             has_var_step = True  #有变着
-        comment_len = buff_decoder.read_int()
+        annote_len = buff_decoder.read_int()
         #走子起点，落点
         step_info[0] = (step_info[0] - 0x18) & 0xFF
         step_info[1] = (step_info[1] - 0x20) & 0xFF
@@ -271,14 +271,14 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if (step_info[2] & 0x40):  #有变招
             has_var_step = True
         if (step_info[2] & 0x20):  #有注释
-            comment_len = buff_decoder.read_int() - keys.KeyRMKSize
+            annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
         #走子起点，落点
         step_info[0] = (step_info[0] - 0x18 - keys.KeyXYf) & 0xFF
         step_info[1] = (step_info[1] - 0x20 - keys.KeyXYt) & 0xFF
 
     move_from, move_to = _decode_pos2(step_info)
-    comment = buff_decoder.read_str(comment_len) if comment_len > 0 else None
+    annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
 
     fench = board.get_fench(move_from)
 
@@ -292,7 +292,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if board.is_valid_move(move_from, move_to):
             #认为当前走子一方就是合理一方，避免过多走子方检查
             curr_move = board.move(move_from, move_to)
-            curr_move.comment = comment
+            curr_move.annote = annote
             #print curr_move.move_str(), has_next_step, has_var_step
             if parent_move:
                 parent_move.append_next_move(curr_move)
@@ -358,7 +358,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
     if ucRes <= 4:  #It's really some file has value 4
         game_info["result"] = result_dict[ucRes]
     else:
-        print("Bad Result  ", ucRes, file_name)
+        print("Bad Result  ", ucRes, full_file_name)
         game_info["result"] = '*'
 
     if ucRedPlayerNameLen > 0:
@@ -436,25 +436,21 @@ def _encode_pos(pos):
 class XQMove:
     """表示一步棋及其变招"""
     def __init__(self, start_pos: Tuple[int, int], end_pos: Tuple[int, int], 
-                 comment: str = "", has_variation = False):
+                 annote: str = "", has_variation = False):
         self.start_pos = start_pos  # (x, y) 元组
         self.end_pos = end_pos      # (x, y) 元组
-        self.comment = comment
+        self.annote = annote
         self.has_variation = has_variation
     
 #-----------------------------------------------------#
 class XQFWriter:
     def __init__(self, game):
         self.game = game
-        self.header = bytearray(1024)  # 头部固定1024字节
-        
-        # 初始化头部为0
-        for i in range(len(self.header)):
-            self.header[i] = 0
+        self.header = bytearray(b'\x00' * 1024)  # 头部固定1024字节
             
         # 设置文件标记和版本
-        self._set_bytes(0x0000, b'XQ')  # 文件标记
-        self.header[0x0002] = 0x0A      # 版本号 1.0
+        self._set_bytes(0, b'XQ')  # 文件标记
+        self.header[2] = 0x0A      # 版本号 1.0
         
         # 设置默认初始局面
         self.set_initial_position()
@@ -603,18 +599,18 @@ class XQFWriter:
         
         move_record[3] = 0x00  # 保留字节
         # 处理注解
-        comment_data = b""
-        if move.comment:
+        annote_data = b""
+        if move.annote:
             try:
-                comment_data = move.comment.encode('gbk')
+                annote_data = move.annote.encode('gbk')
             except Exception:
-                comment_data = move.comment.encode('gbk', errors='ignore')
+                annote_data = move.annote.encode('gbk', errors='ignore')
         
         # 设置注解长度（32位整数，小端序）
-        comment_length = len(comment_data)
-        move_record[4:8] = struct.pack('<I', comment_length)
+        annote_length = len(annote_data)
+        move_record[4:8] = struct.pack('<I', annote_length)
         
-        return bytes(move_record+comment_data)
+        return bytes(move_record+annote_data)
     
 
     def save(self, file_name):
@@ -624,8 +620,8 @@ class XQFWriter:
             for line in lines:
                 w_line = []
                 for index, move in enumerate(line['moves']): 
-                    has_variation = move.sibling_next is not None
-                    w_line.append(XQMove(move.p_from, move.p_to, move.comment, has_variation))      
+                    has_variation = move.variation_next is not None
+                    w_line.append(XQMove(move.p_from, move.p_to, move.annote, has_variation))      
                 move_lines.append(w_line)
 
             f.write(self.header)

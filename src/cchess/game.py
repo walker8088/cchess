@@ -19,8 +19,9 @@ import pathlib
 import datetime as dt
 from collections import defaultdict
 
-from .common import FULL_INIT_FEN, parse_dhtmlxq
+from .common import FULL_INIT_FEN
 from .board import ChessBoard
+from .exception import CChessException
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
@@ -74,7 +75,7 @@ class Game(object):
             self.init_board = chess_move.board.copy()
             self.last_move = self.first_move
         else:
-            self.first_move.add_sibling(chess_move)
+            self.first_move.add_variation(chess_move)
         
         return chess_move
 
@@ -98,11 +99,11 @@ class Game(object):
         return chess_move
     
     '''
-    def add_sibling_move(self, chess_move):
+    def add_variation_move(self, chess_move):
         if not self.last_move:
         
         else:    
-            self.last_move.add_sibling_move(chess_move)
+            self.last_move.add_variation_move(chess_move)
             self.last_move = chess_move
         
         return chess_move
@@ -112,9 +113,8 @@ class Game(object):
         if not self.first_move:
             return []
         
-        siblings = list(self.first_move.get_siblings(include_me = True))
-        print(siblings)
-        return siblings
+        variations = list(self.first_move.get_variations(include_me = True))
+        return variations
 
     def verify_moves(self):
         """验证已记录的走子序列在初始棋盘上是否都合法。
@@ -187,22 +187,22 @@ class Game(object):
 
     def dump_iccs_moves(self):
         """以 ICCS 字符串形式返回所有走子线路（去掉路径前缀）。"""
-        return [[str(move) for move in move_line[1:]]
+        return [[ move.to_iccs() for move in move_line['moves'] ]
             for move_line in self.dump_moves()]
     
     def dump_fen_iccs_moves(self):
         """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
-        return [[ [move.board.to_fen(), str(move)] for move in move_line[1:] ]
+        return [[ [move.board.to_fen(), str(move)] for move in move_line['moves'] ]
             for move_line in self.dump_moves()]
-
-    def dump_text_moves(self):
+                
+    def dump_text_moves(self, show_branch = False):
         """以中文可读文本形式返回所有走子线路。"""
-        return [[move.to_text() for move in move_line[1:]]
+        return [[ move.to_text_detail(show_branch, show_annote = False)[0] for move in move_line['moves']]
             for move_line in self.dump_moves()]
-    
+      
     def dump_text_moves_with_annote(self):
         """返回 (走法文本, 注释) 元组的列表，用于显示含注释的走子。"""
-        return [[(move.to_text(),move.annote) for move in move_line[1:]]
+        return [[(move.to_text(), move.annote) for move in move_line['moves']]
             for move_line in self.dump_moves()]
     
     def dump_moves_line(self):
@@ -211,19 +211,7 @@ class Game(object):
             return []
         return [[str(move) for move in move_line['moves']]
                 for move_line in self.dump_moves()]
-    
-    def dump_fen_iccs_moves(self):
-        return [[ [move.board.to_fen(), str(move)] for move in move_line['moves'] ]
-                for move_line in self.dump_moves()]
-
-    def dump_text_moves(self, show_branch = False):
-        return [[move.to_text_detail(show_branch, show_comment = False)[0] for move in move_line['moves']]
-                for move_line in self.dump_moves()]
-    
-    def dump_text_note_moves(self, show_branch = False, show_comment = False):
-        return [[move.to_text_detail(show_branch, show_comment) for move in move_line['moves']]
-                for move_line in self.dump_moves()]
-    
+        
     def move_line_to_list(self, move = None):
         if not move:
             move = self.first_move
@@ -257,13 +245,13 @@ class Game(object):
             if len(moves) > 1:
                 print(f'第 {index+1} 分支')
             line_move = '' 
-            for i, (text, comment) in enumerate(line):
+            for i, (text, annote) in enumerate(line):
                 if (i % 2) == 0:
                     line_move += f' {(i // 2 + 1):02d}.{text}'
                 else:
                     line_move += f' {text}'
-                if show_comment and comment:
-                    line_move += f'[{comment}]'
+                if show_annote and annote:
+                    line_move += f'[{annote}]'
                 i += 1
                 if (i % (steps_per_line * 2)) == 0:
                     print(line_move)
@@ -321,20 +309,10 @@ class Game(object):
             raise Exception(f"Unknown lib file format:{file_name}")
     
     def save_to_pgn(self, file_name):
-        from .io_pgn import PGNWriter
         
-        w = PGNWriter(self)
-        w.write_file(file_name)
+        #w = PGNWriter(self)
+        #w.write_file(file_name)
         
-    
-    def save_to(self, file_name):
-        """将当前游戏保存为文本格式的棋谱文件。
-
-        简单写出比赛头信息、可选的初始 FEN，以及按行列出的走子文本表示。
-
-        参数:
-            file_name (str): 输出文件路径
-        """
         init_fen = self.init_board.to_fen()
         with open(file_name, 'w') as f:
             f.write('[Game "Chinese Chess"]\n')
@@ -349,7 +327,7 @@ class Game(object):
                 
             moves = self.dump_moves()
             if len(moves) > 0:
-                move_line = moves[0][1:]
+                move_line = moves[0]['moves']
                 for index, m in enumerate(move_line):
                     if (index % 2) == 0:
                         pre_str = f" {index//2+1}."
@@ -362,56 +340,21 @@ class Game(object):
 
             f.write('   *\n')
             f.write('  =========\n')
-            
-        '''
+
+    def save_to(self, file_name):
+        """根据文件扩展名写入对应格式的棋谱文件。
+        参数:
+            file_name (str): 输出文件路径
+        """
+
         from .io_xqf import XQFWriter
+        from .io_pgn import PGNWriter
         
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
             writer = XQFWriter(self)    
-            return writer.save(file_name)
         elif ext == '.pgn':
-            return self.save_to_pgn(file_name)
-        ''' 
-
-    def from_ubb_dhtml(self, html_str):
-    
-        def decode_txt_pos(pos):
-            return (int(pos[0]), 9 - int(pos[1]))
-
-        self.info = parse_dhtmlxq(html_str)
-        
-        if 'binit' not in self.info:
-            board = ChessBoard(FULL_INIT_FEN)
-        else:
-            board = ChessBoard()
-            pos_txt = self.info['binit']
-            chessman_kinds = 'RNBAKABNRCCPPPPP'
-            for side in range(2):
-                for man_index in range(16):
-                    pos_index = (side * 16 + man_index) * 2
-                    man_pos = pos_txt[pos_index:pos_index + 2]
-                    if man_pos == '99':
-                        continue
-                    pos = decode_txt_pos(man_pos)
-                    fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
-                    board.put_fench(fen_ch, pos)
-        
-        self.init_board = board.copy()
-        
-        if 'movelist' not in self.info:
-            return
-
-        moves_txt = self.info['movelist']
-        step_no = 0
-        while step_no * 4 < len(moves_txt):
-            move_from = decode_txt_pos(moves_txt[step_no * 4:step_no * 4 + 2])
-            move_to = decode_txt_pos(moves_txt[step_no * 4 + 2:step_no * 4 + 4])
-            if board.is_valid_move(move_from, move_to):
-                new_move = board.move(move_from, move_to)
-                self.append_next_move(new_move)
-                board.next_turn()
-            else:
-                raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
-            step_no += 1
+            writer = PGNWriter(self)    
+         
+        return writer.save(file_name)
         
