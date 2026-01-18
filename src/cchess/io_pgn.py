@@ -308,6 +308,9 @@ class PGNWriter:
         
         #写入初始局面
         lines.append(f'[Fen "{self.game.init_board.to_fen()}"]')
+        #写入棋局注释
+        if self.game.annote:
+            lines.append(f'{{{self.game.annote}}}')
         
         return '\n'.join(lines)
     
@@ -347,9 +350,6 @@ class PGNWriter:
     
     def write_lines(self) -> str:
         
-        if not self.game.first_move:
-            return ''
-
         """写入完整的PGN"""
         lines = []
         
@@ -363,7 +363,7 @@ class PGNWriter:
         
         # 添加结果
         if 'result' in self.game.info:
-            lines.append(self.game.info['result'])
+            lines.append(f"  {self.game.info['result']}")
             lines.append('  =========')
             
         return '\n'.join(lines)

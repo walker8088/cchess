@@ -106,8 +106,8 @@ def __read_init_info(buff_decoder):
     if a_len == 0:
         return ''
     else:
-        comment_len = buff_decoder.read_int()
-        return buff_decoder.read_str(comment_len)
+        annote_len = buff_decoder.read_int()
+        return buff_decoder.read_str(annote_len)
 
 #-----------------------------------------------------#
 def __read_steps(buff_decoder, game, parent_move, board):
@@ -139,14 +139,14 @@ def __read_steps(buff_decoder, game, parent_move, board):
     
     #有注释    
     if step_mark & 0x04: 
-        comment_len = buff_decoder.read_int()
+        annote_len = buff_decoder.read_int()
     else:
-        comment_len = 0
+        annote_len = 0
     
     board_bak = board.copy()
     move_from = _decode_pos(step_from)
     move_to   = _decode_pos(step_to)
-    comment = buff_decoder.read_str(comment_len) if comment_len > 0 else None
+    annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
     
     fench = board.get_fench(move_from)
     if not fench:
@@ -158,7 +158,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
         
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
-            curr_move.comment = comment
+            curr_move.annote = annote
             
             if parent_move:
                 parent_move.append_next_move(curr_move)
@@ -206,9 +206,8 @@ def read_from_cbr_buffer(contents):
                 board.put_fench(piece_dict[v], (x, 9-y))
     
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
-    game_annotation = __read_init_info(buff_decoder)
-    
-    game = Game(board, game_annotation)
+    game_annote = __read_init_info(buff_decoder)
+    game = Game(board, game_annote)
     game.info = game_info
     
     if not buff_decoder.is_end():
