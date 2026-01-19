@@ -141,21 +141,21 @@ class ChessBoard(object):
         return copy.deepcopy(self)
 
     def mirror(self):
-        """返回沿竖直中线镜像的棋盘拷贝（左右翻转）。"""
+        """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[y][8 - x] for x in range(9)]
                     for y in range(10)]
         return b
             
     def flip(self):
-        """返回绕横轴翻转（上下翻转）的棋盘拷贝。"""
+        """返回新棋盘: 绕横轴翻转（上下翻转）。"""
         b = self.copy()
         b._board = [[self._board[9 - y][x] for x in range(9)]
                     for y in range(10)]
         return b
 
     def swap(self):
-        """交换棋子大小写（红黑互换），并返回新的棋盘拷贝。
+        """返回新棋盘: 交换棋子大小写（红黑互换）。
 
         大写表示红方、小写表示黑方。该方法将所有棋子字母大小写取反，
         同时切换走子方（调用 `next()`）。
@@ -193,23 +193,22 @@ class ChessBoard(object):
             fench (str): 棋子字符，例如 'K' 或 'p'
             pos (tuple): 目标坐标 (x, y)
         """
+        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
+        
         self._board[pos[1]][pos[0]] = fench
 
     def pop_fench(self, pos):
         """移除并返回指定位置的棋子（若为空则返回 None）。"""
+        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
+        
         fench = self._board[pos[1]][pos[0]]
         self._board[pos[1]][pos[0]] = None
-
         return fench
         
     def get_fench(self, pos):
-        """返回指定位置的棋子字符，越界返回 None。"""
-        if pos[0] < 0 or pos[0] > 8 :
-            return None
-
-        if pos[1] < 0 or pos[1] > 9:
-            return None
-
+        """返回指定位置的棋子字符。"""
+        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
+        
         return self._board[pos[1]][pos[0]]
 
     def get_fench_color(self, pos):
