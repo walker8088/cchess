@@ -55,6 +55,8 @@ _text_board = [
     #'',
 ]
 
+_g_fen_num_set = set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
+_g_fen_ch_set = set(('k', 'a', 'b', 'n', 'r', 'c', 'p'))
 
 #-----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
@@ -129,7 +131,9 @@ class ChessBoard(object):
         参数:
             fen (str): 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
         """
-        self.from_fen(fen)
+        self.clear()
+        if fen:
+            self.from_fen(fen)
 
     def clear(self):
         """清空棋盘并将走子方设为未指定（`NO_COLOR`）。"""
@@ -139,7 +143,12 @@ class ChessBoard(object):
     def copy(self):
         """返回棋盘的深拷贝（用于模拟走子或回溯）。"""
         return copy.deepcopy(self)
-
+    
+    def from_board(self, b):
+        """从另一个ChessBoard Copy属性"""
+        self._board = b._board
+        self.move_player = b.move_player
+        
     def mirror(self):
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
@@ -292,9 +301,7 @@ class ChessBoard(object):
         return self.is_valid_move(move_from, move_to)
 
     def is_valid_move(self, pos_from, pos_to):
-        '''
-        只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度
-        '''
+        '''只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度'''
 
         if not (0 <= pos_to[0] <= 8): 
             return False
@@ -330,7 +337,6 @@ class ChessBoard(object):
 
     def move(self, pos_from, pos_to, check = True):
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
-
         返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
         if not self.is_valid_move(pos_from, pos_to):
             return None
@@ -379,7 +385,6 @@ class ChessBoard(object):
 
     def is_checked_move(self, pos_from, pos_to):
         """判断执行给定走子后己方是否处于被将军状态。
-
         若走子非法，抛出 `CChessException('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
             raise CChessException('Invalid Move')
@@ -449,50 +454,43 @@ class ChessBoard(object):
 
         返回 True 表示加载成功，False 表示遇到无法识别字符。
         """
-
-        num_set = set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
-        ch_set = set(('k', 'a', 'b', 'n', 'r', 'c', 'p'))
-
-        self.clear()
-
-        if fen == '':
-            return True
-
+        
         fen = fen.strip()
-
+        if fen == '':
+            self.clear()
+            return True
+            
+        fen0, fen1 = fen.split(' ')[:2] #只取前两个元素
+        
+        b = ChessBoard()
         x = 0
         y = 9
-
-        for i in range(0, len(fen)):
-            ch = fen[i]
-
-            if ch == ' ': 
-                break
-            elif ch == '/':
-                y -= 1
+        for i, ch in enumerate(fen0):
+            if (x > 9) or (y < 0): 
+                raise CChessException(f'fen行列超出界限:{i}, 列:{x}, 行:{y}')
+            if ch == '/':
                 x = 0
-                if y < 0: 
-                    break
-            elif ch in num_set:
+                y -= 1
+            elif ch in _g_fen_num_set:
                 x += int(ch)
-                if x > 8: 
-                    x = 8
-            elif ch.lower() in ch_set:
-                if x <= 8:
-                    self.put_fench(ch, (x, y))
-                    x += 1
+            elif ch.lower() in _g_fen_ch_set:
+                b.put_fench(ch, (x, y))
+                x += 1
             else:
-                return False
-
-        fens = fen.split()
+                 raise CChessException(f'不合法的fen字符串:{i},[{ch}]')
 
         self.move_player = ChessPlayer(NO_COLOR)
 
-        if (len(fens) >= 2) and (fens[1] == 'b'):
-            self.move_player = ChessPlayer(BLACK)
+        if fen1 == 'b':
+            b.move_player = ChessPlayer(BLACK)
+        if fen1 in ['w', 'r']:
+            b.move_player = ChessPlayer(RED)
         else:
-            self.move_player = ChessPlayer(RED)
-
+            raise CChessException('fen走子合理的值只包括[w,r,b]')
+        
+        #事务性转换
+        self.from_board(b)
+        
         return True
 
     def to_fen(self):
@@ -530,7 +528,6 @@ class ChessBoard(object):
         
     def zhash(self, fen = None):
         """计算当前棋盘的 Zobrist 哈希值。
-
         可选地传入 `fen` 先加载局面再计算哈希，返回一个带符号的整数哈希值。
         """
         if fen:
@@ -580,9 +577,7 @@ class ChessBoard(object):
         return None
     
     def text_view(self):
-
         """将棋盘渲染为文本画板（返回字符串列表）。"""
-
         board_str = _text_board[:]
 
         y = 0
