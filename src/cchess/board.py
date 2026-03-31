@@ -157,9 +157,9 @@ class ChessBoard(object):
         return b
             
     def flip(self):
-        """返回新棋盘: 绕横轴翻转（上下翻转）。"""
+        """返回新棋盘: 绕横轴翻转（上下翻转）+ 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
-        b._board = [[self._board[9 - y][x] for x in range(9)]
+        b._board = [[self._board[9 - y][8-x] for x in range(9)]
                     for y in range(10)]
         return b
 
