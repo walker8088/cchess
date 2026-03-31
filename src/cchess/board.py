@@ -467,7 +467,7 @@ class ChessBoard(object):
         y = 9
         for i, ch in enumerate(fen0):
             if (x > 9) or (y < 0): 
-                raise CChessException(f'fen行列超出界限:{i}, 列:{x}, 行:{y}')
+                raise CChessException(f'fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}')
             if ch == '/':
                 x = 0
                 y -= 1
@@ -477,16 +477,16 @@ class ChessBoard(object):
                 b.put_fench(ch, (x, y))
                 x += 1
             else:
-                 raise CChessException(f'不合法的fen字符串:{i},[{ch}]')
+                 raise CChessException(f'fen:{fen} 不合法的fen字符串:{i},[{ch}]')
 
         self.move_player = ChessPlayer(NO_COLOR)
-
+        
         if fen1 == 'b':
             b.move_player = ChessPlayer(BLACK)
-        if fen1 in ['w', 'r']:
+        elif fen1 in ['w', 'r']:
             b.move_player = ChessPlayer(RED)
         else:
-            raise CChessException('fen走子合理的值只包括[w,r,b]')
+            raise CChessException(f'fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}')
         
         #事务性转换
         self.from_board(b)
