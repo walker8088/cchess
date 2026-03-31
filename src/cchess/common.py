@@ -163,6 +163,12 @@ def fen_mirror(fen):
     b = ChessBoard(fen)
     return b.mirror().to_fen()
 
+def fen_swap(fen):
+    from .board import ChessBoard
+    
+    b = ChessBoard(fen)
+    return b.swap().to_fen()
+
 #-----------------------------------------------------#
 def full2half(text):
     # 全角到半角的映射
