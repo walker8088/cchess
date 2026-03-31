@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+import pytest
 from cchess import CChessException, ChessBoard,ChessPlayer, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, RED, BLACK
 
 #-----------------------------------------------------#
@@ -105,9 +105,8 @@ class TestBoard():
         #不存在的棋子的移动
         assert board.move((1, 0), (2, 0)) is None
         #错误fen字符串
-        assert board.from_fen(
-            'rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b'
-        ) is False
+        with pytest.raises(CChessException):
+            board.from_fen('rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b')
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
