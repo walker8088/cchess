@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 
@@ -37,22 +36,24 @@ ubb_str = '''
     [/DhtmlXQHTML]
 '''
 
+
 class TestReaderCbr():
+
     def setup_method(self):
         #os.chdir(os.path.dirname(__file__))
         pass
 
     def teardown_method(self):
         pass
-    
+
     def test_read_ubb(self):
         game = Game()
         game.from_ubb_dhtml(ubb_str)
-        
-        for k,v in game.info.items():
+
+        for k, v in game.info.items():
             print(f"{k}:{v}")
 
-        moves = game.dump_moves(is_tree_mode = False)
+        moves = game.dump_moves(is_tree_mode=False)
 
         for index, m_line in enumerate(moves):
             txt = ','.join([x.to_text() for x in m_line['moves']])

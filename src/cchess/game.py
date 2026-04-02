@@ -34,7 +34,8 @@ book_type_str = (u"未知", u"全局", u"开局", u"中局", u"残局")
 
 #-----------------------------------------------------#
 class Game(object):
-    def __init__(self, board = None, annote = None):
+
+    def __init__(self, board=None, annote=None):
         """创建一个 `Game` 实例。
 
         参数:
@@ -61,7 +62,7 @@ class Game(object):
     def __str__(self):
         """返回游戏信息的字符串表示（通常用于调试）。"""
         return str(self.info)
-    
+
     #当第一步走法就有变招的时候，需多次调用这个函数
     def append_first_move(self, chess_move):
         """将 `chess_move` 添加为游戏的第一个走子节点或作为分支加入。
@@ -76,10 +77,10 @@ class Game(object):
             self.last_move = self.first_move
         else:
             self.first_move.add_variation(chess_move)
-        
+
         return chess_move
 
-    #给当前的最后招法节点增加后续节点，如果已经有后续节点了，则增加后续节点的兄弟节点    
+    #给当前的最后招法节点增加后续节点，如果已经有后续节点了，则增加后续节点的兄弟节点
     def append_next_move(self, chess_move):
         """将 `chess_move` 作为当前游戏的下一个走子追加。
 
@@ -92,12 +93,12 @@ class Game(object):
             self.first_move = chess_move
             self.init_board = chess_move.board.copy()
             self.last_move = self.first_move
-        else:    
+        else:
             self.last_move.append_next_move(chess_move)
             self.last_move = chess_move
-        
+
         return chess_move
-    
+
     '''
     def add_variation_move(self, chess_move):
         if not self.last_move:
@@ -112,8 +113,8 @@ class Game(object):
     def get_children(self):
         if not self.first_move:
             return []
-        
-        variations = list(self.first_move.get_variations(include_me = True))
+
+        variations = list(self.first_move.get_variations(include_me=True))
         return variations
 
     def verify_moves(self):
@@ -129,9 +130,10 @@ class Game(object):
             for step_no, iccs in enumerate(move_line):
                 m = board.move_iccs(iccs)
                 if m is None:
-                    raise Exception(f"{index}_{step_no}_{iccs} {','.join(move_line)}")
+                    raise Exception(
+                        f"{index}_{step_no}_{iccs} {','.join(move_line)}")
                 board.next_turn()
-                    
+
         return True
 
     def mirror(self):
@@ -167,7 +169,7 @@ class Game(object):
         """返回初始棋盘的文本视图（用于打印）。"""
         return self.init_board.text_view()
 
-    def dump_moves(self, is_tree_mode = False):
+    def dump_moves(self, is_tree_mode=False):
         """序列化游戏中记录的所有走子线路。
 
         返回一个列表，每个元素表示一条走子线路（包含分支索引和顺序），
@@ -180,60 +182,63 @@ class Game(object):
 
         if self.first_move:
             curr_line = self.first_move.init_move_line()
-            move_list.append(curr_line)            
+            move_list.append(curr_line)
             self.first_move.dump_moves(move_list, curr_line, is_tree_mode)
-            
+
         return move_list
 
     def dump_iccs_moves(self):
         """以 ICCS 字符串形式返回所有走子线路（去掉路径前缀）。"""
-        return [[ move.to_iccs() for move in move_line['moves'] ]
-            for move_line in self.dump_moves()]
-    
+        return [[move.to_iccs() for move in move_line['moves']]
+                for move_line in self.dump_moves()]
+
     def dump_fen_iccs_moves(self):
         """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
-        return [[ [move.board.to_fen(), str(move)] for move in move_line['moves'] ]
-            for move_line in self.dump_moves()]
-                
-    def dump_text_moves(self, show_branch = False):
+        return [[[move.board.to_fen(), str(move)]
+                 for move in move_line['moves']]
+                for move_line in self.dump_moves()]
+
+    def dump_text_moves(self, show_branch=False):
         """以中文可读文本形式返回所有走子线路。"""
-        return [[ move.to_text_detail(show_branch, show_annote = False)[0] for move in move_line['moves']]
-            for move_line in self.dump_moves()]
-      
+        return [[
+            move.to_text_detail(show_branch, show_annote=False)[0]
+            for move in move_line['moves']
+        ] for move_line in self.dump_moves()]
+
     def dump_text_moves_with_annote(self):
         """返回 (走法文本, 注释) 元组的列表，用于显示含注释的走子。"""
         return [[(move.to_text(), move.annote) for move in move_line['moves']]
-            for move_line in self.dump_moves()]
-    
+                for move_line in self.dump_moves()]
+
     def dump_moves_line(self):
         """返回沿当前选定分支的一条走子线路（线性，不含分支信息）。"""
         if not self.first_move:
             return []
         return [[str(move) for move in move_line['moves']]
                 for move_line in self.dump_moves()]
-        
-    def move_line_to_list(self, move = None):
+
+    def move_line_to_list(self, move=None):
         if not move:
             move = self.first_move
-        
+
         move_line = []
         while move:
             move_line.append(move)
             move = move.next_move
-        
-        return move_line    
-        
+
+        return move_line
+
     def make_branchs_tag(self):
         if not self.first_move:
             return
-        self.first_move.make_branchs_tag(0, 0)            
-            
+        self.first_move.make_branchs_tag(0, 0)
+
     def print_init_board(self):
         """将初始棋盘的文本视图打印到标准输出。"""
         for line in self.init_board.text_view():
             print(line)
 
-    def print_text_moves(self, steps_per_line = 2, show_annote = False):
+    def print_text_moves(self, steps_per_line=2, show_annote=False):
         """以格式化方式打印走子文本，支持每行若干步并显示注释。
 
         参数:
@@ -244,7 +249,7 @@ class Game(object):
         for index, line in enumerate(moves):
             if len(moves) > 1:
                 print(f'第 {index+1} 分支')
-            line_move = '' 
+            line_move = ''
             for i, (text, annote) in enumerate(line):
                 if (i % 2) == 0:
                     line_move += f' {(i // 2 + 1):02d}.{text}'
@@ -258,17 +263,17 @@ class Game(object):
                     line_move = ''
             if line_move:
                 print(line_move)
-                
+
     def dump_info(self):
         """打印存储在 `info` 字典中的游戏元信息键值对。"""
         for key in self.info:
             print(key, self.info[key])
-    
+
     @staticmethod
     def from_ubb_dhtml(txt):
         """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
         from .read_txt import read_from_ubb_dhtml
-        
+
         return read_from_ubb_dhtml(txt)
 
     @staticmethod
@@ -283,7 +288,7 @@ class Game(object):
         from .read_pgn import read_from_pgn
         from .read_cbf import read_from_cbf
         from .read_cbr import read_from_cbr
-        
+
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
             return read_from_xqf(file_name)
@@ -295,24 +300,24 @@ class Game(object):
             return read_from_cbr(file_name)
         else:
             raise Exception(f"Unknown file format:{file_name}")
-    
+
     @staticmethod
     def read_from_lib(file_name):
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
         #在函数开始时才导入以避免循环导入
         from .read_cbr import read_from_cbl
-        
+
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.cbl':
             return read_from_cbl(file_name)
         else:
             raise Exception(f"Unknown lib file format:{file_name}")
-    
+
     def save_to_pgn(self, file_name):
-        
+
         #w = PGNWriter(self)
         #w.write_file(file_name)
-        
+
         init_fen = self.init_board.to_fen()
         with open(file_name, 'w') as f:
             f.write('[Game "Chinese Chess"]\n')
@@ -324,7 +329,7 @@ class Game(object):
 
             if self.annote:
                 f.write(f'{{ {self.annote} }}\n')
-                
+
             moves = self.dump_moves()
             if len(moves) > 0:
                 move_line = moves[0]['moves']
@@ -335,7 +340,7 @@ class Game(object):
                         pre_str = "    "
                     if m.annote:
                         f.write(f'{pre_str} {m.to_text()} {{ {m.annote} }}\n')
-                    else:    
+                    else:
                         f.write(f'{pre_str} {m.to_text()}\n')
 
             f.write('   *\n')
@@ -349,12 +354,11 @@ class Game(object):
 
         from .io_xqf import XQFWriter
         from .io_pgn import PGNWriter
-        
+
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
-            writer = XQFWriter(self)    
+            writer = XQFWriter(self)
         elif ext == '.pgn':
-            writer = PGNWriter(self)    
-         
+            writer = PGNWriter(self)
+
         return writer.save(file_name)
-        

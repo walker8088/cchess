@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-
 from xml.etree import ElementTree as et
 
 from .exception import CChessException
@@ -28,7 +27,7 @@ from .board import ChessBoard
 def read_from_cbf(file_name):
     #避免循环导入
     from .game import Game
-    
+
     def decode_move(move_str):
         p_from = (int(move_str[0]), 9 - int(move_str[1]))
         p_to = (int(move_str[3]), 9 - int(move_str[4]))
@@ -39,7 +38,7 @@ def read_from_cbf(file_name):
     root = tree.getroot()
 
     head = root.find("Head")
-    for node in list(head): #.getchildren():
+    for node in list(head):  #.getchildren():
         if node.tag == "FEN":
             init_fen = node.text
         #print node.tag
@@ -47,7 +46,7 @@ def read_from_cbf(file_name):
     #books = {}
     board = ChessBoard(init_fen)
 
-    move_list = list(root.find("MoveList")) #.getchildren()
+    move_list = list(root.find("MoveList"))  #.getchildren()
 
     game = Game(board)
     last_move = None
@@ -63,6 +62,7 @@ def read_from_cbf(file_name):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException(f"bad move at {step_no} {move_from}, {move_to}")
+            raise CChessException(
+                f"bad move at {step_no} {move_from}, {move_to}")
         step_no += 1
     return game

@@ -21,12 +21,13 @@ import struct
 from typing import Tuple
 
 from .common import RED, fench_to_species
-from .board import ChessPlayer, ChessBoard 
+from .board import ChessPlayer, ChessBoard
 from .game import Game
 
 #-----------------------------------------------------#
 #result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
 result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
+
 
 def _decode_pos(man_pos):
     """将单个压缩的棋子位置整数解码为 (x, y) 坐标。
@@ -35,16 +36,20 @@ def _decode_pos(man_pos):
     """
     return (int(man_pos // 10), man_pos % 10)
 
+
 def _decode_pos2(man_pos):
     """将包含两个压缩位置的元组解码为 ((from_x,from_y),(to_x,to_y))。"""
     return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
                                                        man_pos[1] % 10))
 
+
 #-----------------------------------------------------#
 class XQFKey(object):
+
     def __init__(self):
         """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
         pass
+
 
 #-----------------------------------------------------#
 class XQFBuffDecoder(object):
@@ -53,6 +58,7 @@ class XQFBuffDecoder(object):
     提供按字节读取、按长度解码字符串以及读取 4 字节整数的便利方法，
     以便在解析走子（steps）时按顺序消费缓冲区。
     """
+
     def __init__(self, buffer):
         self.buffer = buffer
         self.index = 0
@@ -312,6 +318,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
         game.info['branchs'] += 1
 
+
 #-----------------------------------------------------#
 def read_from_xqf(full_file_name, read_annotation=True):
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
@@ -354,7 +361,7 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game_info["source"] = "XQF"
     game_info["version"] = version
     game_info["type"] = ucType + 1
-    
+
     if ucRes <= 4:  #It's really some file has value 4
         game_info["result"] = result_dict[ucRes]
     else:
@@ -363,13 +370,18 @@ def read_from_xqf(full_file_name, read_annotation=True):
 
     if ucRedPlayerNameLen > 0:
         try:
-            game_info["red_player"] = szRedPlayerName[:ucRedPlayerNameLen].decode("GB18030")
+            game_info[
+                "red_player"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
+                    "GB18030")
         except Exception:
             pass
 
     if ucBlackPlayerNameLen > 0:
         try:
-            game_info["black_player"] = szBlackPlayerName[:ucBlackPlayerNameLen].decode("GB18030")
+            game_info[
+                "black_player"] = szBlackPlayerName[:
+                                                    ucBlackPlayerNameLen].decode(
+                                                        "GB18030")
         except Exception:
             pass
 
@@ -428,37 +440,45 @@ def read_from_xqf(full_file_name, read_annotation=True):
 
     return game
 
+
 #-----------------------------------------------------#
 def _encode_pos(pos):
-    return pos[0]*10 + pos[1]
+    return pos[0] * 10 + pos[1]
+
 
 #-----------------------------------------------------#
 class XQMove:
     """表示一步棋及其变招"""
-    def __init__(self, start_pos: Tuple[int, int], end_pos: Tuple[int, int], 
-                 annote: str = "", has_variation = False):
+
+    def __init__(self,
+                 start_pos: Tuple[int, int],
+                 end_pos: Tuple[int, int],
+                 annote: str = "",
+                 has_variation=False):
         self.start_pos = start_pos  # (x, y) 元组
-        self.end_pos = end_pos      # (x, y) 元组
+        self.end_pos = end_pos  # (x, y) 元组
         self.annote = annote
         self.has_variation = has_variation
-    
+
+
 #-----------------------------------------------------#
 class XQFWriter:
+
     def __init__(self, game):
         self.game = game
         self.header = bytearray(b'\x00' * 1024)  # 头部固定1024字节
-            
+
         # 设置文件标记和版本
         self._set_bytes(0, b'XQ')  # 文件标记
-        self.header[2] = 0x0A      # 版本号 1.0
-        
+        self.header[2] = 0x0A  # 版本号 1.0
+
         # 设置默认初始局面
         self.set_initial_position()
-        
+
         # 设置默认结果和类型
         self.set_result(0x00)  # 默认未知结果
         self.set_game_type(0x00)  # 默认全局文件
-        
+
         # 设置棋局信息
         self.set_title(game.info['title'])
         self.set_event(game.info['event'])
@@ -468,28 +488,28 @@ class XQFWriter:
         self.set_black_player(game.info['black_player'])
         self.set_commentator(game.info['commentator'])
         self.set_author("cchess")
-        
+
     def _set_bytes(self, offset: int, data: bytes):
         """在指定偏移量设置字节数据"""
         for i, byte in enumerate(data):
             self.header[offset + i] = byte
-    
+
     def _set_string(self, offset: int, text: str, max_length: int):
         """设置字符串字段"""
         if not text:
             self.header[offset] = 0
             return
-            
+
         # 转换为GBK编码（XQF使用GBK编码）
         try:
             encoded = text.encode('gbk')
         except Exception:
             encoded = text.encode('gbk', errors='ignore')
-            
+
         length = min(len(encoded), max_length - 1)
         self.header[offset] = length
         self._set_bytes(offset + 1, encoded[:length])
-    
+
     def set_initial_position(self):
         """设置初始局面"""
         # 默认初始局面（红方和黑方从右到左排列）
@@ -501,14 +521,14 @@ class XQFWriter:
         #]
 
         position = bytearray(32)
-    
+
         board = self.game.init_board
         pieces_dict = {}
         for key in ['R', 'N', 'B', 'A', 'K', 'C', 'P']:
             pieces_dict[key] = board.get_fenchs(key)
             key_lower = key.lower()
             pieces_dict[key_lower] = board.get_fenchs(key_lower)
-            
+
         fenchs = ('RNBAKABNRCCPPPPP')
         for x in range(2):
             for i, fench in enumerate(fenchs):
@@ -516,79 +536,79 @@ class XQFWriter:
                 pos_list = pieces_dict[key]
                 pos_index = x * 16 + i
                 if len(pos_list) == 0:
-                    position[pos_index] = 0xff 
+                    position[pos_index] = 0xff
                 else:
                     pos = pos_list.pop(0)
                     position[pos_index] = _encode_pos(pos)
-        
+
         self._set_bytes(0x0010, bytes(position))
-    
+
     def set_result(self, result: int):
         """设置棋局结果
         0x00-未知, 0x01-红胜, 0x02-黑胜, 0x03-和棋
         """
         self.header[0x0033] = result
-    
+
     def set_game_type(self, game_type: int):
         """设置棋局类型
         0x00-全局文件, 0x01-布局文件, 0x02-中局文件, 0x03-残局文件
         """
         self.header[0x0040] = game_type
-    
+
     def set_title(self, title: str):
         """设置标题"""
         self._set_string(0x0050, title, 63)
-    
+
     def set_event(self, event: str):
         """设置比赛名称"""
         self._set_string(0x00D0, event, 63)
-    
+
     def set_date(self, date: str):
         """设置比赛日期"""
         self._set_string(0x0110, date, 15)
-    
+
     def set_location(self, location: str):
         """设置比赛地点"""
         self._set_string(0x0120, location, 15)
-    
+
     def set_red_player(self, player: str):
         """设置红方棋手"""
         self._set_string(0x0130, player, 15)
-    
+
     def set_black_player(self, player: str):
         """设置黑方棋手"""
         self._set_string(0x0140, player, 15)
-    
+
     def set_time_rule(self, rule: str):
         """设置用时规则"""
         self._set_string(0x0150, rule, 63)
-    
+
     def set_red_time(self, time_str: str):
         """设置红方用时"""
         self._set_string(0x0190, time_str, 15)
-    
+
     def set_black_time(self, time_str: str):
         """设置黑方用时"""
         self._set_string(0x01A0, time_str, 15)
-    
+
     def set_commentator(self, commentator: str):
         """设置棋谱讲评人"""
         self._set_string(0x01D0, commentator, 15)
-    
+
     def set_author(self, author: str):
         """设置文件作者"""
         self._set_string(0x01E0, author, 15)
-    
+
     def _encode_move(self, move: XQMove, is_last) -> Tuple[bytes, bytes]:
         """编码一步棋为XQF格式"""
         start_pos_value = _encode_pos(move.start_pos)
         end_pos_value = _encode_pos(move.end_pos)
-        
+
         # 构建移动记录
         move_record = bytearray(8)
         move_record[0] = start_pos_value + 24  # 起始位置+24
-        move_record[1] = end_pos_value + 32    # 目标位置+32
-        
+        move_record[1] = end_pos_value + 32  # 目标位置+32
+
         # 如果是序列中的最后一步或者是棋局的最后一步，则标记为最后一步
         move_record[2] = 0x00
 
@@ -596,7 +616,7 @@ class XQFWriter:
             move_record[2] |= 0x0F
         if not is_last:
             move_record[2] |= 0xF0
-        
+
         move_record[3] = 0x00  # 保留字节
         # 处理注解
         annote_data = b""
@@ -605,37 +625,38 @@ class XQFWriter:
                 annote_data = move.annote.encode('gbk')
             except Exception:
                 annote_data = move.annote.encode('gbk', errors='ignore')
-        
+
         # 设置注解长度（32位整数，小端序）
         annote_length = len(annote_data)
         move_record[4:8] = struct.pack('<I', annote_length)
-        
-        return bytes(move_record+annote_data)
-    
+
+        return bytes(move_record + annote_data)
 
     def save(self, file_name):
         with open(file_name, 'wb') as f:
             move_lines = []
-            lines = self.game.dump_moves(is_tree_mode = True)
+            lines = self.game.dump_moves(is_tree_mode=True)
             for line in lines:
                 w_line = []
-                for index, move in enumerate(line['moves']): 
+                for index, move in enumerate(line['moves']):
                     has_variation = move.variation_next is not None
-                    w_line.append(XQMove(move.p_from, move.p_to, move.annote, has_variation))      
+                    w_line.append(
+                        XQMove(move.p_from, move.p_to, move.annote,
+                               has_variation))
                 move_lines.append(w_line)
 
             f.write(self.header)
-            
+
             if len(move_lines) == 0:
                 # 只有初始局面，没有着法记录
                 f.write(b'\x18\x20\x00\xFF\x00\x00\x00\x00')
                 return
 
             # 有棋谱记录
-            f.write(b'\x18\x20\xF0\xFF\x00\x00\x00\x00')            
+            f.write(b'\x18\x20\xF0\xFF\x00\x00\x00\x00')
             for line in move_lines:
                 for i, move in enumerate(line):
-                    is_last = (i == len(line)-1) 
-                    move_record = self._encode_move(move, is_last)    
+                    is_last = (i == len(line) - 1)
+                    move_record = self._encode_move(move, is_last)
                     # 写入招法记录
                     f.write(move_record)

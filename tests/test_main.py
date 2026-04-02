@@ -22,15 +22,16 @@ from unittest.mock import patch
 
 import cchess.__main__ as rt_main
 
+
 class TestReaderXQF():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
 
     def teardown_method(self):
         pass
-    
+
     def test_main_entry(self):
         testargs = ["-r .\\data\\test.cbf"]
         with patch.object(sys, 'argv', testargs):
             rt_main.main()
-            

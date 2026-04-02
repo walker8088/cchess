@@ -58,6 +58,7 @@ _text_board = [
 _g_fen_num_set = set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
 _g_fen_ch_set = set(('k', 'a', 'b', 'n', 'r', 'c', 'p'))
 
+
 #-----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
     """
@@ -74,6 +75,7 @@ def _pos_to_text_board_pos(pos):
 
 #-----------------------------------------------------#
 PLAYER = ('', 'RED', 'BLACK')
+
 
 class ChessPlayer():
     """表示当前走子的玩家（颜色）。
@@ -143,23 +145,23 @@ class ChessBoard(object):
     def copy(self):
         """返回棋盘的深拷贝（用于模拟走子或回溯）。"""
         return copy.deepcopy(self)
-    
+
     def from_board(self, b):
         """从另一个ChessBoard Copy属性"""
         self._board = b._board
         self.move_player = b.move_player
-        
+
     def mirror(self):
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[y][8 - x] for x in range(9)]
                     for y in range(10)]
         return b
-            
+
     def flip(self):
         """返回新棋盘: 绕横轴翻转（上下翻转）+ 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
-        b._board = [[self._board[9 - y][8-x] for x in range(9)]
+        b._board = [[self._board[9 - y][8 - x] for x in range(9)]
                     for y in range(10)]
         return b
 
@@ -169,23 +171,24 @@ class ChessBoard(object):
         大写表示红方、小写表示黑方。该方法将所有棋子字母大小写取反，
         同时切换走子方（调用 `next()`）。
         """
+
         def swap_fench(fench):
-            if fench is None: 
+            if fench is None:
                 return None
             return fench.upper() if fench.islower() else fench.lower()
-            
+
         b = self.copy()
         b._board = [[swap_fench(self._board[y][x]) for x in range(9)]
-                for y in range(10)]
+                    for y in range(10)]
 
         b.move_player.next()
 
         return b
-    
+
     def is_mirror(self):
         """判断当前棋盘是否关于竖中线对称（镜像局面）。"""
         b = self.mirror()
-        return  self.to_fen() == b.to_fen()
+        return self.to_fen() == b.to_fen()
 
     def set_move_color(self, color):
         """设置当前走子方为指定颜色（整数或 `ChessPlayer` 内部值）。"""
@@ -203,21 +206,21 @@ class ChessBoard(object):
             pos (tuple): 目标坐标 (x, y)
         """
         assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-        
+
         self._board[pos[1]][pos[0]] = fench
 
     def pop_fench(self, pos):
         """移除并返回指定位置的棋子（若为空则返回 None）。"""
         assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-        
+
         fench = self._board[pos[1]][pos[0]]
         self._board[pos[1]][pos[0]] = None
         return fench
-        
+
     def get_fench(self, pos):
         """返回指定位置的棋子字符。"""
         assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-        
+
         return self._board[pos[1]][pos[0]]
 
     def get_fench_color(self, pos):
@@ -303,9 +306,9 @@ class ChessBoard(object):
     def is_valid_move(self, pos_from, pos_to):
         '''只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度'''
 
-        if not (0 <= pos_to[0] <= 8): 
+        if not (0 <= pos_to[0] <= 8):
             return False
-        if not (0 <= pos_to[1] <= 9): 
+        if not (0 <= pos_to[1] <= 9):
             return False
 
         fench_from = self._board[pos_from[1]][pos_from[0]]
@@ -335,7 +338,7 @@ class ChessBoard(object):
 
         return fench
 
-    def move(self, pos_from, pos_to, check = True):
+    def move(self, pos_from, pos_to, check=True):
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
         返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
         if not self.is_valid_move(pos_from, pos_to):
@@ -353,12 +356,12 @@ class ChessBoard(object):
 
         return move
 
-    def move_iccs(self, move_str, check = True):
+    def move_iccs(self, move_str, check=True):
         """根据 ICCS 格式的字符串执行走子，返回 `Move` 或 None。"""
         move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to, check)
 
-    def move_text(self, move_str, check = True):
+    def move_text(self, move_str, check=True):
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
         ret = Move.from_text(self, move_str)
         if not ret:
@@ -454,19 +457,19 @@ class ChessBoard(object):
 
         返回 True 表示加载成功，False 表示遇到无法识别字符。
         """
-        
+
         fen = fen.strip()
         if fen == '':
             self.clear()
             return True
-            
-        fen0, fen1 = fen.split(' ')[:2] #只取前两个元素
-        
+
+        fen0, fen1 = fen.split(' ')[:2]  #只取前两个元素
+
         b = ChessBoard()
         x = 0
         y = 9
         for i, ch in enumerate(fen0):
-            if (x > 9) or (y < 0): 
+            if (x > 9) or (y < 0):
                 raise CChessException(f'fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}')
             if ch == '/':
                 x = 0
@@ -477,20 +480,20 @@ class ChessBoard(object):
                 b.put_fench(ch, (x, y))
                 x += 1
             else:
-                 raise CChessException(f'fen:{fen} 不合法的fen字符串:{i},[{ch}]')
+                raise CChessException(f'fen:{fen} 不合法的fen字符串:{i},[{ch}]')
 
         self.move_player = ChessPlayer(NO_COLOR)
-        
+
         if fen1 == 'b':
             b.move_player = ChessPlayer(BLACK)
         elif fen1 in ['w', 'r']:
             b.move_player = ChessPlayer(RED)
         else:
             raise CChessException(f'fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}')
-        
+
         #事务性转换
         self.from_board(b)
-        
+
         return True
 
     def to_fen(self):
@@ -512,12 +515,12 @@ class ChessBoard(object):
                 fen += str(count)
                 count = 0
 
-            if y > 0: 
+            if y > 0:
                 fen += '/'
 
         if self.move_player == BLACK:
             fen += ' b'
-        else: 
+        else:
             fen += ' w'
 
         return fen
@@ -525,8 +528,8 @@ class ChessBoard(object):
     def to_full_fen(self):
         """返回包含占位信息的完整 FEN（方便外部工具兼容）。"""
         return self.to_fen() + ' - - 0 1'
-        
-    def zhash(self, fen = None):
+
+    def zhash(self, fen=None):
         """计算当前棋盘的 Zobrist 哈希值。
         可选地传入 `fen` 先加载局面再计算哈希，返回一个带符号的整数哈希值。
         """
@@ -546,7 +549,7 @@ class ChessBoard(object):
             key ^= z_redKey
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))
-        
+
     def detect_move_pieces(self, new_board):
         """比较当前棋盘与 `new_board` 并返回变化位置元组 (from_positions, to_positions)。"""
         p_from = []
@@ -575,7 +578,7 @@ class ChessBoard(object):
             if self.is_valid_move(p_from, p_to):
                 return (p_from, p_to)
         return None
-    
+
     def text_view(self):
         """将棋盘渲染为文本画板（返回字符串列表）。"""
         board_str = _text_board[:]
@@ -593,7 +596,7 @@ class ChessBoard(object):
             y += 1
 
         return board_str
-        
+
     def print_board(self):
         """在标准输出打印棋盘的文本表示，便于调试。"""
         print('')
@@ -614,8 +617,10 @@ class ChessBoard(object):
         else:
             return False
 
+
 #-----------------------------------------------------#
 class ChessBoardOneHot(ChessBoard):
+
     def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
         self.__chess_dict = chess_dict
@@ -647,4 +652,3 @@ class ChessBoardOneHot(ChessBoard):
         :return: 字典，棋子-独热编码的映射
         """
         return self.__chess_dict.copy()
-

@@ -21,15 +21,16 @@ from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, 
 #-----------------------------------------------------#
 #TODO 英文全角半角统一识别
 _h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
-                 ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
+                  ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
 
 _v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
-                  ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
+                   ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
+
 
 #-----------------------------------------------------#
 class Move(object):
-    def __init__(self, board, p_from, p_to, is_checking=False):
 
+    def __init__(self, board, p_from, p_to, is_checking=False):
         """初始化一个走子对象。
 
         复制传入的 `board`，记录起点 `p_from` 与终点 `p_to`，并设置
@@ -66,7 +67,7 @@ class Move(object):
     @property
     def move_player(self):
         """返回执行此走子的玩家（当前棋盘的 `move_player`）。"""
-        return self.board.move_player    
+        return self.board.move_player
 
     def __str__(self):
         """返回此走子的 ICCS 格式字符串表示。"""
@@ -142,19 +143,19 @@ class Move(object):
 
     def len_variations(self):
         return len(self.variations_all)
-    
-    def get_variations(self, include_me = False):
+
+    def get_variations(self, include_me=False):
         if include_me:
             return self.variations_all
-        
+
         sibs = self.variations_all[:]
         sibs.remove(self)
 
-        return sibs 
+        return sibs
 
     def last_variation(self):
-        return self.variations_all[-1]        
-    
+        return self.variations_all[-1]
+
     def get_variation_index(self):
         slibling_count = len(self.variations_all)
         for index, m in enumerate(self.variations_all):
@@ -165,36 +166,36 @@ class Move(object):
         chess_move.parent = self.parent
         chess_move.step_index = self.step_index
         last = self.last_variation()
-        
+
         assert last.variation_next is None
 
         last.variation_next = chess_move
-        
+
         self.variations_all.append(chess_move)
         for node in self.get_variations():
             node.variations_all = self.variations_all
-        
+
         return chess_move
 
     def remove_variation(self, chess_move):
         if chess_move not in self.variations_all:
             return
-        
+
         #先移出兄弟表
         self.variations_all.remove(chess_move)
-        
+
         #从链上摘下
         node = self
-        while node.variation_next :
+        while node.variation_next:
             if node.variation_next == chess_move:
                 next_node = node.variation_next.slibling_next
                 node.variation_next = next_node
                 chess_move.variation_next = None
 
-        #更新兄弟表到所有的兄弟        
+        #更新兄弟表到所有的兄弟
         for node in self.get_variations():
             node.variations_all = self.variations_all
-                
+
     def append_next_move(self, chess_move):
         """将 `chess_move` 作为当前走子的后继加入走子树。
 
@@ -270,52 +271,59 @@ class Move(object):
             variation_index = index + 1
             variation_move.make_branchs_tag(branch_index, variation_index)
     '''
-    
-    def dump_moves(self, move_list, curr_move_line, is_tree_mode, curr_variation_index = 0):
+
+    def dump_moves(self,
+                   move_list,
+                   curr_move_line,
+                   is_tree_mode,
+                   curr_variation_index=0):
         """将从当前节点开始的走子线路序列化并追加到 `move_list`。
 
         `curr_move_line` 表示当前遍历路径，本方法会在递归过程中
         扩展路径并将每条线（含分支索引）追加到 `move_list`。
         """
 
-        backup_move_line = curr_move_line['moves'][:] 
+        backup_move_line = curr_move_line['moves'][:]
         curr_move_line['moves'].append(self)
-        
+
         curr_line_index = curr_move_line['index']
 
         if self.next_move:
-            self.next_move.dump_moves(move_list, curr_move_line, is_tree_mode, 0)
-        
+            self.next_move.dump_moves(move_list, curr_move_line, is_tree_mode,
+                                      0)
+
         #curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
         #所以就不能在分支中再找兄弟了，否则会重复输出分支
         #assert curr_variation_index == self.get_variation_index()
         if curr_variation_index > 0:
             return
-        
+
         #只有主分支（index == 0）才会遍历兄弟分支
 
         for index, variation_move in enumerate(self.get_variations()):
             variation_index = index + 1
             new_line_index = len(move_list)
-            line_name = f'{curr_line_index}.{self.step_index}.{variation_index}_{new_line_index}'    
+            line_name = f'{curr_line_index}.{self.step_index}.{variation_index}_{new_line_index}'
             new_line = {
-                    'index': new_line_index, 
-                    'name':line_name,  
-                     #'variations':variations, 
-                    'variation_index':variation_index, 
-                    'from_line': (curr_line_index, self.step_index, variation_index), 
-                    'moves':[]
-                    }
-    
+                'index': new_line_index,
+                'name': line_name,
+                #'variations':variations,
+                'variation_index': variation_index,
+                'from_line':
+                (curr_line_index, self.step_index, variation_index),
+                'moves': []
+            }
+
             if not is_tree_mode:
                 new_line['moves'].extend(backup_move_line)
 
             move_list.append(new_line)
-            variation_move.dump_moves(move_list, new_line, is_tree_mode, variation_index)
+            variation_move.dump_moves(move_list, new_line, is_tree_mode,
+                                      variation_index)
 
     def init_move_line(self):
-        return {'index': 0, 'name':'0', 'variations':[], 'moves':[] }
-            
+        return {'index': 0, 'name': '0', 'variations': [], 'moves': []}
+
     def to_text(self, detailed=False):
         """返回此走子的中文可读文本表示。
 
@@ -414,33 +422,33 @@ class Move(object):
         return man_name + _h_level_index[man_side][pos[0]]
 
     def to_text_detail(self, show_variation, show_annote):
-        
+
         if show_variation:
             txt = self.to_text_variation()
         else:
-            txt = self.to_text()    
-        
+            txt = self.to_text()
+
         annote = self.annote if show_annote else ''
 
-        return (txt,  annote)
-    
+        return (txt, annote)
+
     def to_text_variation(self):
-        
+
         assert len(self.variations_all) > 0
-        
+
         #父节点只有一个孩子，那就是自己
         if len(self.variations_all) == 1:
             return self.to_text()
-        
+
         txts = []
         for index, m in enumerate(self.variations_all):
             if m == self:
-               txts.append(f'{m.to_text()}') 
+                txts.append(f'{m.to_text()}')
             else:
-               txts.append('*') #m.to_text())
-        
+                txts.append('*')  #m.to_text())
+
         return f"[{','.join(txts)}]"
-                       
+
     def prepare_for_engine(self, move_player, history):
         """为引擎查询准备 FEN 与 moves 列表。
 
@@ -465,7 +473,6 @@ class Move(object):
                 self.move_list_for_engine = last_move.move_list_for_engine[:]
                 self.move_list_for_engine.append(self.to_iccs())
 
-    
     def to_engine_fen(self):
         """返回用于引擎的输入字符串：基础 FEN（可选加 moves）。
 
@@ -514,8 +521,15 @@ class Move(object):
                 except ValueError:
                     # 简单映射常见中文数字到全角数字
                     zh_to_full = {
-                        '一': '１', '二': '２', '三': '３', '四': '４', '五': '５',
-                        '六': '６', '七': '７', '八': '８', '九': '９'
+                        '一': '１',
+                        '二': '２',
+                        '三': '３',
+                        '四': '４',
+                        '五': '５',
+                        '六': '６',
+                        '七': '７',
+                        '八': '８',
+                        '九': '９'
                     }
                     ch = zh_to_full.get(move_str[1], move_str[1])
                     diff = _v_change_index[move_player].index(ch)
@@ -580,10 +594,10 @@ class Move(object):
             if man_index > 2:
                 multi_lines = True
             man_name = move_str[1]
-            
+
         else:
             man_name = move_str[0]
-        
+
         # 先将文字名称解析为 fench，以便在多行定位时使用
         fench = text_to_fench(man_name, board.move_player)
         if not fench:
@@ -626,7 +640,8 @@ class Move(object):
                 return None
 
             for pos in poss:
-                move = Move.text_move_to_std_move(man_kind, move_player, pos, move_str[2:])
+                move = Move.text_move_to_std_move(man_kind, move_player, pos,
+                                                  move_str[2:])
                 if move:
                     return (pos, move)
 
@@ -636,7 +651,7 @@ class Move(object):
             #单子移动
             x = _h_level_index[move_player].index(move_str[1])
             poss = board.get_fenchs_x(x, fench)
-            
+
             #无子可走
             if len(poss) == 0:
                 return None
@@ -655,14 +670,14 @@ class Move(object):
 
         else:
             #多选一移动
-            if move_str[0] in ['前','中','后']:
+            if move_str[0] in ['前', '中', '后']:
                 poss = board.get_fenchs(fench)
                 if move_player == BLACK:
                     poss.reverse()
-                
+
                 move_indexs = {"前": -1, "中": 1, "后": 0}
                 pos = poss[move_indexs[move_str[0]]]
-   
+
                 #print(man_kind, move_player, pos, move_str[2:])
                 move = Move.text_move_to_std_move(man_kind, move_player, pos,
                                                   move_str[2:])

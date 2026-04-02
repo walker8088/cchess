@@ -37,6 +37,7 @@ def load_move_txt(txt_file):
     result = result_dict[lines[-1].strip().decode('utf-8')]
     return (fen, moves, result)
 
+
 def load_iccs_txt(txt_file):
     with open(txt_file, "r") as f:
         line = f.readline()
@@ -47,41 +48,45 @@ def load_iccs_txt(txt_file):
 
 
 class TestEngineException():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
-        
+
     def teardown_method(self):
         pass
 
     def test_engine_error(self):
         self.engine = UciEngine()
-        ret, err_msg = self.engine.load("..\\Engine\\pikafish_230408\\pikafishh.exe")
+        ret, err_msg = self.engine.load(
+            "..\\Engine\\pikafish_230408\\pikafishh.exe")
         assert ret == False
         assert self.engine.engine_status == EngineStatus.ERROR
 
     def test_engine_exception(self):
         self.engine = UciEngine()
-        ret, err_msg = self.engine.load("..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
+        ret, err_msg = self.engine.load(
+            "..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
         print(self.engine.engine_status)
         #assert self.engine.engine_status == EngineStatus.ERROR
 
 
 class TestUcci():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
-        
+
     def teardown_method(self):
         pass
 
     def test_ucci(self):
-        
+
         self.engine = UcciEngine()
-        assert self.engine.load("eleeye")[0] is False 
+        assert self.engine.load("eleeye")[0] is False
 
         assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe")[0] is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
-        
+
         fen, moves, result = load_move_txt(Path("data", "ucci_test1_move.txt"))
         game = Game.read_from(Path('data', 'ucci_test1.xqf'))
         game.init_board.move_player = ChessPlayer(cchess.RED)
@@ -119,28 +124,31 @@ class TestUcci():
                 elif action == 'draw':
                     dead = True
                     break
-                
+
             self.engine.stop_thinking()
-                
+
         self.engine.quit()
 
         time.sleep(0.5)
 
+
 class TestUci():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
         self.engine = UciEngine()
-        
-        ret, err_msg = self.engine.load("..\\Engine\\pikafish_32bit\\pikafish-sse41.exe")
+
+        ret, err_msg = self.engine.load(
+            "..\\Engine\\pikafish_32bit\\pikafish-sse41.exe")
         assert ret is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
-        
+
     def teardown_method(self):
         pass
 
     def test_uci_endgame(self):
-        
+
         fen, moves, result = load_iccs_txt(Path("data", "uci_test_move.txt"))
         #print(moves)
         board = ChessBoard(fen)
@@ -159,7 +167,7 @@ class TestUci():
                     print(output)
                     iccs = output["move"]
                     move = board.move_iccs(iccs)
-                    print(move.to_text()) 
+                    print(move.to_text())
                     assert move.to_iccs() == moves.pop(0)
                     last_player = board.move_player
                     board.next_turn()
@@ -167,24 +175,24 @@ class TestUci():
                 elif action == 'info_move':
                     #print(output)
                     pass
-                    
+
                 elif action == 'dead':
                     #print(output)
-                   
+
                     if board.move_player == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
-                        assert result  == S_RED_WIN
+                        assert result == S_RED_WIN
                     dead = True
                     break
                 elif action == 'draw':
                     dead = True
                     break
-                
+
             self.engine.stop_thinking()
 
     def test_uci_game(self):
-        
+
         board = ChessBoard(cchess.FULL_INIT_FEN)
 
         #self.engine.go_from(board.to_fen(), {'depth': 15})
@@ -202,61 +210,65 @@ class TestUci():
                     print(output)
                     iccs = output["move"]
                     move = board.move_iccs(iccs)
-                    print(move.to_text()) 
+                    print(move.to_text())
                     board.next_turn()
                     break
                 elif action == 'info_move':
                     #print(output)
                     pass
-                    
+
             self.engine.stop_thinking()
-        
+
         self.engine.quit()
 
         time.sleep(0.5)
 
-    
+
 class TestEngineManager():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
         self.mgr = EngineManager()
-        
+
     def teardown_method(self):
         self.mgr.quit()
 
     def test_game_score(self):
-        options ={'LU_Output': 'false', 'Threads ':'8', 'Hash ':'2000'}
-        
+        options = {'LU_Output': 'false', 'Threads ': '8', 'Hash ': '2000'}
+
         go_params = {'depth': 6}
-        self.mgr.load_uci("..\\Engine\\pikafish_230408\\pikafish.exe", options, go_params)
+        self.mgr.load_uci("..\\Engine\\pikafish_230408\\pikafish.exe", options,
+                          go_params)
         file_name = Path('data', '030-黄松轩先胜冯敬如.XQF')
         game = Game.read_from(file_name)
         assert game.info['branchs'] == 2
 
-        moves = game.dump_moves(is_tree_mode = False)
+        moves = game.dump_moves(is_tree_mode=False)
         for m_line in moves:
             print(m_line['name'])
             print(','.join([x.to_text() for x in m_line['moves']]))
-        
-        moves = game.dump_fen_iccs_moves() 
+
+        moves = game.dump_fen_iccs_moves()
         for branch, move_line in enumerate(moves):
             print(f'{file_name} 分支:{branch+1}/{len(moves)}')
             for index, (fen, iccs) in enumerate(move_line):
                 board = ChessBoard(fen)
                 move = board.move_iccs(iccs)
-                
+
                 if board.is_checkmate():
                     print(index + 1, fen, move.to_text(), "将死")
                     break
-                
+
                 board.next_turn()
                 new_fen = board.to_fen()
                 result = self.mgr.get_fen_score(new_fen)
-                
+
                 if 'mate' in result:
-                    print(index + 1, fen, move.to_text(), "score:", result['score'], 'mate:', result['mate'])
+                    print(index + 1, fen, move.to_text(), "score:",
+                          result['score'], 'mate:', result['mate'])
                 else:
-                    print(index + 1, fen, move.to_text(), "score:", result['score'])  
-                    #print(result)            
+                    print(index + 1, fen, move.to_text(), "score:",
+                          result['score'])
+                    #print(result)
         #self.cache.save()
         #self.mgr.get_game_file_score(Path('data', '030-黄松轩先胜冯敬如.XQF'))

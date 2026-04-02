@@ -18,8 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cchess import ChessPlayer, NO_COLOR, RED, BLACK
 
+
 #-----------------------------------------------------#
 class TestPiece():
+
     def test_base(self):
         side = ChessPlayer(NO_COLOR)
         assert side.next() == NO_COLOR

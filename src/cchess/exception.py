@@ -16,10 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+
 class CChessException(Exception):
+
     def __init__(self, reason):
         self.reason = reason
 
+
 class EngineErrorException(Exception):
+
     def __init__(self, reason):
         self.reason = reason

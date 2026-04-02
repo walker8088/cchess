@@ -7,6 +7,7 @@ from cchess.move import Move
 # They focus on from_text() producing a valid (pos_from, pos_to) when given
 # move strings using '一','二',... prefix to indicate column selection.
 
+
 def test_pawn_multiline_select_column():
     return
     #TODO
@@ -31,18 +32,18 @@ def test_pawn_multiline_no_column_found_falls_back():
     #TODO
     fen = '4k4/2P6/3P5/3P1P3/4P4/9/7p1/6p2/9/4K4 w'
     board = ChessBoard(fen)
-   
+
     # Use '一' which maps to column 0, but pawns are at column 2, should fall back
     res = Move.from_text(board, '一兵进一')
     assert res is not None
 
 
 def test_pawn_multiline_black_selection_order():
-    return 
+    return
     #TODO
     fen = '4k4/2P6/3P5/3P1P3/4P4/9/7p1/6p2/9/4K4 w'
     board = ChessBoard(fen)
-   
+
     res = Move.from_text(board, '三兵进一')
     assert res is not None
     pos_from, pos_to = res

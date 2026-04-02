@@ -34,19 +34,20 @@ def load_move_txt(txt_file):
 
 
 class TestReaderXQF():
+
     def setup_method(self):
         os.chdir(os.path.dirname(__file__))
 
     def teardown_method(self):
         pass
-    
+
     '''
     def test_base(self):
         game = read_from_xqf(Path("data", "WildHouse.xqf"))
         moves = game.dump_moves()
         #assert moves == ''
     '''
-    
+
     def test_base(self):
         game = read_from_xqf(Path("data", "game_test.xqf"))
         moves = game.dump_moves()

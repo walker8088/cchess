@@ -16,25 +16,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 import pytest
-from cchess import CChessException, ChessBoard,ChessPlayer, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, RED, BLACK
+from cchess import CChessException, ChessBoard, ChessPlayer, iccs2pos, pos2iccs, iccs_mirror, iccs_flip, iccs_swap, get_move_color, FULL_INIT_FEN, RED, BLACK
+
 
 #-----------------------------------------------------#
 class TestBoard():
+
     def test_base(self):
         board = ChessBoard('')
         assert '9/9/9/9/9/9/9/9/9/9 w' == board.to_fen()
-        
+
         assert board.get_king(RED) is None
-        assert board.get_king(BLACK) is None 
+        assert board.get_king(BLACK) is None
         assert board.is_checking() is False
-        assert board.no_moves() is True 
-        assert board.is_mirror()  is True 
+        assert board.no_moves() is True
+        assert board.is_mirror() is True
 
         board = ChessBoard(FULL_INIT_FEN)
         assert board.is_checking() is False
-        assert board.no_moves() is False 
-        assert board.is_checkmate() is False 
-        assert board.is_mirror() is True 
+        assert board.no_moves() is False
+        assert board.is_checkmate() is False
+        assert board.is_mirror() is True
 
         fen = board.to_fen()
         assert FULL_INIT_FEN == fen
@@ -51,7 +53,7 @@ class TestBoard():
         assert board.to_fen() == fen
 
         board = board.swap()
-        board =  board.swap()
+        board = board.swap()
         assert board.to_fen() == fen
 
         k = board.get_king(RED)
@@ -106,12 +108,14 @@ class TestBoard():
         assert board.move((1, 0), (2, 0)) is None
         #错误fen字符串
         with pytest.raises(CChessException):
-            board.from_fen('rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b')
+            board.from_fen(
+                'rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b'
+            )
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
-        assert board.is_checking() is True 
-        assert board.is_checkmate() is False 
+        assert board.is_checking() is True
+        assert board.is_checkmate() is False
 
         board.from_fen(
             'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR b')
@@ -119,14 +123,14 @@ class TestBoard():
 
         board.from_fen(
             'rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR b')
-        assert board.is_checking() is True 
-        assert board.is_checkmate() is True 
+        assert board.is_checking() is True
+        assert board.is_checkmate() is True
 
         board.from_fen(
             'rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w')
         assert board.is_checking() is False
         #assert  is True board.is_checked()
-        assert board.no_moves() is True 
+        assert board.no_moves() is True
 
         board.from_fen(
             'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w')
@@ -138,22 +142,25 @@ class TestBoard():
         assert (board.is_valid_move((1, 0), (3, 1)) is True)
         move_it = board.move((1, 0), (3, 1))
         assert move_it.to_text() == '马八进六'
-        
-        board.from_fen('1nbaka1nr/r8/1c2b2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N3CC1/9/R1BAKABNR w')
+
+        board.from_fen(
+            '1nbaka1nr/r8/1c2b2c1/p1p1p1p1p/9/9/P1P1P1P1P/2N3CC1/9/R1BAKABNR w'
+        )
         assert board.mirror().move_iccs('c2e2') is not None
-        board.from_fen('1rbakabnr/9/1cn6/p3p1p1p/2p6/6P2/P1P1P2cP/2N1C2C1/9/1RBAKABNR w')
+        board.from_fen(
+            '1rbakabnr/9/1cn6/p3p1p1p/2p6/6P2/P1P1P2cP/2N1C2C1/9/1RBAKABNR w')
         assert board.mirror().move_iccs('b0c2').to_text() == '马八进七'
 
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w'
         assert get_move_color(fen) == RED
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w - - 0 1'
         assert get_move_color(fen) == RED
-        
+
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b'
         assert get_move_color(fen) == BLACK
         fen = 'rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b - - 0 1'
         assert get_move_color(fen) == BLACK
-        
+
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)
         assert board.count_x_line_in(0, 0, 8) == 7
@@ -226,7 +233,7 @@ class TestBoard():
         board = ChessBoard('3k5/9/9/9/9/4R4/9/9/9/5K3 w')
         assert board.copy().move_iccs('e4e9').is_king_killed() is False
         assert board.copy().is_checking_move(*iccs2pos('e4e9')) is True
-        assert board.is_mirror() is False 
+        assert board.is_mirror() is False
 
     def test_AA_move(self):
 
@@ -256,8 +263,7 @@ class TestBoard():
         assert len(moves) == 1
         moves = list(board.create_piece_moves((5, 0)))
         assert len(moves) == 1
-        
-        
+
     def test_BB_move(self):
         #middle BB
         board = ChessBoard('4k4/4a4/4b4/9/9/9/9/4B4/4A4/4K4 w')
@@ -445,12 +451,14 @@ class TestBoard():
 
         assert move.to_text() == '车九进一'
         #assert move.from_text(board, '车九进一') == ((0,0), (0,1))
-    
+
     def test_qianhou_move(self):
-        board = ChessBoard('r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w')
+        board = ChessBoard(
+            'r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w'
+        )
         move = board.copy().move_text('前炮退二')
         assert move.move_player == RED
-        
+
     def test_board_text(self):
         board = ChessBoard(FULL_INIT_FEN)
         board_txt = board.text_view()
@@ -484,7 +492,7 @@ class TestBoard():
     def test_text(self):
         board = ChessBoard(FULL_INIT_FEN)
         assert board.copy().move_text('炮二平五').to_text() == '炮二平五'
-        
+
         assert board.copy().move((7, 2), (4, 2)).to_text() == '炮二平五'
         assert board.copy().move((1, 2), (1, 1)).to_text() == '炮八退一'
         assert board.copy().move((7, 2), (7, 6)).to_text() == '炮二进四'
@@ -496,7 +504,7 @@ class TestBoard():
         assert board.copy().move((7, 0), (6, 2)).to_text() == '马二进三'
         board.next_turn()
         assert board.copy().move_text('炮８平５').to_text() == '炮８平５'
-        assert board.copy().move_text('炮8平5').to_text()   == '炮８平５'
+        assert board.copy().move_text('炮8平5').to_text() == '炮８平５'
         assert board.copy().move((7, 7), (4, 7)).to_text() == '炮８平５'
         assert board.copy().move((7, 7), (7, 3)).to_text() == '炮８进４'
         assert board.copy().move((0, 9), (0, 8)).to_text() == '车１进１'
@@ -508,4 +516,3 @@ class TestBoard():
         assert board.zhash(FULL_INIT_FEN) == 7101337512282506414
         b = board.mirror()
         assert b.zhash() == 7101337512282506414
-        

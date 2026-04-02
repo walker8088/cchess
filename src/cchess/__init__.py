@@ -16,21 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from .exception import CChessException, EngineErrorException # noqa: F401
+from .exception import CChessException, EngineErrorException  # noqa: F401
 from .common import NO_COLOR, RED, BLACK, fench_to_species, fench_to_text, iccs2pos, pos2iccs, iccs_mirror, iccs_list_mirror,\
-			iccs_flip, iccs_swap, fen_mirror, fen_flip, fen_swap, get_move_color, get_fen_type, get_fen_type_detail,\
+   iccs_flip, iccs_swap, fen_mirror, fen_flip, fen_swap, get_move_color, get_fen_type, get_fen_type_detail,\
             FULL_INIT_BOARD, FULL_INIT_FEN, EMPTY_BOARD, EMPTY_FEN # noqa: F401# noqa: F401
-from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn # noqa: F401
-from .board import ChessBoard, ChessPlayer # noqa: F401
-from .move import Move # noqa: F401
-from .game import Game # noqa: F401
-from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache # noqa: F401
+from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn  # noqa: F401
+from .board import ChessBoard, ChessPlayer  # noqa: F401
+from .move import Move  # noqa: F401
+from .game import Game  # noqa: F401
+from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache  # noqa: F401
 
 from .io_xqf import read_from_xqf  # noqa: F401
-from .read_pgn import read_from_pgn # noqa: F401
-from .read_cbf import read_from_cbf # noqa: F401
-from .read_cbr import read_from_cbr, read_from_cbl # noqa: F401
+from .read_pgn import read_from_pgn  # noqa: F401
+from .read_cbf import read_from_cbf  # noqa: F401
+from .read_cbr import read_from_cbr, read_from_cbl  # noqa: F401
 
 __all__ = []
-
-

@@ -21,10 +21,10 @@ from .common import fench_to_species, opposite_color, RED, BLACK
 #-----------------------------------------------------#
 #士象固定位置枚举
 _advisor_pos = ((), ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
-               ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)))
+                ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)))
 
 _bishop_pos = ((), ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
-              ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)))
+               ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)))
 
 
 #-----------------------------------------------------#
@@ -35,8 +35,10 @@ def abs_diff(x, y):
 def middle_p(x, y):
     return ((x[0] + y[0]) // 2, (x[1] + y[1]) // 2)
 
+
 #-----------------------------------------------------#
 class Piece(object):
+
     def __init__(self, board, fench, pos):
 
         self.board = board
@@ -49,13 +51,13 @@ class Piece(object):
 
     def is_valid_move(self, pos_to):
         return True
-    
+
     def get_color_fench(self):
         if self.fench.islower():
             return f'b{self.fench}'
         else:
             return f'r{self.fench.lower()}'
-            
+
     @staticmethod
     def create(board, fench, pos):
         p_type = fench.lower()
@@ -78,6 +80,7 @@ class Piece(object):
 #-----------------------------------------------------#
 #王
 class King(Piece):
+
     def is_valid_pos(self, pos):
         #放置棋子要把各自的王放到自己一方
         if not super().is_valid_pos(pos):
@@ -88,7 +91,7 @@ class King(Piece):
 
         if (self.color == RED) and (pos[1] > 2):
             return False
-            
+
         if (self.color == BLACK) and (pos[1] < 7):
             return False
 
@@ -130,6 +133,7 @@ class King(Piece):
 #-----------------------------------------------------#
 #士
 class Advisor(Piece):
+
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
@@ -156,6 +160,7 @@ class Advisor(Piece):
 #-----------------------------------------------------#
 #象
 class Bishop(Piece):
+
     def is_valid_pos(self, pos):
         if not super().is_valid_pos(pos):
             return False
@@ -167,7 +172,8 @@ class Bishop(Piece):
             return False
 
         #塞象眼检查
-        if self.board.get_fench(middle_p((self.x, self.y), pos_to)) is not None:
+        if self.board.get_fench(middle_p((self.x, self.y),
+                                         pos_to)) is not None:
             return False
 
         #象过河检查
@@ -189,6 +195,7 @@ class Bishop(Piece):
 #-----------------------------------------------------#
 #马
 class Knight(Piece):
+
     def is_valid_move(self, pos_to):
         if (abs(self.x - pos_to[0]) == 2) and (abs(self.y - pos_to[1]) == 1):
             m_x = (self.x + pos_to[0]) // 2
@@ -229,6 +236,7 @@ class Knight(Piece):
 #-----------------------------------------------------#
 #车
 class Rook(Piece):
+
     def is_valid_move(self, pos_to):
         if self.x != pos_to[0]:
             #斜向移动是非法的
@@ -260,6 +268,7 @@ class Rook(Piece):
 #-----------------------------------------------------#
 #炮
 class Cannon(Piece):
+
     def is_valid_move(self, pos_to):
 
         if self.x != pos_to[0]:
@@ -297,6 +306,7 @@ class Cannon(Piece):
 #-----------------------------------------------------#
 #兵/卒
 class Pawn(Piece):
+
     def is_valid_pos(self, pos):
 
         if not super().is_valid_pos(pos):

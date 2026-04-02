@@ -22,6 +22,7 @@ from collections import OrderedDict
 #-----------------------------------------------------#
 NO_COLOR, RED, BLACK = (0, 1, 2)
 
+
 def opposite_color(color):
     return 3 - color
 
@@ -59,6 +60,7 @@ _v_dict = {
     '9': '0'
 }
 
+
 #-----------------------------------------------------#
 def pos2iccs(p_from, p_to):
     return chr(ord('a') + p_from[0]) + str(
@@ -68,6 +70,7 @@ def pos2iccs(p_from, p_to):
 def iccs2pos(iccs):
     return ((ord(iccs[0]) - ord('a'), int(iccs[1])), (ord(iccs[2]) - ord('a'),
                                                       int(iccs[3])))
+
 
 def iccs_mirror(iccs):
     return f'{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}'
@@ -79,9 +82,11 @@ def iccs_flip(iccs):
 
 def iccs_swap(iccs):
     return f'{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}'
-    
+
+
 def iccs_list_mirror(iccs_list):
     return [iccs_mirror(x) for x in iccs_list]
+
 
 #-----------------------------------------------------#
 _fench_name_dict = {
@@ -132,16 +137,18 @@ _fench_txt_name_dict = {
     'p': "卒"
 }
 
+
 #-----------------------------------------------------#
-def fench_to_txt_name(fench):    
+def fench_to_txt_name(fench):
     if fench not in _fench_txt_name_dict:
         return None
-        
+
     return _fench_txt_name_dict[fench]
 
 
 def fench_to_text(fench):
     return _fench_name_dict[fench]
+
 
 def text_to_fench(text, color):
     if text not in _name_fench_dict:
@@ -149,81 +156,105 @@ def text_to_fench(text, color):
     fench = _name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 
+
 def fench_to_species(fen_ch):
     return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
+
 #-----------------------------------------------------#
 def get_move_color(fen):
-    color = fen.rstrip().split(' ' )[1].lower()
+    color = fen.rstrip().split(' ')[1].lower()
     return RED if color == 'w' else BLACK
+
 
 def fen_mirror(fen):
     from .board import ChessBoard
-    
+
     b = ChessBoard(fen)
     return b.mirror().to_fen()
 
+
 def fen_flip(fen):
     from .board import ChessBoard
-    
+
     b = ChessBoard(fen)
     return b.flip().to_fen()
 
+
 def fen_swap(fen):
     from .board import ChessBoard
-    
+
     b = ChessBoard(fen)
     return b.swap().to_fen()
+
 
 #-----------------------------------------------------#
 def full2half(text):
     # 全角到半角的映射
     fullwidth_map = {
-        '１': '1', '２': '2', '３': '3', '４': '4', '５': '5',
-        '６': '6', '７': '7', '８': '8', '９': '9'
+        '１': '1',
+        '２': '2',
+        '３': '3',
+        '４': '4',
+        '５': '5',
+        '６': '6',
+        '７': '7',
+        '８': '8',
+        '９': '9'
     }
-    
+
     # 使用 translate 方法进行批量替换
     translation_table = str.maketrans(fullwidth_map)
     return text.translate(translation_table)
 
+
 def half2full(text):
     # 半角到全角的映射
     halfwidth_map = {
-        '1': '１', '2': '２', '3': '３', '4': '４', '5': '５',
-        '6': '６', '7': '７', '8': '８', '9': '９'
+        '1': '１',
+        '2': '２',
+        '3': '３',
+        '4': '４',
+        '5': '５',
+        '6': '６',
+        '7': '７',
+        '8': '８',
+        '9': '９'
     }
-    
+
     # 使用 translate 方法进行批量替换
     translation_table = str.maketrans(halfwidth_map)
     return text.translate(translation_table)
+
+
 #-----------------------------------------------------#
 p_count_dict = {
-    "R1":'车',
-    "R2":'双车',
-    "N1":'马',
-    "N2":'双马',
-    "C1":'炮',
-    "C2":'双炮',
-    "P1":'兵',
-    "P2":'双兵',
-    "P3":'三兵',
-    "P4":'多兵',
-    "P5":'多兵',
-    'A1':'仕',
-    'A2':'双仕',    
-    'B1':'相',
-    'B2':'双相',    
+    "R1": '车',
+    "R2": '双车',
+    "N1": '马',
+    "N2": '双马',
+    "C1": '炮',
+    "C2": '双炮',
+    "P1": '兵',
+    "P2": '双兵',
+    "P3": '三兵',
+    "P4": '多兵',
+    "P5": '多兵',
+    'A1': '仕',
+    'A2': '双仕',
+    'B1': '相',
+    'B2': '双相',
 }
 
 p_dict = {
-    "R":'车',
-    "N":'马',
-    "C":'炮',
-    "P":'兵',
-    'A':'士',
-    'B':'象',    
+    "R": '车',
+    "N": '马',
+    "C": '炮',
+    "P": '兵',
+    'A': '士',
+    'B': '象',
 }
+
 
 #-----------------------------------------------------#
 def get_fen_pieces(fen):
@@ -237,28 +268,30 @@ def get_fen_pieces(fen):
         pieces[ch] += 1
     return pieces
 
+
 def get_fen_type(fen):
 
     pieces = get_fen_pieces(fen)
     for ch in ['K', 'A', 'B']:
         if ch in pieces:
             pieces.pop(ch)
-    
+
     title = ''
     p_count = 0
     for fench in ['R', 'N', "C", 'P']:
         if fench not in pieces:
             continue
- 
+
         title += p_dict[f'{fench}']
         p_count += 1
-        
+
     return title
+
 
 #-----------------------------------------------------#
 def get_fen_type_detail(fen):
     pieces = get_fen_pieces(fen)
-    
+
     title_red = ''
     p_count = 0
     for fench in ['R', 'N', "C", 'P', "A", "B"]:
@@ -266,35 +299,36 @@ def get_fen_type_detail(fen):
             continue
         title_red += p_count_dict[f'{fench}{pieces[fench]}']
         p_count += 1
-    
+
     title_red = title_red.replace('双仕双相', '仕相全')
     if title_red in ['车', '马', '炮', '兵', '仕', '相']:
         title_red = '单' + title_red
-    
+
     if title_red == '':
         title_red = '帅'
-        
+
     p_count = 0
     title_black = ''
     for fench in ['r', 'n', "c", 'p', 'a', 'b']:
         if fench not in pieces:
             continue
-        ch_upper = fench.upper()    
+        ch_upper = fench.upper()
         title_black += p_count_dict[f'{ch_upper}{pieces[fench]}']
         p_count += 1
-    
+
     title_black = title_black.replace('兵', '卒')
     title_black = title_black.replace('仕', '士')
     title_black = title_black.replace('相', '象')
     title_black = title_black.replace('双士双象', '士象全')
-    
+
     if title_black in ['车', '马', '炮', '卒', '士', '象']:
         title_black = '单' + title_black
-    
+
     if title_black == '':
         title_black = '将'
-    
+
     return (title_red, title_black)
+
 
 #-----------------------------------------------------#
 def parse_dhtmlxq(html_str):
@@ -316,18 +350,17 @@ def parse_dhtmlxq(html_str):
         }
     """
     result = {}
-    
+
     # 使用正则表达式匹配所有 [DhtmlXQ_xxx]content[/DhtmlXQ_xxx]
     pattern = r'\[DhtmlXQ_([^]]+)\](.*?)\[/DhtmlXQ_\1\]'
     matches = re.findall(pattern, html_str, re.DOTALL)
-    
+
     for key, value in matches:
         # 去除内容中的换行和多余空白
         cleaned_value = value.strip()
         # 恢复原始字段名（去掉 DhtmlXQ_ 前缀）
         field_name = key.lower()
         result[field_name] = cleaned_value
-    
+
     # 特殊处理：如果有 [DhtmlXQHTML] 开头和结尾，可以忽略
     return result
-

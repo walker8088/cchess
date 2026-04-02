@@ -21,17 +21,17 @@ from .exception import CChessException
 from .common import FULL_INIT_FEN
 from .board import ChessBoard
 
-
 #读取PGN文件的简易版本
+
 
 #-----------------------------------------------------#
 def read_from_pgn(file_name):
     #避免循环导入
     from .game import Game
-    
+
     board = ChessBoard(FULL_INIT_FEN)
     game = Game(board)
-    
+
     with open(file_name, 'r') as file:
         flines = file.readlines()
 
@@ -48,9 +48,10 @@ def read_from_pgn(file_name):
     #lines, docs = __get_comments(lines)
     #infos["Doc"] = docs
     __get_steps(game, lines)
-    
+
     return game
-    
+
+
 def __get_headers(game, lines):
 
     index = 0
@@ -58,24 +59,24 @@ def __get_headers(game, lines):
         line = it.strip()
         #匹配 [] 并取出包含的内容
         pattern1 = r'\[([^\[\]]*)\]'
-        #匹配并捕获xxx和YYYY（不包括引号），且它们之间至少有一个空格  
-        pattern2 = r'(\w+)\s+"\s*([^"]+)"' 
-        matches = re.findall(pattern1, line) 
-        if len(matches) == 0: 
+        #匹配并捕获xxx和YYYY（不包括引号），且它们之间至少有一个空格
+        pattern2 = r'(\w+)\s+"\s*([^"]+)"'
+        matches = re.findall(pattern1, line)
+        if len(matches) == 0:
             return lines[index:]
         for text in matches:
             #print(text)
-            match = re.search(pattern2, text)    
-            if match:  
-                # match.groups()会返回一个包含所有捕获组的元组  
-                # 我们可以通过索引来访问它们  
-                name = match.group(1).lower()  
-                value = match.group(2)  
+            match = re.search(pattern2, text)
+            if match:
+                # match.groups()会返回一个包含所有捕获组的元组
+                # 我们可以通过索引来访问它们
+                name = match.group(1).lower()
+                value = match.group(2)
                 if name.lower() == 'fen':
                     game.init_board = ChessBoard(value)
                 else:
                     game.info[name] = value
-                
+
         #if len(items) < 3:
         #    raise CChessException(f"Format Error on line {index + 1}")
 
@@ -111,16 +112,16 @@ def __get_comments(lines):
 
 
 def __get_steps(game, lines):
-    
+
     steps = []
-    
+
     board = game.init_board.copy()
-    
+
     if 'format' in game.info and game.info['format'].lower() == 'iccs':
         use_iccs = True
     else:
         use_iccs = False
-        
+
     for line in lines:
         if line in ["*", "1-0", "0-1", "1/2-1/2"]:
             return steps
@@ -132,16 +133,15 @@ def __get_steps(game, lines):
                 continue
             if use_iccs:
                 if len(it) == 5:
-                    new_it = it[:2]+it[3:]
+                    new_it = it[:2] + it[3:]
                 else:
                     new_it = it
-                move = board.move_iccs(new_it.lower())   
+                move = board.move_iccs(new_it.lower())
             else:
                 move = board.move_text(it)
             if move is None:
-               return game
+                return game
             board.next_turn()
             game.append_next_move(move)
-                       
+
     return game
-    

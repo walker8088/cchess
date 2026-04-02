@@ -18,35 +18,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cchess import ChessBoard, Move, FULL_INIT_FEN, RED, BLACK
 
+
 class TestMoveExtended():
+
     def test_to_text_detailed(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 普通走子
         move = board.copy().move((0, 0), (0, 1))
         assert move.to_text() == '车九进一'
         assert move.to_text(detailed=False) == '车九进一'
-        
+
         # 将军
-        board.from_fen('rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
+        board.from_fen(
+            'rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w')
         move = board.copy().move((1, 2), (4, 2))
         if move:
             text = move.to_text(detailed=True)
             assert '将军' in text or '将' in text
-        
+
         # 吃子
-        board.from_fen('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w')
+        board.from_fen(
+            'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w')
         move = board.copy().move((0, 0), (0, 9))
         if move and move.captured:
             text = move.to_text(detailed=True)
             assert '吃' in text
-        
+
         # 将死
-        board.from_fen('rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w')
+        board.from_fen(
+            'rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w')
         move = board.copy().move((1, 2), (4, 2))
         if move and move.is_checkmate:
             text = move.to_text(detailed=True)
             assert '将死' in text
-   
+
     ''' 
     def test_move_mirror_flip_swap(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -115,4 +120,3 @@ class TestMoveExtended():
         move.prepare_for_engine(RED, history)
         # 检查是否设置了必要的属性
         assert hasattr(move, 'board_done')
-    

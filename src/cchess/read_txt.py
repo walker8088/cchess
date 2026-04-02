@@ -21,9 +21,10 @@ from .exception import CChessException
 from .common import fench_to_species, FULL_INIT_FEN
 from .board import ChessBoard
 
+
 #-----------------------------------------------------#
 def decode_txt_pos(pos):
-        return (int(pos[0]), 9 - int(pos[1]))
+    return (int(pos[0]), 9 - int(pos[1]))
 
 
 #-----------------------------------------------------#
@@ -55,7 +56,7 @@ def read_from_txt(moves_txt, pos_txt=None):
     last_move = None
     if not moves_txt:
         return Game(board)
-    
+
     step_no = 0
     while step_no * 4 < len(moves_txt):
         #steps = moves_txt[step_no * 4:step_no * 4 + 4]
@@ -76,36 +77,40 @@ def read_from_txt(moves_txt, pos_txt=None):
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
+            raise CChessException(
+                f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
     if step_no == 0:
         game = Game(board)
 
     return game
 
+
 #-----------------------------------------------------#
 def ubb_to_dict(ubb_text):
     # 先提取整个 [DhtmlXQHTML] ... [/DhtmlXQHTML] 块的内容（去掉外层标签）
-    block_match = re.search(r'\[DhtmlXQHTML\](.*?)\[/DhtmlXQHTML\]', ubb_text, re.DOTALL)
+    block_match = re.search(r'\[DhtmlXQHTML\](.*?)\[/DhtmlXQHTML\]', ubb_text,
+                            re.DOTALL)
     if not block_match:
         return "{}"
-    
+
     content = block_match.group(1)
-    
+
     # 正则匹配所有 [DhtmlXQ_xxx]value[/DhtmlXQ_xxx]
     pattern = r'\[DhtmlXQ_([^]]+)\](.*?)\[/DhtmlXQ_\1\]'
     matches = re.findall(pattern, content, re.DOTALL)
-    
+
     result = {}
     for key, value in matches:
         cleaned_value = value.strip()
         result[key] = cleaned_value
-    
+
     return result
+
 
 #-----------------------------------------------------#
 def txt_to_board(pos_txt):
-    
+
     #车马相士帅士相马车炮炮兵兵兵兵兵
     #车马象士将士象马车炮炮卒卒卒卒卒
     chessman_kinds = 'RNBAKABNRCCPPPPP'
@@ -126,8 +131,9 @@ def txt_to_board(pos_txt):
                 pos = decode_txt_pos(man_pos)
                 fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
                 board.put_fench(fen_ch, pos)
-    
-    return board 
+
+    return board
+
 
 #-----------------------------------------------------#
 def txt_to_moves(board, moves_txt):
@@ -142,15 +148,17 @@ def txt_to_moves(board, moves_txt):
             if len(moves) == 0:
                 _, man_side = fench_to_species(board.get_fench(move_from))
                 board.move_side = man_side
-                
+
             new_move = board.move(move_from, move_to)
             moves.append(new_move)
             board.next_turn()
         else:
-            raise CChessException(f"bad move at {step_no} {move_from} {move_to}")
+            raise CChessException(
+                f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
-    
+
     return moves
+
 
 #-----------------------------------------------------#
 def read_from_ubb_dhtml(ubb_text):
@@ -160,10 +168,10 @@ def read_from_ubb_dhtml(ubb_text):
     info = ubb_to_dict(ubb_text)
     board = txt_to_board(info['binit'])
     moves = txt_to_moves(board, info['movelist'])
-    
-    game= Game(board)
+
+    game = Game(board)
     game.info = info
     for move in moves:
         game.append_next_move(move)
-    
+
     return game
