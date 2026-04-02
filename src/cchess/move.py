@@ -386,11 +386,11 @@ class Move(object):
 
         fench = self.board.get_fench(pos)
         _, man_side = fench_to_species(fench)
-        man_name = fench_to_text(fench)
+        piece_name = fench_to_text(fench)
 
         #王，士，相命名规则
         if fench.lower() in ('k', 'a', 'b'):
-            return man_name + _h_level_index[man_side][pos[0]]
+            return piece_name + _h_level_index[man_side][pos[0]]
 
         #车,马,炮,兵命名规则
         #红黑顺序相反，俩数组减少计算工作量
@@ -408,18 +408,18 @@ class Move(object):
                 count += 1
 
         if count == 1:
-            return man_name + _h_level_index[man_side][pos[0]]
+            return piece_name + _h_level_index[man_side][pos[0]]
         elif count == 2:
-            return pos_name2[man_side][pos_index] + man_name
+            return pos_name2[man_side][pos_index] + piece_name
         elif count == 3:
             #TODO 查找另一个多子行
-            return pos_name3[man_side][pos_index] + man_name
+            return pos_name3[man_side][pos_index] + piece_name
         elif count == 4:
-            return pos_name4[man_side][pos_index] + man_name
+            return pos_name4[man_side][pos_index] + piece_name
         elif count == 5:
-            return pos_name5[man_side][pos_index] + man_name
+            return pos_name5[man_side][pos_index] + piece_name
 
-        return man_name + _h_level_index[man_side][pos[0]]
+        return piece_name + _h_level_index[man_side][pos[0]]
 
     def to_text_detail(self, show_variation, show_annote):
 
@@ -493,22 +493,22 @@ class Move(object):
         return pos2iccs(self.p_from, self.p_to)
 
     @staticmethod
-    def text_move_to_std_move(man_kind, move_player, p_from, move_str):
+    def text_move_to_std_move(piece_fench, move_player, p_from, move_str):
         """将中文走法片段转换为目标坐标。
 
-        根据棋子类型 `man_kind`、走子方 `move_player` 与起点 `p_from`，
+        根据棋子类型 `piece_fench`、走子方 `move_player` 与起点 `p_from`，
         解析 `move_str` 并返回目标坐标 `(x, y)`。会对中文数字与全角
         数字做简单归一化，否则在无法解析时返回 None。
         """
 
         #移动规则检查
-        if man_kind in ['a', 'b', 'n'] and move_str[0] == "平":
+        if piece_fench in ['a', 'b', 'n'] and move_str[0] == "平":
             return None
         if move_str[0] not in ['进', '退', '平']:
             return None
 
         #王,车,炮,兵的移动规则
-        if man_kind in ['k', 'r', 'c', 'p']:
+        if piece_fench in ['k', 'r', 'c', 'p']:
             #平移
             if move_str[0] == "平":
                 new_x = _h_level_index[move_player].index(move_str[1])
@@ -543,7 +543,7 @@ class Move(object):
                 return (p_from[0], p_from[1] + diff)
 
         #仕的移动规则
-        elif man_kind == 'a':
+        elif piece_fench == 'a':
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
             if move_player == BLACK:
@@ -551,7 +551,7 @@ class Move(object):
             return (new_x, p_from[1] - diff_y)
 
         #象的移动规则
-        elif man_kind == 'b':
+        elif piece_fench == 'b':
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
             if move_player == BLACK:
@@ -559,7 +559,7 @@ class Move(object):
             return (new_x, p_from[1] - diff_y)
 
         #马的移动规则
-        elif man_kind == 'n':
+        elif piece_fench == 'n':
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_x = abs(p_from[0] - new_x)
 
@@ -575,7 +575,7 @@ class Move(object):
 
     @staticmethod
     def from_text(board, move_str):
-        """解析中文走法字符串，返回标准化的走子 `(p_from, p_to)`。
+        """解析中文走法字符串，返回标准化的走子 `((p_from, p_to))`。
 
         支持形式如 '前/中/后' 的歧义消除以及 '一'..'五' 的列选择。
         若无法解析或找不到合法走子，返回 `None`。
@@ -585,30 +585,30 @@ class Move(object):
         #TODO测试黑方
         move_indexs = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
-        multi_mans = False
+        multi_pieces = False
         multi_lines = False
 
         if move_str[0] in move_indexs:
-            multi_mans = True
+            multi_pieces = True
             man_index = move_indexs.index(move_str[0])
             if man_index > 2:
                 multi_lines = True
-            man_name = move_str[1]
+            piece_name = move_str[1]
 
         else:
-            man_name = move_str[0]
+            piece_name = move_str[0]
 
         # 先将文字名称解析为 fench，以便在多行定位时使用
-        fench = text_to_fench(man_name, board.move_player)
+        fench = text_to_fench(piece_name, board.move_player)
         if not fench:
             return None
 
-        man_kind, move_player = fench_to_species(fench)
+        piece_fench, move_player = fench_to_species(fench)
 
         if multi_lines:
             # 草案实现：支持以中文数字（'一','二','三','四','五'）指定某一列（文件）
             # 优先在该列查找对应棋子；若无则在全盘匹配中选择候选。
-            # 对于兵（man_kind == 'p'），若同列有多个兵，则选择更靠前方的兵：
+            # 对于兵（piece_fench == 'p'），若同列有多个兵，则选择更靠前方的兵：
             # - 红方（RED）选择 y 最大的兵
             # - 黑方（BLACK）选择 y 最小的兵
             chinese_digit = move_str[0]
@@ -620,7 +620,7 @@ class Move(object):
 
             poss = []
             if target_x is not None:
-                poss = board.get_fenchs_x(target_x, fench)
+                poss = board.get_fenchs_x(fench, target_x)
 
             if not poss:
                 poss = board.get_fenchs(fench)
@@ -630,7 +630,7 @@ class Move(object):
                 poss = list(reversed(poss))
 
             # 对兵在同列多子情况做优先级选择
-            if man_kind == 'p' and len(poss) > 1:
+            if piece_fench == 'p' and len(poss) > 1:
                 if move_player == RED:
                     poss.sort(key=lambda p: p[1], reverse=True)
                 else:
@@ -640,34 +640,43 @@ class Move(object):
                 return None
 
             for pos in poss:
-                move = Move.text_move_to_std_move(man_kind, move_player, pos,
+                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
                                                   move_str[2:])
                 if move:
-                    return (pos, move)
+                    return ((pos, move))
 
             return None
 
-        if not multi_mans:
+        if not multi_pieces:
             #单子移动
             x = _h_level_index[move_player].index(move_str[1])
-            poss = board.get_fenchs_x(x, fench)
-
+            poss = board.get_fenchs_x(fench, x)
+                
             #无子可走
             if len(poss) == 0:
                 return None
 
             #同一行选出来多个,这种情况下, 只有士象是可以多个子尝试移动而不用标明前后的
-            if (len(poss) > 1) and (man_kind not in ['a', 'b']):
+            if (len(poss) > 1) and (piece_fench not in ['a', 'b']):
                 return None
 
+            '''
             for pos in poss:
-                move = Move.text_move_to_std_move(man_kind, move_player, pos,
+                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
                                                   move_str[2:])
                 if move:
-                    return (pos, move)
+                    return ((pos, move))
 
-            return None
+            '''
+            moves = []
+            for pos in poss:
+                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
+                                                  move_str[2:])
+                if move:
+                    moves.append((pos, move))
 
+            return moves
+            
         else:
             #多选一移动
             if move_str[0] in ['前', '中', '后']:
@@ -678,11 +687,11 @@ class Move(object):
                 move_indexs = {"前": -1, "中": 1, "后": 0}
                 pos = poss[move_indexs[move_str[0]]]
 
-                #print(man_kind, move_player, pos, move_str[2:])
-                move = Move.text_move_to_std_move(man_kind, move_player, pos,
+                #print(piece_fench, move_player, pos, move_str[2:])
+                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
                                                   move_str[2:])
                 if move:
-                    return (pos, move)
+                    return ((pos, move))
                 else:
                     return None
             #多兵选一移动

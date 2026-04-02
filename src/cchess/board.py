@@ -241,6 +241,14 @@ class ChessBoard(object):
                     poss.append((x, y))
         return poss
 
+    def get_fenchs_x(self, fench, x):
+        """返回指定列 x 上匹配 fench 的所有坐标。"""
+        poss = []
+        for y in range(10):
+            if self._board[y][x] == fench:
+                poss.append((x, y))
+        return poss
+
     def get_piece(self, pos):
         """返回指定位置的 `Piece` 实例（若有棋子），否则返回 None。"""
         fench = self.get_fench(pos)
@@ -266,14 +274,6 @@ class ChessBoard(object):
                     _, p_color = fench_to_species(fench)
                     if color == p_color:
                         yield Piece.create(self, fench, (x, y))
-
-    def get_fenchs_x(self, x, fench):
-        """返回指定列 x 上匹配 fench 的所有坐标。"""
-        poss = []
-        for y in range(10):
-            if self._board[y][x] == fench:
-                poss.append((x, y))
-        return poss
 
     def get_king(self, color):
         """查找并返回指定颜色的王 `Piece`，找不到返回 None。
@@ -364,11 +364,18 @@ class ChessBoard(object):
     def move_text(self, move_str, check=True):
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
         ret = Move.from_text(self, move_str)
+        #print(ret)
         if not ret:
             return None
-        move_from, move_to = ret
-        return self.move(move_from, move_to, check)
+        # move_from, move_to = ret    
+        # return self.move(move_from, move_to)
+        for move_from, move_to in ret:
+            move = self.move(move_from, move_to)
+            if move is not None:
+                return move
 
+        return None
+        
     def next_turn(self):
         """切换到下一个走子方并返回新的 `ChessPlayer` 实例（工具方法）。"""
         return self.move_player.next()
