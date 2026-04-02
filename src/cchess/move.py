@@ -209,69 +209,6 @@ class Move(object):
         else:
             self.next_move.variations_all.append(chess_move)
 
-    '''
-    def branch_count(self):
-        """返回当前分支数量（避免与实例属性 `branchs` 名称冲突）。"""
-        return len(self.branchs)
-
-    def get_branch(self, index):
-        """返回索引为 `index` 的分支走子。
-
-        直接从 `branchs` 列表中取出对应分支。
-        """
-        return self.branchs[index]
-
-    def select_branch(self, index):
-        """选择当前应使用的分支索引。
-
-        将 `branch_index` 设为 `index`，用于后续遍历时决定走哪条分支。
-        """
-        self.branch_index = index
-
-    def get_all_branchs(self):
-        """返回包含自身和直接分支的列表（不递归子分支）。"""
-        res = [self]
-        res.extend(self.branchs)
-        return res
-        
-    def dump_moves_line(self, move_list):
-        """沿选定的分支收集一条走子线路并追加到 `move_list`。
-
-        根据 `branch_index` 决定当前节点是自身还是某个分支，随后
-        将该节点加入 `move_list` 并沿 `next_move` 继续递归。
-        """
-
-        if self.branch_index == 0:
-            sel_move = self
-
-        elif self.branch_index <= len(self.branchs):
-            sel_move = self.branchs[self.branch_index - 1]
-        else:
-            sel_move = None
-
-        if not sel_move:
-            return
-        move_list.append(sel_move)
-
-        if not sel_move.next_move:
-            return
-
-        sel_move.next_move.dump_moves_line(move_list)
-
-        if self.next_move:
-            self.next_move.make_branchs_tag(self.branch_index, 0)
-        
-        #curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
-        #所以就不能在分支中再找兄弟了，否则会重复输出分支
-        if curr_variation_index > 0:
-            return
-
-        for index, variation_move in enumerate(self.get_variations()):
-            branch_index += 1
-            variation_index = index + 1
-            variation_move.make_branchs_tag(branch_index, variation_index)
-    '''
-
     def dump_moves(self,
                    move_list,
                    curr_move_line,
@@ -643,7 +580,7 @@ class Move(object):
                 move = Move.text_move_to_std_move(piece_fench, move_player, pos,
                                                   move_str[2:])
                 if move:
-                    return ((pos, move))
+                    return [(pos, move)]
 
             return None
 
@@ -691,7 +628,7 @@ class Move(object):
                 move = Move.text_move_to_std_move(piece_fench, move_player, pos,
                                                   move_str[2:])
                 if move:
-                    return ((pos, move))
+                    return [(pos, move)]
                 else:
                     return None
             #多兵选一移动

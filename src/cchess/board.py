@@ -364,11 +364,9 @@ class ChessBoard(object):
     def move_text(self, move_str, check=True):
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
         ret = Move.from_text(self, move_str)
-        #print(ret)
         if not ret:
             return None
-        # move_from, move_to = ret    
-        # return self.move(move_from, move_to)
+        
         for move_from, move_to in ret:
             move = self.move(move_from, move_to)
             if move is not None:

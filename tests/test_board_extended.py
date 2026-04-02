@@ -61,12 +61,12 @@ class TestBoardExtended():
     def test_get_fenchs_x(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 获取第0列的所有车
-        rooks = board.get_fenchs_x(0, 'R')
+        rooks = board.get_fenchs_x('R', 0)
         assert len(rooks) == 1
         assert rooks[0] == (0, 0)
 
         # 获取不存在的棋子
-        empty = board.get_fenchs_x(4, 'X')
+        empty = board.get_fenchs_x('X', 4)
         assert len(empty) == 0
 
     def test_detect_move_pieces(self):
