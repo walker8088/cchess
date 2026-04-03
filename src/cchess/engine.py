@@ -100,7 +100,7 @@ def parse_engine_info_to_dict(s):
         if part in ['info', 'cp', 'lowerbound',
                     'upperbound']:  #略过这些关键字,不影响分析结果
             continue
-        elif part == 'pv':  ##遇到pv就是到尾了，剩下的都是招法
+        if part == 'pv':  ##遇到pv就是到尾了，剩下的都是招法
             result['moves'] = info[index + 1:]
             break
 
@@ -109,16 +109,17 @@ def parse_engine_info_to_dict(s):
             #替换key
             if current_key == 'bestmove':
                 current_key = 'move'
+            continue
+
+        if part == 'mate':  # score mate 这样的字符串，后滑一个关键字
+            current_key = part
+            continue
+
+        if is_int(part):
+            result[current_key] = int(part)
         else:
-            if part == 'mate':  # score mate 这样的字符串，后滑一个关键字
-                current_key = part
-                continue
-            else:
-                if is_int(part):
-                    result[current_key] = int(part)
-                else:
-                    result[current_key] = part
-                current_key = None
+            result[current_key] = part
+        current_key = None
 
     return result
 
@@ -126,14 +127,15 @@ def parse_engine_info_to_dict(s):
 #------------------------------------------------------------------------------
 #Engine status
 class EngineStatus(enum.IntEnum):
-    ERROR = 0,
-    BOOTING = 1,
-    READY = 2,
-    WAITING = 3,
-    INFO_MOVE = 4,
-    MOVE = 5,
-    DEAD = 6,
-    UNKNOWN = 7,
+    """引擎运行状态枚举。"""
+    ERROR = 0
+    BOOTING = 1
+    READY = 2
+    WAITING = 3
+    INFO_MOVE = 4
+    MOVE = 5
+    DEAD = 6
+    UNKNOWN = 7
     BOARD_RESET = 8
 
 
@@ -141,7 +143,8 @@ class EngineStatus(enum.IntEnum):
 
 
 #------------------------------------------------------------------------------
-class Engine(Thread):
+class Engine(Thread):  # pylint: disable=too-many-instance-attributes
+    """棋力引擎线程封装，负责进程通信与消息解析。"""
 
     def __init__(self, exec_path=''):
         """Engine 进程包装对象。
@@ -163,8 +166,15 @@ class Engine(Thread):
         self.engine_status = None
         self.ids = {}
         self.options = []
+        self.process = None
+        self.pin = None
+        self.pout = None
+        self.perr = None
+        self.engine_out_queque = Queue()
 
         self.last_fen = None
+        self.last_go = None
+        self.score_dict = {}
         self.move_queue = Queue()
 
     def init_cmd(self):
@@ -173,6 +183,10 @@ class Engine(Thread):
         子类（如 UciEngine、UcciEngine）应重写此方法返回
         对应协议的初始化命令（例如 'uci' 或 'ucci'）。
         """
+        return ""
+
+    def ok_resp(self):
+        """返回协议初始化完成时的应答关键字。"""
         return ""
 
     def load(self, engine_path):
@@ -192,7 +206,7 @@ class Engine(Thread):
             if os.name == 'nt':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            self.process = subprocess.Popen(
+            self.process = subprocess.Popen(  # pylint: disable=consider-using-with
                 self.engine_exec_path,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -201,8 +215,8 @@ class Engine(Thread):
                 cwd=Path(self.engine_exec_path).parent,
                 text=True,
             )
-        except Exception as e:
-            logger.error(f"load engine {engine_path} ERROR: {e}")
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
+            logger.error("load engine %s ERROR: %s", engine_path, e)
             self.engine_status = EngineStatus.ERROR
             return (False, str(e))
 
@@ -280,7 +294,7 @@ class Engine(Thread):
         返回:
             bool: 成功返回 True，否则抛出异常
         """
-        logger.debug(f"--> {cmd_str}")
+        logger.debug("--> %s", cmd_str)
 
         if self.process.returncode is not None:
             self.engine_status = EngineStatus.ERROR
@@ -290,9 +304,10 @@ class Engine(Thread):
             cmd_bytes = f'{cmd_str}\r\n'
             self.pin.write(cmd_bytes)
             self.pin.flush()
-        except Exception as e:
-            logger.error(f"Send cmd [{cmd_str}] ERROR: {e}")
-            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+        except (BrokenPipeError, OSError, ValueError) as e:
+            logger.error("Send cmd [%s] ERROR: %s", cmd_str, e)
+            raise EngineErrorException(
+                f"程序异常退出，退出码：{self.process.returncode}") from e
 
         if self.process.returncode is not None:
             self.engine_status = EngineStatus.ERROR
@@ -348,10 +363,73 @@ class Engine(Thread):
 
     #run_once 在线程中运行
     def run_once(self):
+        """读取一行引擎输出并放入内部队列。"""
         #readline 会阻塞
         output = self.pout.readline().strip()
         if len(output) > 0:
             self.engine_out_queque.put(output)
+
+    def _merge_cached_score(self, move_info):
+        """将缓存中的评分字段合并到 bestmove 结果。"""
+        move_key = move_info['move']
+        if move_key not in self.score_dict:
+            return
+
+        for key in ['score', 'mate', 'moves', 'seldepth', 'time']:
+            if key in self.score_dict[move_key]:
+                move_info[key] = self.score_dict[move_key][key]
+
+    def _build_ready_move_info(self, output, out_list, resp_id):
+        """构建 READY 状态下的一条动作信息。"""
+        move_info = {
+            "fen_engine": self.last_fen,
+            "raw_msg": output,
+            "action": "info",
+        }
+
+        if resp_id == 'nobestmove':
+            move_info["action"] = 'dead'
+            return move_info
+
+        if resp_id == 'bestmove':
+            if out_list[1] in ['null', 'resign', '(none)']:
+                move_info["action"] = 'dead'
+                return move_info
+            if out_list[1] == 'draw':
+                move_info["action"] = 'draw'
+                return move_info
+
+            move_info["action"] = 'bestmove'
+            move_info.update(parse_engine_info_to_dict(output))
+            self._merge_cached_score(move_info)
+            return move_info
+
+        if resp_id == 'info' and out_list[1] == "depth":
+            # info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
+            # info depth 1 seldepth 1 multipv 1 score cp -58
+            # nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
+            move_info['action'] = 'info_move'
+            move_info.update(parse_engine_info_to_dict(output))
+            if 'moves' in move_info:
+                move_key = move_info['moves'][0]
+                self.score_dict[move_key] = move_info
+            elif 'currmove' not in move_info:
+                logger.info(move_info)
+
+        return move_info
+
+    def _handle_booting_message(self, output, out_list, resp_id):
+        """处理 BOOTING 状态消息。"""
+        move_info = {}
+        if resp_id == "id":
+            self.ids[out_list[1]] = ' '.join(out_list[2:])
+        elif resp_id == "option":
+            self.options.append(output)
+
+        if resp_id == self.ok_resp():
+            self.engine_status = EngineStatus.READY
+            move_info["action"] = 'ready'
+        return move_info
 
     #handle_msg_once 在前台运行
     def _handle_msg_once(self):
@@ -367,7 +445,7 @@ class Engine(Thread):
         except Empty:
             return False
 
-        logger.debug(f"<-- {output}")
+        logger.debug("<-- %s", output)
 
         if output in ['bye', '']:  #stop pipe
             self.process.terminate()
@@ -377,54 +455,10 @@ class Engine(Thread):
         resp_id = out_list[0]
 
         move_info = {}
-
         if self.engine_status == EngineStatus.BOOTING:
-            if resp_id == "id":
-                self.ids[out_list[1]] = ' '.join(out_list[2:])
-            elif resp_id == "option":
-                self.options.append(output)
-            if resp_id == self.ok_resp():
-                self.engine_status = EngineStatus.READY
-                move_info["action"] = 'ready'
-
+            move_info = self._handle_booting_message(output, out_list, resp_id)
         elif self.engine_status == EngineStatus.READY:
-            move_info["fen_engine"] = self.last_fen
-            move_info['raw_msg'] = output
-            move_info["action"] = 'info'
-
-            if resp_id == 'nobestmove':
-                move_info["action"] = 'dead'
-            elif resp_id == 'bestmove':
-                if out_list[1] in ['null', 'resign', '(none)']:
-                    move_info["action"] = 'dead'
-                elif out_list[1] == 'draw':
-                    move_info["action"] = 'draw'
-                else:
-                    move_info["action"] = 'bestmove'
-                    resp_dict = parse_engine_info_to_dict(output)
-                    move_info.update(resp_dict)
-                    move_key = move_info['move']
-                    if move_key in self.score_dict:
-                        for key in [
-                                'score', 'mate', 'moves', 'seldepth', 'time'
-                        ]:
-                            if key in self.score_dict[move_key]:
-                                move_info[key] = self.score_dict[move_key][key]
-
-            elif resp_id == 'info' and out_list[1] == "depth":
-                #info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
-                #info depth 1 seldepth 1 multipv 1 score cp -58 nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
-                move_info['action'] = 'info_move'
-                resp_dict = parse_engine_info_to_dict(output)
-                move_info.update(resp_dict)
-                if 'moves' in move_info:
-                    move_key = move_info['moves'][0]
-                    self.score_dict[move_key] = move_info
-                elif 'currmove' in move_info:
-                    #暂时不处理
-                    pass
-                else:
-                    logger.info(move_info)
+            move_info = self._build_ready_move_info(output, out_list, resp_id)
 
         if len(move_info) > 0:
             self.move_queue.put(move_info)
@@ -434,6 +468,7 @@ class Engine(Thread):
 
 #------------------------------------------------------------------------------
 class UcciEngine(Engine):
+    """UCCI 协议引擎适配器。"""
 
     def init_cmd(self):
         return "ucci"
@@ -443,6 +478,7 @@ class UcciEngine(Engine):
 
 
 class UciEngine(Engine):
+    """UCI 协议引擎适配器。"""
 
     def init_cmd(self):
         return "uci"
@@ -453,6 +489,7 @@ class UciEngine(Engine):
 
 #------------------------------------------------------------------------------
 def action_mirror(action):
+    """镜像 action 中的走法字段（move/ponder/moves）。"""
     for key in action:
         if key in ['move', 'ponder']:
             action[key] = iccs_mirror(action[key])
@@ -464,6 +501,7 @@ def action_mirror(action):
 
 #------------------------------------------------------------------------------
 class FenCache():
+    """FEN 到引擎动作信息的简单缓存。"""
 
     def __init__(self):
         """简单的 FEN 行为缓存，用于存储引擎对某局面的推荐走法。
@@ -505,9 +543,7 @@ class FenCache():
         if info is None:
             return None
 
-        actions = [
-            v for v in sorted(info.values(), key=lambda item: item['score'])
-        ]
+        actions = list(sorted(info.values(), key=lambda item: item['score']))
 
         if move_color == RED:
             act = actions[0]
@@ -569,6 +605,7 @@ class FenCache():
 
 #------------------------------------------------------------------------------
 class EngineManager():
+    """引擎加载与查询的门面管理器。"""
 
     def __init__(self, fen_cache=None):
         """引擎管理器：加载、配置引擎并对外提供运行和缓存接口。
@@ -577,6 +614,7 @@ class EngineManager():
             fen_cache (FenCache): 可选的缓存实例，如未提供会创建一个新的。
         """
         self.engine = None
+        self.go_params = {}
         if fen_cache is None:
             fen_cache = FenCache()
         self.cache = fen_cache

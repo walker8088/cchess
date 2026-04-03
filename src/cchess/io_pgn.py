@@ -28,6 +28,7 @@ from enum import Enum
 
 
 class Color(Enum):
+    """棋子颜色枚举。"""
     RED = "red"
     BLACK = "black"
 
@@ -91,7 +92,7 @@ class PGNParser:
         self.tokens = []
         self.current_token_index = 0
 
-    def tokenize(self, text: str) -> List[Dict[str, Any]]:
+    def tokenize(self, text: str) -> List[Dict[str, Any]]:  # pylint: disable=too-many-branches
         """将PGN文本分词"""
         tokens = []
         i = 0
@@ -179,6 +180,7 @@ class PGNParser:
 
         return headers
 
+    # pylint: disable=too-many-locals,too-many-branches
     def parse_moves(
         self,
         tokens: List[Dict[str,
@@ -252,6 +254,7 @@ class PGNParser:
             i += 1
 
         return root.next, result
+    # pylint: enable=too-many-locals,too-many-branches
 
     def parse(self, pgn_text: str) -> PGNGame:
         """解析完整的PGN文本"""
@@ -288,9 +291,10 @@ class PGNParser:
         return game
 
     def read_file(self, file_name):
+        """从文件读取 PGN 文本并解析为 `PGNGame`。"""
         with open(file_name, 'r', encoding='utf-8') as f:
             txts = f.read()
-            self.parser(txts)
+            return self.parse(txts)
 
 
 #-----------------------------------------------------#
@@ -380,7 +384,8 @@ class PGNWriter:
         return '\n'.join(lines)
 
     def save(self, file_name):
-        with open(file_name, 'w') as f:
+        """将生成的 PGN 文本保存到文件。"""
+        with open(file_name, 'w', encoding='utf-8') as f:
             lines = self.write_lines()
             f.write(lines)
 

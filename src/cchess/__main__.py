@@ -24,6 +24,7 @@ from .game import Game
 
 
 def print_game(game):
+    """将棋局信息、初始盘面和走子文本打印到标准输出。"""
 
     print('\n=====================================')
     for key, v in game.info.items():
@@ -40,6 +41,7 @@ def print_game(game):
 
 
 def main():
+    """命令行入口：读取棋谱并打印内容。"""
     parser = argparse.ArgumentParser(prog='python -m cchess')
     parser.add_argument('-r',
                         '--readfile',
@@ -53,14 +55,14 @@ def main():
     if file_name:
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.cbl':
-            lib = Game.read_lib_from(file_name)
-            print(lib.info['name'])
+            lib = Game.read_from_lib(file_name)
+            print(lib['name'])
             for game in lib['games']:
                 print_game(game)
         else:
             try:
                 game = Game.read_from(file_name)
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 print(e)
                 sys.exit(-1)
             print_game(game)

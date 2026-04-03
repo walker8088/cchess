@@ -26,6 +26,8 @@ from .piece import Piece
 from .move import Move
 from .zhash_data import z_c90, z_pieces, z_redKey, z_hashTable
 
+# pylint: disable=protected-access,attribute-defined-outside-init,too-many-public-methods
+
 #-----------------------------------------------------#
 _text_board = [
     #'  1   2   3   4   5   6   7   8   9 ',
@@ -115,13 +117,13 @@ class ChessPlayer():
         """
         if isinstance(other, ChessPlayer):
             return self.color == other.color
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.color == other
         return False
 
 
 #-----------------------------------------------------#
-class ChessBoard(object):
+class ChessBoard:
     """棋盘核心类：存储棋子分布并提供走子/检测规则的工具方法。
 
     该类提供加载/导出 FEN、生成走子、检查将军/将死等功能。
@@ -306,9 +308,9 @@ class ChessBoard(object):
     def is_valid_move(self, pos_from, pos_to):
         '''只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度'''
 
-        if not (0 <= pos_to[0] <= 8):
+        if not 0 <= pos_to[0] <= 8:
             return False
-        if not (0 <= pos_to[1] <= 9):
+        if not 0 <= pos_to[1] <= 9:
             return False
 
         fench_from = self._board[pos_from[1]][pos_from[0]]
@@ -317,7 +319,7 @@ class ChessBoard(object):
 
         _, from_color = fench_to_species(fench_from)
 
-        if (self.move_player != NO_COLOR) and (self.move_player != from_color):
+        if self.move_player not in (NO_COLOR, from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -366,14 +368,14 @@ class ChessBoard(object):
         ret = Move.from_text(self, move_str)
         if not ret:
             return None
-        
+
         for move_from, move_to in ret:
-            move = self.move(move_from, move_to)
+            move = self.move(move_from, move_to, check)
             if move is not None:
                 return move
 
         return None
-        
+
     def next_turn(self):
         """切换到下一个走子方并返回新的 `ChessPlayer` 实例（工具方法）。"""
         return self.move_player.next()
@@ -381,15 +383,13 @@ class ChessBoard(object):
     def create_moves(self):
         """生成当前走子方的所有候选走法（每个为 (from, to) 元组）。"""
         for piece in self.get_pieces(self.move_player):
-            for move in piece.create_moves():
-                yield move
+            yield from piece.create_moves()
 
     def create_piece_moves(self, pos):
         """生成指定位置棋子的所有候选走法。"""
         piece = self.get_piece(pos)
         if piece:
-            for move in piece.create_moves():
-                yield move
+            yield from piece.create_moves()
 
     def is_checked_move(self, pos_from, pos_to):
         """判断执行给定走子后己方是否处于被将军状态。
@@ -550,7 +550,7 @@ class ChessBoard(object):
                     chess = z_pieces[letter]
                     key ^= z_hashTable[chess * 256 + square]
 
-        if (self.get_move_color() == RED):
+        if self.get_move_color() == RED:
             key ^= z_redKey
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))
@@ -616,21 +616,22 @@ class ChessBoard(object):
 
     def __eq__(self, other):
         if isinstance(other, str):
-            return (self.to_fen() == other)
-        elif isinstance(other, ChessBoard):
-            return (self.to_fen() == other.to_fen())
-        else:
-            return False
+            return self.to_fen() == other
+        if isinstance(other, ChessBoard):
+            return self.to_fen() == other.to_fen()
+        return False
 
 
 #-----------------------------------------------------#
 class ChessBoardOneHot(ChessBoard):
+    """基于 `ChessBoard` 的独热编码棋盘表示。"""
 
     def __init__(self, fen='', chess_dict=None):
         super().__init__(fen)
         self.__chess_dict = chess_dict
 
     def load_one_hot_dict(self, file):
+        """从 JSON 文件加载棋子到独热向量的映射。"""
         with open(file, 'r', encoding='utf-8') as f:
             self.__chess_dict = json.load(f)
         self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

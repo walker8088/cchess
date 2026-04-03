@@ -24,13 +24,15 @@ from .board import ChessBoard
 
 #-----------------------------------------------------#
 def decode_txt_pos(pos):
+    """将两位文本坐标转换为棋盘坐标。"""
     return (int(pos[0]), 9 - int(pos[1]))
 
 
 #-----------------------------------------------------#
-def read_from_txt(moves_txt, pos_txt=None):
+def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
+    """从文本棋谱字符串读取并返回 `Game` 对象。"""
     #避免循环导入
-    from .game import Game
+    from .game import Game  # pylint: disable=import-outside-toplevel
 
     #车马相士帅士相马车炮炮兵兵兵兵兵
     #车马象士将士象马车炮炮卒卒卒卒卒
@@ -88,6 +90,7 @@ def read_from_txt(moves_txt, pos_txt=None):
 
 #-----------------------------------------------------#
 def ubb_to_dict(ubb_text):
+    """解析 UBB 的 DhtmlXQHTML 片段并返回键值字典。"""
     # 先提取整个 [DhtmlXQHTML] ... [/DhtmlXQHTML] 块的内容（去掉外层标签）
     block_match = re.search(r'\[DhtmlXQHTML\](.*?)\[/DhtmlXQHTML\]', ubb_text,
                             re.DOTALL)
@@ -110,6 +113,7 @@ def ubb_to_dict(ubb_text):
 
 #-----------------------------------------------------#
 def txt_to_board(pos_txt):
+    """将局面文本编码转换为 `ChessBoard`。"""
 
     #车马相士帅士相马车炮炮兵兵兵兵兵
     #车马象士将士象马车炮炮卒卒卒卒卒
@@ -137,6 +141,7 @@ def txt_to_board(pos_txt):
 
 #-----------------------------------------------------#
 def txt_to_moves(board, moves_txt):
+    """将走子文本解析为 `Move` 列表。"""
     moves = []
     step_no = 0
     while step_no * 4 < len(moves_txt):
@@ -162,8 +167,9 @@ def txt_to_moves(board, moves_txt):
 
 #-----------------------------------------------------#
 def read_from_ubb_dhtml(ubb_text):
+    """从 UBB DHTML 文本读取并返回 `Game` 对象。"""
     #避免循环导入
-    from .game import Game
+    from .game import Game  # pylint: disable=import-outside-toplevel
 
     info = ubb_to_dict(ubb_text)
     board = txt_to_board(info['binit'])

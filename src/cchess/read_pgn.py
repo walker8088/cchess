@@ -26,13 +26,14 @@ from .board import ChessBoard
 
 #-----------------------------------------------------#
 def read_from_pgn(file_name):
+    """从 PGN 文件读取并解析为 `Game` 对象。"""
     #避免循环导入
-    from .game import Game
+    from .game import Game  # pylint: disable=import-outside-toplevel
 
     board = ChessBoard(FULL_INIT_FEN)
     game = Game(board)
 
-    with open(file_name, 'r') as file:
+    with open(file_name, 'r', encoding='utf-8') as file:
         flines = file.readlines()
 
     lines = []
@@ -84,6 +85,8 @@ def __get_headers(game, lines):
 
         index += 1
 
+    return []
+
 
 def __get_comments(lines):
 
@@ -117,16 +120,14 @@ def __get_steps(game, lines):
 
     board = game.init_board.copy()
 
-    if 'format' in game.info and game.info['format'].lower() == 'iccs':
-        use_iccs = True
-    else:
-        use_iccs = False
+    use_iccs = ('format' in game.info and
+                game.info['format'].lower() == 'iccs')
 
     for line in lines:
         if line in ["*", "1-0", "0-1", "1/2-1/2"]:
             return steps
 
-        for step, it in enumerate(line.split(" ")):
+        for _, it in enumerate(line.split(" ")):
             if it in ["*", "1-0", "0-1", "1/2-1/2"]:
                 break
             if it.endswith('.'):

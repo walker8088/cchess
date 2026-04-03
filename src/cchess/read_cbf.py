@@ -24,9 +24,10 @@ from .board import ChessBoard
 #-----------------------------------------------------#
 
 
-def read_from_cbf(file_name):
+def read_from_cbf(file_name):  # pylint: disable=too-many-locals
+    """从 CBF 文件读取棋局并转换为 `Game` 对象。"""
     #避免循环导入
-    from .game import Game
+    from .game import Game  # pylint: disable=import-outside-toplevel
 
     def decode_move(move_str):
         p_from = (int(move_str[0]), 9 - int(move_str[1]))
@@ -37,11 +38,15 @@ def read_from_cbf(file_name):
     tree = et.parse(file_name)
     root = tree.getroot()
 
+    init_fen = None
     head = root.find("Head")
     for node in list(head):  #.getchildren():
         if node.tag == "FEN":
             init_fen = node.text
         #print node.tag
+
+    if init_fen is None:
+        raise CChessException("Missing FEN in CBF file")
 
     #books = {}
     board = ChessBoard(init_fen)

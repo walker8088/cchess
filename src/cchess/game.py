@@ -21,19 +21,19 @@ from collections import defaultdict
 
 from .common import FULL_INIT_FEN
 from .board import ChessBoard
-from .exception import CChessException
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
-result_str = (u"未知", u"红胜", u"黑胜", u"平局")
+result_str = ("未知", "红胜", "黑胜", "平局")
 
 #存储类型
 BOOK_UNKNOWN, BOOK_ALL, BOOK_BEGIN, BOOK_MIDDLE, BOOK_END = range(5)
-book_type_str = (u"未知", u"全局", u"开局", u"中局", u"残局")
+book_type_str = ("未知", "全局", "开局", "中局", "残局")
 
 
 #-----------------------------------------------------#
-class Game(object):
+class Game:  # pylint: disable=too-many-public-methods
+    """棋局对象，维护初始棋盘、走子树及元信息。"""
 
     def __init__(self, board=None, annote=None):
         """创建一个 `Game` 实例。
@@ -99,18 +99,8 @@ class Game(object):
 
         return chess_move
 
-    '''
-    def add_variation_move(self, chess_move):
-        if not self.last_move:
-        
-        else:    
-            self.last_move.add_variation_move(chess_move)
-            self.last_move = chess_move
-        
-        return chess_move
-    '''
-
     def get_children(self):
+        """返回首步及其分支列表。"""
         if not self.first_move:
             return []
 
@@ -130,7 +120,7 @@ class Game(object):
             for step_no, iccs in enumerate(move_line):
                 m = board.move_iccs(iccs)
                 if m is None:
-                    raise Exception(
+                    raise ValueError(
                         f"{index}_{step_no}_{iccs} {','.join(move_line)}")
                 board.next_turn()
 
@@ -218,6 +208,7 @@ class Game(object):
                 for move_line in self.dump_moves()]
 
     def move_line_to_list(self, move=None):
+        """将从给定节点开始的主线转换为列表。"""
         if not move:
             move = self.first_move
 
@@ -229,6 +220,7 @@ class Game(object):
         return move_line
 
     def make_branchs_tag(self):
+        """为走子树生成分支编号标记。"""
         if not self.first_move:
             return
         self.first_move.make_branchs_tag(0, 0)
@@ -272,7 +264,7 @@ class Game(object):
     @staticmethod
     def from_ubb_dhtml(txt):
         """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
-        from .read_txt import read_from_ubb_dhtml
+        from .read_txt import read_from_ubb_dhtml  # pylint: disable=import-outside-toplevel
 
         return read_from_ubb_dhtml(txt)
 
@@ -284,42 +276,41 @@ class Game(object):
         模块以避免循环依赖。
         """
         #在函数开始时才导入以避免循环导入
-        from .io_xqf import read_from_xqf
-        from .read_pgn import read_from_pgn
-        from .read_cbf import read_from_cbf
-        from .read_cbr import read_from_cbr
+        from .io_xqf import read_from_xqf  # pylint: disable=import-outside-toplevel
+        from .read_pgn import read_from_pgn  # pylint: disable=import-outside-toplevel
+        from .read_cbf import read_from_cbf  # pylint: disable=import-outside-toplevel
+        from .read_cbr import read_from_cbr  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
             return read_from_xqf(file_name)
-        elif ext == '.pgn':
+        if ext == '.pgn':
             return read_from_pgn(file_name)
-        elif ext == '.cbf':
+        if ext == '.cbf':
             return read_from_cbf(file_name)
-        elif ext == '.cbr':
+        if ext == '.cbr':
             return read_from_cbr(file_name)
-        else:
-            raise Exception(f"Unknown file format:{file_name}")
+        raise ValueError(f"Unknown file format:{file_name}")
 
     @staticmethod
     def read_from_lib(file_name):
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
         #在函数开始时才导入以避免循环导入
-        from .read_cbr import read_from_cbl
+        from .read_cbr import read_from_cbl  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.cbl':
             return read_from_cbl(file_name)
-        else:
-            raise Exception(f"Unknown lib file format:{file_name}")
+        raise ValueError(f"Unknown lib file format:{file_name}")
 
     def save_to_pgn(self, file_name):
+        """将棋局按简化 PGN 文本格式保存到文件。"""
 
         #w = PGNWriter(self)
         #w.write_file(file_name)
 
         init_fen = self.init_board.to_fen()
-        with open(file_name, 'w') as f:
+        with open(file_name, 'w', encoding='utf-8') as f:
             f.write('[Game "Chinese Chess"]\n')
             f.write(f'[Date "{dt.date.today()}"]\n')
             f.write('[Red ""]\n')
@@ -352,13 +343,15 @@ class Game(object):
             file_name (str): 输出文件路径
         """
 
-        from .io_xqf import XQFWriter
-        from .io_pgn import PGNWriter
+        from .io_xqf import XQFWriter  # pylint: disable=import-outside-toplevel
+        from .io_pgn import PGNWriter  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == '.xqf':
             writer = XQFWriter(self)
         elif ext == '.pgn':
             writer = PGNWriter(self)
+        else:
+            raise ValueError(f"Unknown file format:{file_name}")
 
         return writer.save(file_name)
