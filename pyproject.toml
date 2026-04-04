@@ -27,6 +27,7 @@ requires-python = ">=3.6"
 dependencies = [
     "pytest>=7.0.1",
     "pytest-coverage>=0.0",
+    "chardet>=5.0",
 ]
 
 [project.urls]
@@ -54,5 +55,4 @@ publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
 [tool.pytest.ini_options]
-#tb_style = "short"
-tb_style = "line"
+addopts = "--tb=short"

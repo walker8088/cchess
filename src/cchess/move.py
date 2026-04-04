@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,21 +14,40 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
-from .common import RED, BLACK, fench_to_species, fench_to_text, text_to_fench, pos2iccs, half2full
+from .common import (
+    RED,
+    BLACK,
+    fench_to_species,
+    fench_to_text,
+    text_to_fench,
+    pos2iccs,
+    half2full,
+)
 
-#-----------------------------------------------------#
-#TODO 英文全角半角统一识别
-_h_level_index = ((), ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
-                  ("１", "２", "３", "４", "５", "６", "７", "８", "９"))
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
+# pylint: disable=too-many-return-statements,too-many-branches,too-many-statements
+# pylint: disable=too-many-locals,fixme
 
-_v_change_index = ((), ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
-                   ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"))
+# -----------------------------------------------------#
+# TODO 英文全角半角统一识别
+_h_level_index = (
+    (),
+    ("九", "八", "七", "六", "五", "四", "三", "二", "一"),
+    ("１", "２", "３", "４", "５", "６", "７", "８", "９"),
+)
+
+_v_change_index = (
+    (),
+    ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九"),
+    ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"),
+)
 
 
-#-----------------------------------------------------#
-class Move(object):
+# -----------------------------------------------------#
+class Move:
+    """表示一步棋及其在走子树中的关系（含变招、注释等）。"""
 
     def __init__(self, board, p_from, p_to, is_checking=False):
         """初始化一个走子对象。
@@ -44,7 +63,7 @@ class Move(object):
         self.is_checking = is_checking
         self.step_index = 0
         self.score = None
-        self.annote = ''
+        self.annote = ""
         self.parent = None
 
         if self.is_checking:
@@ -55,7 +74,7 @@ class Move(object):
         self.captured = self.board.get_fench(p_to)
         self.board_done = board.copy()
         self.board_done._move_piece(p_from, p_to)
-        self.board_done.next_turn()  #TODO 默认红走一步，黑走一步，对于让先的处理后续考虑
+        self.board_done.next_turn()  # TODO 默认红走一步，黑走一步，对于让先的处理后续考虑
         self.next_move = None
 
         self.variation_next = None
@@ -137,14 +156,16 @@ class Move(object):
 
         检查记录的 `captured` 字符是否表示国王（不区分大小写）。
         """
-        if self.captured and self.captured.lower() == 'k':
+        if self.captured and self.captured.lower() == "k":
             return True
         return False
 
     def len_variations(self):
+        """返回当前走子的分支（变招）数量。"""
         return len(self.variations_all)
 
     def get_variations(self, include_me=False):
+        """返回当前走子的所有分支（变招），可选择是否包含自身。"""
         if include_me:
             return self.variations_all
 
@@ -154,15 +175,19 @@ class Move(object):
         return sibs
 
     def last_variation(self):
+        """返回最后一个分支（变招）走子。"""
         return self.variations_all[-1]
 
     def get_variation_index(self):
+        """返回当前走子在分支列表中的索引及分支总数。"""
         slibling_count = len(self.variations_all)
         for index, m in enumerate(self.variations_all):
             if m == self:
                 return (index, slibling_count)
+        return None
 
     def add_variation(self, chess_move):
+        """将 `chess_move` 添加为当前走子的一个新分支（变招）。"""
         chess_move.parent = self.parent
         chess_move.step_index = self.step_index
         last = self.last_variation()
@@ -178,13 +203,14 @@ class Move(object):
         return chess_move
 
     def remove_variation(self, chess_move):
+        """从当前走子的分支列表中移除指定的 `chess_move`。"""
         if chess_move not in self.variations_all:
             return
 
-        #先移出兄弟表
+        # 先移出兄弟表
         self.variations_all.remove(chess_move)
 
-        #从链上摘下
+        # 从链上摘下
         node = self
         while node.variation_next:
             if node.variation_next == chess_move:
@@ -192,7 +218,7 @@ class Move(object):
                 node.variation_next = next_node
                 chess_move.variation_next = None
 
-        #更新兄弟表到所有的兄弟
+        # 更新兄弟表到所有的兄弟
         for node in self.get_variations():
             node.variations_all = self.variations_all
 
@@ -209,57 +235,55 @@ class Move(object):
         else:
             self.next_move.variations_all.append(chess_move)
 
-    def dump_moves(self,
-                   move_list,
-                   curr_move_line,
-                   is_tree_mode,
-                   curr_variation_index=0):
+    def dump_moves(
+        self, move_list, curr_move_line, is_tree_mode, curr_variation_index=0
+    ):
         """将从当前节点开始的走子线路序列化并追加到 `move_list`。
 
         `curr_move_line` 表示当前遍历路径，本方法会在递归过程中
         扩展路径并将每条线（含分支索引）追加到 `move_list`。
         """
 
-        backup_move_line = curr_move_line['moves'][:]
-        curr_move_line['moves'].append(self)
+        backup_move_line = curr_move_line["moves"][:]
+        curr_move_line["moves"].append(self)
 
-        curr_line_index = curr_move_line['index']
+        curr_line_index = curr_move_line["index"]
 
         if self.next_move:
-            self.next_move.dump_moves(move_list, curr_move_line, is_tree_mode,
-                                      0)
+            self.next_move.dump_moves(move_list, curr_move_line, is_tree_mode, 0)
 
-        #curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
-        #所以就不能在分支中再找兄弟了，否则会重复输出分支
-        #assert curr_variation_index == self.get_variation_index()
+        # curr_variation_index >0 说明是在分支中dump，因为主分支（index=0）已经把兄弟们遍历了一遍，
+        # 所以就不能在分支中再找兄弟了，否则会重复输出分支
+        # assert curr_variation_index == self.get_variation_index()
         if curr_variation_index > 0:
             return
 
-        #只有主分支（index == 0）才会遍历兄弟分支
+        # 只有主分支（index == 0）才会遍历兄弟分支
 
         for index, variation_move in enumerate(self.get_variations()):
             variation_index = index + 1
             new_line_index = len(move_list)
-            line_name = f'{curr_line_index}.{self.step_index}.{variation_index}_{new_line_index}'
+            line_name = f"{curr_line_index}.{self.step_index}.{variation_index}_{new_line_index}"
             new_line = {
-                'index': new_line_index,
-                'name': line_name,
+                "index": new_line_index,
+                "name": line_name,
                 #'variations':variations,
-                'variation_index': variation_index,
-                'from_line':
-                (curr_line_index, self.step_index, variation_index),
-                'moves': []
+                "variation_index": variation_index,
+                "from_line": (curr_line_index, self.step_index, variation_index),
+                "moves": [],
             }
 
             if not is_tree_mode:
-                new_line['moves'].extend(backup_move_line)
+                new_line["moves"].extend(backup_move_line)
 
             move_list.append(new_line)
-            variation_move.dump_moves(move_list, new_line, is_tree_mode,
-                                      variation_index)
+            variation_move.dump_moves(
+                move_list, new_line, is_tree_mode, variation_index
+            )
 
     def init_move_line(self):
-        return {'index': 0, 'name': '0', 'variations': [], 'moves': []}
+        """初始化并返回一个空的走子线路字典。"""
+        return {"index": 0, "name": "0", "variations": [], "moves": []}
 
     def to_text(self, detailed=False):
         """返回此走子的中文可读文本表示。
@@ -273,7 +297,7 @@ class Move(object):
 
         diff = self.p_to[1] - self.p_from[1]
 
-        #黑方是红方的反向操作
+        # 黑方是红方的反向操作
         if man_side == BLACK:
             diff = -diff
 
@@ -284,15 +308,15 @@ class Move(object):
         else:
             diff_str = "退"
 
-        #王车炮兵规则
-        if fench.lower() in ('k', 'r', 'c', 'p'):
+        # 王车炮兵规则
+        if fench.lower() in ("k", "r", "c", "p"):
             if diff == 0:
                 dest_str = _h_level_index[man_side][self.p_to[0]]
             elif diff > 0:
                 dest_str = _v_change_index[man_side][diff]
             else:
                 dest_str = _v_change_index[man_side][-diff]
-        else:  #士相马的规则
+        else:  # 士相马的规则
             dest_str = _h_level_index[man_side][self.p_to[0]]
 
         name_str = self.__get_text_name(self.p_from)
@@ -303,16 +327,21 @@ class Move(object):
 
         details = []
         if self.captured:
-            details.append(f'吃{fench_to_text(self.captured)}', )
+            details.append(
+                f"吃{fench_to_text(self.captured)}",
+            )
         if self.is_checkmate:
-            details.append('将死', )
+            details.append(
+                "将死",
+            )
         elif self.is_checking:
-            details.append('将军', )
+            details.append(
+                "将军",
+            )
 
         if len(details) == 0:
             return text
-        else:
-            return f'{text}({",".join(details)})'
+        return f"{text}({','.join(details)})"
 
     def __get_text_name(self, pos):
         """根据位置计算并返回带有位置限定词的棋子名称。
@@ -325,64 +354,64 @@ class Move(object):
         _, man_side = fench_to_species(fench)
         piece_name = fench_to_text(fench)
 
-        #王，士，相命名规则
-        if fench.lower() in ('k', 'a', 'b'):
+        # 王，士，相命名规则
+        if fench.lower() in ("k", "a", "b"):
             return piece_name + _h_level_index[man_side][pos[0]]
 
-        #车,马,炮,兵命名规则
-        #红黑顺序相反，俩数组减少计算工作量
-        pos_name2 = ((), ('后', '前'), ('前', '后'))
-        pos_name3 = ((), ('后', '中', '前'), ('前', '中', '后'))
-        pos_name4 = ((), ('后', '三', '二', '前'), ('前', '２', '３', '后'))
-        pos_name5 = ((), ('后', '四', '三', '二', '前'), ('前', '２', '３', '４', '后'))
+        # 车,马,炮,兵命名规则
+        # 红黑顺序相反，俩数组减少计算工作量
+        pos_name2 = ((), ("后", "前"), ("前", "后"))
+        pos_name3 = ((), ("后", "中", "前"), ("前", "中", "后"))
+        pos_name4 = ((), ("后", "三", "二", "前"), ("前", "２", "３", "后"))
+        pos_name5 = ((), ("后", "四", "三", "二", "前"), ("前", "２", "３", "４", "后"))
 
         count = 0
         pos_index = -1
         for y in range(10):
-            if self.board._board[y][pos[0]] == fench:
+            if self.board._board[y][pos[0]] == fench:  # pylint: disable=protected-access
                 if pos[1] == y:
                     pos_index = count
                 count += 1
 
         if count == 1:
             return piece_name + _h_level_index[man_side][pos[0]]
-        elif count == 2:
+        if count == 2:
             return pos_name2[man_side][pos_index] + piece_name
-        elif count == 3:
-            #TODO 查找另一个多子行
+        if count == 3:
+            # TODO 查找另一个多子行
             return pos_name3[man_side][pos_index] + piece_name
-        elif count == 4:
+        if count == 4:
             return pos_name4[man_side][pos_index] + piece_name
-        elif count == 5:
+        if count == 5:
             return pos_name5[man_side][pos_index] + piece_name
 
         return piece_name + _h_level_index[man_side][pos[0]]
 
     def to_text_detail(self, show_variation, show_annote):
-
+        """返回走子的文本表示，可选择是否显示变招和注释。"""
         if show_variation:
             txt = self.to_text_variation()
         else:
             txt = self.to_text()
 
-        annote = self.annote if show_annote else ''
+        annote = self.annote if show_annote else ""
 
         return (txt, annote)
 
     def to_text_variation(self):
-
+        """返回带有变招标记的走子文本表示（多分支以方括号包裹）。"""
         assert len(self.variations_all) > 0
 
-        #父节点只有一个孩子，那就是自己
+        # 父节点只有一个孩子，那就是自己
         if len(self.variations_all) == 1:
             return self.to_text()
 
         txts = []
-        for index, m in enumerate(self.variations_all):
+        for _index, m in enumerate(self.variations_all):
             if m == self:
-                txts.append(f'{m.to_text()}')
+                txts.append(f"{m.to_text()}")
             else:
-                txts.append('*')  #m.to_text())
+                txts.append("*")  # m.to_text())
 
         return f"[{','.join(txts)}]"
 
@@ -393,18 +422,18 @@ class Move(object):
         根据历史拼接 moves 列表以便向引擎发送完整走子序列。
         """
         if self.captured:
-            #吃子移动
+            # 吃子移动
             self.board_done.move_player = move_player
             self.fen_for_engine = self.board_done.to_fen()
             self.move_list_for_engine = []
         else:
-            #未吃子移动
+            # 未吃子移动
             if not history:
-                #历史为空
+                # 历史为空
                 self.fen_for_engine = self.board.to_fen()
                 self.move_list_for_engine = [self.to_iccs()]
             else:
-                #历史不为空,往后追加
+                # 历史不为空,往后追加
                 last_move = history[-1]
                 self.fen_for_engine = last_move.fen_for_engine
                 self.move_list_for_engine = last_move.move_list_for_engine[:]
@@ -419,8 +448,8 @@ class Move(object):
         if len(self.move_list_for_engine) == 0:
             return self.fen_for_engine
 
-        move_str = ' '.join(self.move_list_for_engine)
-        return ' '.join([self.fen_for_engine, 'moves', move_str])
+        move_str = " ".join(self.move_list_for_engine)
+        return " ".join([self.fen_for_engine, "moves", move_str])
 
     def to_iccs(self):
         """返回此走子的 ICCS（引擎）走法字符串。
@@ -438,65 +467,64 @@ class Move(object):
         数字做简单归一化，否则在无法解析时返回 None。
         """
 
-        #移动规则检查
-        if piece_fench in ['a', 'b', 'n'] and move_str[0] == "平":
+        # 移动规则检查
+        if piece_fench in ["a", "b", "n"] and move_str[0] == "平":
             return None
-        if move_str[0] not in ['进', '退', '平']:
+        if move_str[0] not in ["进", "退", "平"]:
             return None
 
-        #王,车,炮,兵的移动规则
-        if piece_fench in ['k', 'r', 'c', 'p']:
-            #平移
+        # 王,车,炮,兵的移动规则
+        if piece_fench in ["k", "r", "c", "p"]:
+            # 平移
             if move_str[0] == "平":
                 new_x = _h_level_index[move_player].index(move_str[1])
                 return (new_x, p_from[1])
-            else:
-                #王，车，炮，兵的前进和后退
-                # 支持不同形式的数字（如中文数字 '一' 与全角数字 '１'），尝试归一化后查找
-                try:
-                    diff = _v_change_index[move_player].index(move_str[1])
-                except ValueError:
-                    # 简单映射常见中文数字到全角数字
-                    zh_to_full = {
-                        '一': '１',
-                        '二': '２',
-                        '三': '３',
-                        '四': '４',
-                        '五': '５',
-                        '六': '６',
-                        '七': '７',
-                        '八': '８',
-                        '九': '９'
-                    }
-                    ch = zh_to_full.get(move_str[1], move_str[1])
-                    diff = _v_change_index[move_player].index(ch)
+            # 王，车，炮，兵的前进和后退
+            # 支持不同形式的数字（如中文数字 '一' 与全角数字 '１'），尝试归一化后查找
+            try:
+                diff = _v_change_index[move_player].index(move_str[1])
+            except ValueError:
+                # 简单映射常见中文数字到全角数字
+                zh_to_full = {
+                    "一": "１",
+                    "二": "２",
+                    "三": "３",
+                    "四": "４",
+                    "五": "５",
+                    "六": "６",
+                    "七": "７",
+                    "八": "８",
+                    "九": "９",
+                }
+                ch = zh_to_full.get(move_str[1], move_str[1])
+                diff = _v_change_index[move_player].index(ch)
 
-                if move_str[0] == "退":
-                    diff = -diff
+            if move_str[0] == "退":
+                diff = -diff
 
-                if move_player == BLACK:
-                    diff = -diff
+            if move_player == BLACK:
+                diff = -diff
 
-                return (p_from[0], p_from[1] + diff)
+            return (p_from[0], p_from[1] + diff)
 
-        #仕的移动规则
-        elif piece_fench == 'a':
+        # 仕的移动规则
+        if piece_fench == "a":
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
             if move_player == BLACK:
                 diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
-        #象的移动规则
-        elif piece_fench == 'b':
+        # 象的移动规则
+        if piece_fench == "b":
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
             if move_player == BLACK:
                 diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
-        #马的移动规则
-        elif piece_fench == 'n':
+        # 马的移动规则
+        if piece_fench == "n":
             new_x = _h_level_index[move_player].index(move_str[1])
             diff_x = abs(p_from[0] - new_x)
 
@@ -510,6 +538,8 @@ class Move(object):
 
             return (new_x, p_from[1] - diff_y)
 
+        return None
+
     @staticmethod
     def from_text(board, move_str):
         """解析中文走法字符串，返回标准化的走子 `((p_from, p_to))`。
@@ -519,7 +549,7 @@ class Move(object):
         """
         move_str = half2full(move_str)
 
-        #TODO测试黑方
+        # TODO测试黑方
         move_indexs = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
         multi_pieces = False
@@ -552,7 +582,7 @@ class Move(object):
             target_x = None
             try:
                 target_x = _h_level_index[move_player].index(chinese_digit)
-            except Exception:
+            except ValueError:
                 target_x = None
 
             poss = []
@@ -567,7 +597,7 @@ class Move(object):
                 poss = list(reversed(poss))
 
             # 对兵在同列多子情况做优先级选择
-            if piece_fench == 'p' and len(poss) > 1:
+            if piece_fench == "p" and len(poss) > 1:
                 if move_player == RED:
                     poss.sort(key=lambda p: p[1], reverse=True)
                 else:
@@ -577,61 +607,52 @@ class Move(object):
                 return None
 
             for pos in poss:
-                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
-                                                  move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, move_player, pos, move_str[2:]
+                )
                 if move:
                     return [(pos, move)]
 
             return None
 
         if not multi_pieces:
-            #单子移动
+            # 单子移动
             x = _h_level_index[move_player].index(move_str[1])
             poss = board.get_fenchs_x(fench, x)
-                
-            #无子可走
+
+            # 无子可走
             if len(poss) == 0:
                 return None
 
-            #同一行选出来多个,这种情况下, 只有士象是可以多个子尝试移动而不用标明前后的
-            if (len(poss) > 1) and (piece_fench not in ['a', 'b']):
+            # 同一行选出来多个,这种情况下, 只有士象是可以多个子尝试移动而不用标明前后的
+            if (len(poss) > 1) and (piece_fench not in ["a", "b"]):
                 return None
 
-            '''
-            for pos in poss:
-                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
-                                                  move_str[2:])
-                if move:
-                    return ((pos, move))
-
-            '''
             moves = []
             for pos in poss:
-                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
-                                                  move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, move_player, pos, move_str[2:]
+                )
                 if move:
                     moves.append((pos, move))
 
             return moves
-            
-        else:
-            #多选一移动
-            if move_str[0] in ['前', '中', '后']:
-                poss = board.get_fenchs(fench)
-                if move_player == BLACK:
-                    poss.reverse()
 
-                move_indexs = {"前": -1, "中": 1, "后": 0}
-                pos = poss[move_indexs[move_str[0]]]
+        # 多选一移动
+        if move_str[0] in ["前", "中", "后"]:
+            poss = board.get_fenchs(fench)
+            if move_player == BLACK:
+                poss.reverse()
 
-                #print(piece_fench, move_player, pos, move_str[2:])
-                move = Move.text_move_to_std_move(piece_fench, move_player, pos,
-                                                  move_str[2:])
-                if move:
-                    return [(pos, move)]
-                else:
-                    return None
-            #多兵选一移动
-            else:
-                pass
-                #TODO fix
+            move_indexs = {"前": -1, "中": 1, "后": 0}
+            pos = poss[move_indexs[move_str[0]]]
+
+            # print(piece_fench, move_player, pos, move_str[2:])
+            move = Move.text_move_to_std_move(
+                piece_fench, move_player, pos, move_str[2:]
+            )
+            if move:
+                return [(pos, move)]
+            return None
+        # 多兵选一移动
+        return None

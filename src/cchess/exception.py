@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,16 +14,18 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 
 class CChessException(Exception):
+    """中国象棋库通用异常。"""
 
     def __init__(self, reason):
         self.reason = reason
 
 
 class EngineErrorException(Exception):
+    """引擎通信或执行过程中发生的异常。"""
 
     def __init__(self, reason):
         self.reason = reason

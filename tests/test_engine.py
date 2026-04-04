@@ -66,7 +66,7 @@ class TestEngineException():
         self.engine = UciEngine()
         ret, err_msg = self.engine.load(
             "..\\Engine\\pikafish_230408\\pikafish-vnni512.exe")
-        print(self.engine.engine_status)
+        #print(self.engine.engine_status)
         #assert self.engine.engine_status == EngineStatus.ERROR
 
 
@@ -105,7 +105,7 @@ class TestUcci():
                     continue
                 action = output['action']
                 if action == 'bestmove':
-                    print(output)
+                    #print(output)
                     iccs = output["move"]
                     move_txt = board.move_iccs(iccs).to_text()
                     print(move_txt)
@@ -164,7 +164,7 @@ class TestUci():
                 #print(output)
                 action = output['action']
                 if action == 'bestmove':
-                    print(output)
+                    #print(output)
                     iccs = output["move"]
                     move = board.move_iccs(iccs)
                     print(move.to_text())
@@ -207,7 +207,7 @@ class TestUci():
                 action = output['action']
                 if action == 'bestmove':
                     steps += 1
-                    print(output)
+                    #print(output)
                     iccs = output["move"]
                     move = board.move_iccs(iccs)
                     print(move.to_text())

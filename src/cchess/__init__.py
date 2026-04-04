@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,12 +14,32 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 from .exception import CChessException, EngineErrorException  # noqa: F401
-from .common import NO_COLOR, RED, BLACK, fench_to_species, fench_to_text, iccs2pos, pos2iccs, iccs_mirror, iccs_list_mirror,\
-   iccs_flip, iccs_swap, fen_mirror, fen_flip, fen_swap, get_move_color, get_fen_type, get_fen_type_detail,\
-            FULL_INIT_BOARD, FULL_INIT_FEN, EMPTY_BOARD, EMPTY_FEN # noqa: F401# noqa: F401
+from .common import (  # noqa: F401
+    NO_COLOR,
+    RED,
+    BLACK,
+    fench_to_species,
+    fench_to_text,
+    iccs2pos,
+    pos2iccs,
+    iccs_mirror,
+    iccs_list_mirror,
+    iccs_flip,
+    iccs_swap,
+    fen_mirror,
+    fen_flip,
+    fen_swap,
+    get_move_color,
+    get_fen_type,
+    get_fen_type_detail,
+    FULL_INIT_BOARD,
+    FULL_INIT_FEN,
+    EMPTY_BOARD,
+    EMPTY_FEN,
+)
 from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn  # noqa: F401
 from .board import ChessBoard, ChessPlayer  # noqa: F401
 from .move import Move  # noqa: F401

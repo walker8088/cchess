@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 import copy
 import json
@@ -24,44 +24,44 @@ from .exception import CChessException
 from .common import fench_to_species, fench_to_txt_name, NO_COLOR, RED, BLACK, iccs2pos
 from .piece import Piece
 from .move import Move
-from .zhash_data import z_c90, z_pieces, z_redKey, z_hashTable
+from .zhash_data import z_c90, z_pieces, Z_RED_KEY, Z_HASH_TABLE
 
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-public-methods
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 _text_board = [
     #'  1   2   3   4   5   6   7   8   9 ',
-    '9 ┌───┬───┬───┬───┬───┬───┬───┬───┐ ',
-    '  │   │   │   │ ＼│／ │   │   │   │ ',
-    '8 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │   │　 │   │ ／│＼ │   │   │   │ ',
-    '7 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │   │　 │　 │　 │   │   │   │   │ ',
-    '6 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │　 │　 │   │   │   │   │   │   │ ',
-    '5 ├───┴───┴───┴───┴───┴───┴───┴───┤ ',
-    '  │　                             │ ',
-    '4 ├───┬───┬───┬───┬───┬───┬───┬───┤ ',
-    '  │　 │　 │   │   │   │　 │　 │　 │ ',
-    '3 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │   │　 │　 │　 │   │   │   │   │ ',
-    '2 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │   │   │   │ ＼│／ │　 │　 │　 │ ',
-    '1 ├───┼───┼───┼───┼───┼───┼───┼───┤ ',
-    '  │   │　 │   │ ／│＼ │　 │   │   │ ',
-    '0 └───┴───┴───┴───┴───┴───┴───┴───┘ ',
-    '   ',
-    '  a   b   c   d   e   f   g   h   i ',
-    '  0   1   2   3   4   5   6   7   8 ',
+    "9 ┌───┬───┬───┬───┬───┬───┬───┬───┐ ",
+    "  │   │   │   │ ＼│／ │   │   │   │ ",
+    "8 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │   │　 │   │ ／│＼ │   │   │   │ ",
+    "7 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │   │　 │　 │　 │   │   │   │   │ ",
+    "6 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │　 │　 │   │   │   │   │   │   │ ",
+    "5 ├───┴───┴───┴───┴───┴───┴───┴───┤ ",
+    "  │　                             │ ",
+    "4 ├───┬───┬───┬───┬───┬───┬───┬───┤ ",
+    "  │　 │　 │   │   │   │　 │　 │　 │ ",
+    "3 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │   │　 │　 │　 │   │   │   │   │ ",
+    "2 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │   │   │   │ ＼│／ │　 │　 │　 │ ",
+    "1 ├───┼───┼───┼───┼───┼───┼───┼───┤ ",
+    "  │   │　 │   │ ／│＼ │　 │   │   │ ",
+    "0 └───┴───┴───┴───┴───┴───┴───┴───┘ ",
+    "   ",
+    "  a   b   c   d   e   f   g   h   i ",
+    "  0   1   2   3   4   5   6   7   8 ",
     #'  九  八  七  六  五  四  三  二  一',
     #'',
 ]
 
-_g_fen_num_set = set(('1', '2', '3', '4', '5', '6', '7', '8', '9'))
-_g_fen_ch_set = set(('k', 'a', 'b', 'n', 'r', 'c', 'p'))
+_g_fen_num_set = set(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+_g_fen_ch_set = set(("k", "a", "b", "n", "r", "c", "p"))
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
     """
     将棋盘坐标 (x,y) 转换为文本画板中字符位置。
@@ -75,11 +75,11 @@ def _pos_to_text_board_pos(pos):
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
 
 
-#-----------------------------------------------------#
-PLAYER = ('', 'RED', 'BLACK')
+# -----------------------------------------------------#
+PLAYER = ("", "RED", "BLACK")
 
 
-class ChessPlayer():
+class ChessPlayer:
     """表示当前走子的玩家（颜色）。
 
     该类封装了简单的颜色切换逻辑，用于记录当前走子方。
@@ -122,14 +122,14 @@ class ChessPlayer():
         return False
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class ChessBoard:
     """棋盘核心类：存储棋子分布并提供走子/检测规则的工具方法。
 
     该类提供加载/导出 FEN、生成走子、检查将军/将死等功能。
     """
 
-    def __init__(self, fen=''):
+    def __init__(self, fen=""):
         """使用可选的 FEN 字符串初始化棋盘。
 
         参数:
@@ -156,15 +156,13 @@ class ChessBoard:
     def mirror(self):
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
-        b._board = [[self._board[y][8 - x] for x in range(9)]
-                    for y in range(10)]
+        b._board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
         return b
 
     def flip(self):
         """返回新棋盘: 绕横轴翻转（上下翻转）+ 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
-        b._board = [[self._board[9 - y][8 - x] for x in range(9)]
-                    for y in range(10)]
+        b._board = [[self._board[9 - y][8 - x] for x in range(9)] for y in range(10)]
         return b
 
     def swap(self):
@@ -180,8 +178,9 @@ class ChessBoard:
             return fench.upper() if fench.islower() else fench.lower()
 
         b = self.copy()
-        b._board = [[swap_fench(self._board[y][x]) for x in range(9)]
-                    for y in range(10)]
+        b._board = [
+            [swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)
+        ]
 
         b.move_player.next()
 
@@ -292,7 +291,7 @@ class ChessBoard:
                 fench = self._board[y][x]
                 if not fench:
                     continue
-                if fench.lower() == 'k':
+                if fench.lower() == "k":
                     return Piece.create(self, fench, (x, y))
         return None
 
@@ -306,7 +305,7 @@ class ChessBoard:
         return self.is_valid_move(move_from, move_to)
 
     def is_valid_move(self, pos_from, pos_to):
-        '''只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度'''
+        """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度"""
 
         if not 0 <= pos_to[0] <= 8:
             return False
@@ -395,7 +394,7 @@ class ChessBoard:
         """判断执行给定走子后己方是否处于被将军状态。
         若走子非法，抛出 `CChessException('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
-            raise CChessException('Invalid Move')
+            raise CChessException("Invalid Move")
         board = self.copy()
         board._move_piece(pos_from, pos_to)
         board.move_player.next()
@@ -439,13 +438,19 @@ class ChessBoard:
 
     def count_x_line_in(self, y, x_from, x_to):
         """统计同一行 y 上 x_from 与 x_to 之间（不含端点）被占用的格子数。"""
-        return reduce(lambda count, fench: count + 1 if fench else count,
-                      self.x_line_in(y, x_from, x_to), 0)
+        return reduce(
+            lambda count, fench: count + 1 if fench else count,
+            self.x_line_in(y, x_from, x_to),
+            0,
+        )
 
     def count_y_line_in(self, x, y_from, y_to):
         """统计同一列 x 上 y_from 与 y_to 之间（不含端点）被占用的格子数。"""
-        return reduce(lambda count, fench: count + 1 if fench else count,
-                      self.y_line_in(x, y_from, y_to), 0)
+        return reduce(
+            lambda count, fench: count + 1 if fench else count,
+            self.y_line_in(x, y_from, y_to),
+            0,
+        )
 
     def x_line_in(self, y, x_from, x_to):
         """返回水平方向上两个 x 之间（不含端点）的格子内容列表。"""
@@ -464,19 +469,19 @@ class ChessBoard:
         """
 
         fen = fen.strip()
-        if fen == '':
+        if fen == "":
             self.clear()
             return True
 
-        fen0, fen1 = fen.split(' ')[:2]  #只取前两个元素
+        fen0, fen1 = fen.split(" ")[:2]  # 只取前两个元素
 
         b = ChessBoard()
         x = 0
         y = 9
         for i, ch in enumerate(fen0):
             if (x > 9) or (y < 0):
-                raise CChessException(f'fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}')
-            if ch == '/':
+                raise CChessException(f"fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}")
+            if ch == "/":
                 x = 0
                 y -= 1
             elif ch in _g_fen_num_set:
@@ -485,25 +490,27 @@ class ChessBoard:
                 b.put_fench(ch, (x, y))
                 x += 1
             else:
-                raise CChessException(f'fen:{fen} 不合法的fen字符串:{i},[{ch}]')
+                raise CChessException(f"fen:{fen} 不合法的fen字符串:{i},[{ch}]")
 
         self.move_player = ChessPlayer(NO_COLOR)
 
-        if fen1 == 'b':
+        if fen1 == "b":
             b.move_player = ChessPlayer(BLACK)
-        elif fen1 in ['w', 'r']:
+        elif fen1 in ["w", "r"]:
             b.move_player = ChessPlayer(RED)
         else:
-            raise CChessException(f'fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}')
+            raise CChessException(
+                f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}"
+            )
 
-        #事务性转换
+        # 事务性转换
         self.from_board(b)
 
         return True
 
     def to_fen(self):
         """将棋盘序列化为简化 FEN 字符串（不含额外信息）。"""
-        fen = ''
+        fen = ""
         count = 0
         for y in range(9, -1, -1):
             for x in range(9):
@@ -521,18 +528,18 @@ class ChessBoard:
                 count = 0
 
             if y > 0:
-                fen += '/'
+                fen += "/"
 
         if self.move_player == BLACK:
-            fen += ' b'
+            fen += " b"
         else:
-            fen += ' w'
+            fen += " w"
 
         return fen
 
     def to_full_fen(self):
         """返回包含占位信息的完整 FEN（方便外部工具兼容）。"""
-        return self.to_fen() + ' - - 0 1'
+        return self.to_fen() + " - - 0 1"
 
     def zhash(self, fen=None):
         """计算当前棋盘的 Zobrist 哈希值。
@@ -548,10 +555,10 @@ class ChessBoard:
                 letter = self.get_fench((x, y))
                 if letter in z_pieces:
                     chess = z_pieces[letter]
-                    key ^= z_hashTable[chess * 256 + square]
+                    key ^= Z_HASH_TABLE[chess * 256 + square]
 
         if self.get_move_color() == RED:
-            key ^= z_redKey
+            key ^= Z_RED_KEY
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))
 
@@ -594,8 +601,11 @@ class ChessBoard:
             for ch in line[::-1]:
                 if ch:
                     pos = _pos_to_text_board_pos((x, y))
-                    new_text = board_str[pos[1]][:pos[0]] + fench_to_txt_name(
-                        ch) + board_str[pos[1]][pos[0] + 2:]
+                    new_text = (
+                        board_str[pos[1]][: pos[0]]
+                        + fench_to_txt_name(ch)
+                        + board_str[pos[1]][pos[0] + 2 :]
+                    )
                     board_str[pos[1]] = new_text
                 x -= 1
             y += 1
@@ -604,7 +614,7 @@ class ChessBoard:
 
     def print_board(self):
         """在标准输出打印棋盘的文本表示，便于调试。"""
-        print('')
+        print("")
         for s in self.text_view():
             print(s)
 
@@ -622,17 +632,17 @@ class ChessBoard:
         return False
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class ChessBoardOneHot(ChessBoard):
     """基于 `ChessBoard` 的独热编码棋盘表示。"""
 
-    def __init__(self, fen='', chess_dict=None):
+    def __init__(self, fen="", chess_dict=None):
         super().__init__(fen)
         self.__chess_dict = chess_dict
 
     def load_one_hot_dict(self, file):
         """从 JSON 文件加载棋子到独热向量的映射。"""
-        with open(file, 'r', encoding='utf-8') as f:
+        with open(file, "r", encoding="utf-8") as f:
             self.__chess_dict = json.load(f)
         self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -646,8 +656,8 @@ class ChessBoardOneHot(ChessBoard):
             temp = []
             for y in x:
                 temp.append(
-                    self.__chess_dict.get(
-                        y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+                    self.__chess_dict.get(y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                )
             one_hot_board.append(temp)
         return one_hot_board
 

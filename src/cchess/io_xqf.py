@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,9 +14,13 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
-#import os
+# pylint: disable=invalid-name
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-few-public-methods
+
+# import os
 import struct
 from typing import Tuple
 
@@ -24,9 +28,10 @@ from .common import RED, fench_to_species
 from .board import ChessPlayer, ChessBoard
 from .game import Game
 
-#-----------------------------------------------------#
-#result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
-result_dict = {0: '*', 1: '1-0', 2: '0-1', 3: '1/2-1/2', 4: '1/2-1/2'}
+
+# -----------------------------------------------------#
+# result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
+result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
 
 def _decode_pos(man_pos):
@@ -39,20 +44,28 @@ def _decode_pos(man_pos):
 
 def _decode_pos2(man_pos):
     """将包含两个压缩位置的元组解码为 ((from_x,from_y),(to_x,to_y))。"""
-    return ((int(man_pos[0] // 10), man_pos[0] % 10), (int(man_pos[1] // 10),
-                                                       man_pos[1] % 10))
+    return (
+        (int(man_pos[0] // 10), man_pos[0] % 10),
+        (int(man_pos[1] // 10), man_pos[1] % 10),
+    )
 
 
-#-----------------------------------------------------#
-class XQFKey(object):
+# -----------------------------------------------------#
+class XQFKey:
+    """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
 
     def __init__(self):
-        """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
-        pass
+        """初始化密钥容器。"""
+        self.KeyXY = None
+        self.KeyXYf = None
+        self.KeyXYt = None
+        self.KeyRMKSize = None
+        self.FKeyBytes = None
+        self.F32Keys = None
 
 
-#-----------------------------------------------------#
-class XQFBuffDecoder(object):
+# -----------------------------------------------------#
+class XQFBuffDecoder:
     """对 XQF 中走子数据区的字节流提供顺序读取辅助。
 
     提供按字节读取、按长度解码字符串以及读取 4 字节整数的便利方法，
@@ -67,10 +80,7 @@ class XQFBuffDecoder(object):
     def __read(self, size):
         """内部方法：从当前索引读 `size` 字节并推进索引。"""
         start = self.index
-        stop = self.index + size
-
-        if stop > self.length:
-            stop = self.length
+        stop = min(self.index + size, self.length)
 
         self.index = stop
         return self.buffer[start:stop]
@@ -82,27 +92,28 @@ class XQFBuffDecoder(object):
 
         try:
             ret = buff.decode(coding)
-        except Exception:
+        except (UnicodeDecodeError, ValueError):
             ret = None
 
         return ret
 
     def read_bytes(self, size):
+        """读取指定字节并返回 bytearray。"""
         return bytearray(self.__read(size))
 
     def read_int(self):
         """读取 4 字节并按小端序返回一个整数。"""
-        bytes = self.read_bytes(4)
-        return bytes[0] + (bytes[1] << 8) + (bytes[2] << 16) + (bytes[3] << 24)
+        data = self.read_bytes(4)
+        return data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
 
 
-#-------------------------------------------------
+# -------------------------------------------------
 def __init_decrypt_key(buff_str):
     """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。"""
 
     keys = XQFKey()
 
-    #key_buff = bytearray(buff_str)
+    # key_buff = bytearray(buff_str)
 
     # Pascal code here from XQFRW.pas
     # KeyMask   : dTByte;                         // 加密掩码
@@ -116,49 +127,57 @@ def __init_decrypt_key(buff_str):
     # KeyXYf    : dTByte;                         // 棋谱起点钥匙
     # KeyXYt    : dTByte;                         // 棋谱终点钥匙
 
-    HEAD_KeyMask, HEAD_ProductId, \
-    HEAD_KeyOrA, HEAD_KeyOrB, HEAD_KeyOrC, HEAD_KeyOrD, \
-    HEAD_KeysSum, HEAD_KeyXY, HEAD_KeyXYf, HEAD_KeyXYt = struct.unpack("<BIBBBBBBBB", buff_str)
-    """ 
-        #以下是密码计算公式
-        bKey       := XQFHead.KeyXY;
-        KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
-        bKey       := XQFHead.KeyXYf;
-        KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
-        bKey       := XQFHead.KeyXYt;
-        KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
-        wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
-        KeyRMKSize := (wKey mod 32000) + 767;
-        """
+    (
+        HEAD_KeyMask,
+        _HEAD_ProductId,
+        HEAD_KeyOrA,
+        HEAD_KeyOrB,
+        HEAD_KeyOrC,
+        HEAD_KeyOrD,
+        HEAD_KeysSum,
+        HEAD_KeyXY,
+        HEAD_KeyXYf,
+        HEAD_KeyXYt,
+    ) = struct.unpack("<BIBBBBBBBB", buff_str)
+    # 以下是密码计算公式
+    # bKey       := XQFHead.KeyXY;
+    # KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
+    # bKey       := XQFHead.KeyXYf;
+    # KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
+    # bKey       := XQFHead.KeyXYt;
+    # KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
+    # wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
+    # KeyRMKSize := (wKey mod 32000) + 767;
 
-    #pascal code
-    #bKey       := XQFHead.KeyXY;
-    #KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
+    # pascal code
+    # bKey       := XQFHead.KeyXY;
+    # KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
     bKey = HEAD_KeyXY
-    #棋子32个位置加密因子
-    keys.KeyXY = (((((
-        (bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * bKey) & 0xFF
+    # 棋子32个位置加密因子
+    keys.KeyXY = ((((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * bKey) & 0xFF
 
-    #棋谱加密因子(起点)
-    #pascal code
-    #bKey       := XQFHead.KeyXYf;
-    #KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
+    # 棋谱加密因子(起点)
+    # pascal code
+    # bKey       := XQFHead.KeyXYf;
+    # KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
     bKey = HEAD_KeyXYf
-    keys.KeyXYf = (((((
-        (bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXY) & 0xFF
+    keys.KeyXYf = (
+        (((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXY
+    ) & 0xFF
 
-    #棋谱加密因子(终点)
-    #pascal code
-    #bKey       := XQFHead.KeyXYt;
-    #KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
+    # 棋谱加密因子(终点)
+    # pascal code
+    # bKey       := XQFHead.KeyXYt;
+    # KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
     bKey = HEAD_KeyXYt
-    keys.KeyXYt = (((((
-        (bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXYf) & 0xFF
+    keys.KeyXYt = (
+        (((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXYf
+    ) & 0xFF
 
-    #注解大小加密因子
-    #pascal code
-    #wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
-    #KeyRMKSize := (wKey mod 32000) + 767;
+    # 注解大小加密因子
+    # pascal code
+    # wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
+    # KeyRMKSize := (wKey mod 32000) + 767;
     wKey = HEAD_KeysSum * 256 + HEAD_KeyXY
     keys.KeyRMKSize = ((wKey % 32000) + 767) & 0xFFFF
 
@@ -169,13 +188,13 @@ def __init_decrypt_key(buff_str):
 
     keys.FKeyBytes = (B1, B2, B3, B4)
     keys.F32Keys = bytearray(b"[(C) Copyright Mr. Dong Shiwei.]")
-    for i in range(len(keys.F32Keys)):
+    for i, _ in enumerate(keys.F32Keys):
         keys.F32Keys[i] &= keys.FKeyBytes[i % 4]
 
     return keys
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def __init_chess_board(man_str, version, keys=None):
     """根据文件中存放的棋子布局字节串构造内部的 32 长度数组。
 
@@ -199,13 +218,13 @@ def __init_chess_board(man_str, version, keys=None):
 
     for i in range(32):
         tmpMan[i] = (tmpMan[i] - keys.KeyXY) & 0xFF
-        if (tmpMan[i] > 89):
+        if tmpMan[i] > 89:
             tmpMan[i] = 0xFF
 
     return tmpMan
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def __decode_buff(keys, buff):
     """使用 `keys` 中的 F32Keys 对缓冲区做逐字节的解密变换并返回解密后的 bytes。"""
     nPos = 0x400
@@ -218,7 +237,7 @@ def __decode_buff(keys, buff):
     return bytes(de_buff)
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def __read_init_info(buff_decoder, version, keys):
     """读取并返回记录区的注释信息（若存在）。
 
@@ -229,18 +248,18 @@ def __read_init_info(buff_decoder, version, keys):
 
     annote_len = 0
     if version <= 0x0A:
-        #低版本在走子数据后紧跟着注释长度，长度为0则没有注释
+        # 低版本在走子数据后紧跟着注释长度，长度为0则没有注释
         annote_len = buff_decoder.read_int()
     else:
-        #高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
+        # 高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
         step_info[2] &= 0xE0
-        if (step_info[2] & 0x20):  #有注释
+        if step_info[2] & 0x20:  # 有注释
             annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
     return buff_decoder.read_str(annote_len) if (annote_len > 0) else None
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
 
@@ -259,68 +278,58 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     board_bak = board.copy()
 
     if version <= 0x0A:
-        #低版本在走子数据后紧跟着注释长度，长度为0则没有注释
-        if (step_info[2] & 0xF0):
+        # 低版本在走子数据后紧跟着注释长度，长度为0则没有注释
+        if step_info[2] & 0xF0:
             has_next_step = True
-        if (step_info[2] & 0x0F):
-            has_var_step = True  #有变着
+        if step_info[2] & 0x0F:
+            has_var_step = True  # 有变着
         annote_len = buff_decoder.read_int()
-        #走子起点，落点
+        # 走子起点，落点
         step_info[0] = (step_info[0] - 0x18) & 0xFF
         step_info[1] = (step_info[1] - 0x20) & 0xFF
 
     else:
-        #高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
+        # 高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
         step_info[2] &= 0xE0
-        if (step_info[2] & 0x80):  #有后续
+        if step_info[2] & 0x80:  # 有后续
             has_next_step = True
-        if (step_info[2] & 0x40):  #有变招
+        if step_info[2] & 0x40:  # 有变招
             has_var_step = True
-        if (step_info[2] & 0x20):  #有注释
+        if step_info[2] & 0x20:  # 有注释
             annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
-        #走子起点，落点
+        # 走子起点，落点
         step_info[0] = (step_info[0] - 0x18 - keys.KeyXYf) & 0xFF
         step_info[1] = (step_info[1] - 0x20 - keys.KeyXYt) & 0xFF
 
     move_from, move_to = _decode_pos2(step_info)
     annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
 
+    good_move = parent_move
     fench = board.get_fench(move_from)
-
-    if not fench:
-        #raise CChessException("bad move at %s %s" % (str(move_from), str(move_to)))
-        good_move = parent_move
-    else:
+    if fench:
         _, man_side = fench_to_species(fench)
         board.move_player = ChessPlayer(man_side)
-
         if board.is_valid_move(move_from, move_to):
-            #认为当前走子一方就是合理一方，避免过多走子方检查
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
-            #print curr_move.move_str(), has_next_step, has_var_step
             if parent_move:
                 parent_move.append_next_move(curr_move)
             else:
                 game.append_first_move(curr_move)
             good_move = curr_move
-        else:
-            #print "bad move at", move_from, move_to
-            #board.print_board()
-            good_move = parent_move
 
     if has_next_step:
         __read_steps(buff_decoder, version, keys, game, good_move, board)
 
     if has_var_step:
-        #print("new_line", parent_move.step_index, parent_move.to_text())
+        # print("new_line", parent_move.step_index, parent_move.to_text())
         __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
-        game.info['branchs'] += 1
+        game.info["branchs"] += 1
 
 
-#-----------------------------------------------------#
-def read_from_xqf(full_file_name, read_annotation=True):
+# -----------------------------------------------------#
+def read_from_xqf(full_file_name, read_annotation=True):  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
@@ -337,21 +346,45 @@ def read_from_xqf(full_file_name, read_annotation=True):
     with open(full_file_name, "rb") as f:
         contents = f.read()
 
-    magic, version,  crypt_keys, ucBoard,\
-    ucUn2, ucRes,\
-    ucUn3, ucType,\
-    ucUn4, ucTitleLen,szTitle,\
-    ucUn5, ucMatchNameLen,szMatchName,\
-    ucDateLen, szDate,\
-    ucAddrLen, szAddr,\
-    ucRedPlayerNameLen, szRedPlayerName,\
-    ucBlackPlayerNameLen,szBlackPlayerName,\
-    ucTimeRuleLen,szTimeRule,\
-    ucRedTimeLen,szRedTime,\
-    ucBlackTime,szBlackTime, \
-    ucUn6,\
-    ucCommenerNameLen,szCommenerName,ucAuthorNameLen,szAuthorName,\
-    ucUn7 = struct.unpack("<2sB13s32s3sB12sB15sB63s64sB63sB15sB15sB15sB15sB63sB15sB15s32sB15sB15s528s",  contents[:0x400])
+    (
+        magic,
+        version,
+        crypt_keys,
+        ucBoard,
+        _ucUn2,
+        ucRes,
+        _ucUn3,
+        ucType,
+        _ucUn4,
+        ucTitleLen,
+        szTitle,
+        _ucUn5,
+        ucMatchNameLen,
+        szMatchName,
+        _ucDateLen,
+        _szDate,
+        _ucAddrLen,
+        _szAddr,
+        ucRedPlayerNameLen,
+        szRedPlayerName,
+        ucBlackPlayerNameLen,
+        szBlackPlayerName,
+        _ucTimeRuleLen,
+        _szTimeRule,
+        _ucRedTimeLen,
+        _szRedTime,
+        _ucBlackTime,
+        _szBlackTime,
+        _ucUn6,
+        _ucCommenerNameLen,
+        _szCommenerName,
+        _ucAuthorNameLen,
+        _szAuthorName,
+        _ucUn7,
+    ) = struct.unpack(
+        "<2sB13s32s3sB12sB15sB63s64sB63sB15sB15sB15sB15sB63sB15sB15s32sB15sB15s528s",
+        contents[:0x400],
+    )
 
     if magic != b"XQ":
         return None
@@ -362,42 +395,41 @@ def read_from_xqf(full_file_name, read_annotation=True):
     game_info["version"] = version
     game_info["type"] = ucType + 1
 
-    if ucRes <= 4:  #It's really some file has value 4
+    if ucRes <= 4:  # It's really some file has value 4
         game_info["result"] = result_dict[ucRes]
     else:
         print("Bad Result  ", ucRes, full_file_name)
-        game_info["result"] = '*'
+        game_info["result"] = "*"
 
     if ucRedPlayerNameLen > 0:
         try:
-            game_info[
-                "red_player"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
-                    "GB18030")
-        except Exception:
+            game_info["red_player"] = szRedPlayerName[:ucRedPlayerNameLen].decode(
+                "GB18030"
+            )
+        except (UnicodeDecodeError, ValueError):
             pass
 
     if ucBlackPlayerNameLen > 0:
         try:
-            game_info[
-                "black_player"] = szBlackPlayerName[:
-                                                    ucBlackPlayerNameLen].decode(
-                                                        "GB18030")
-        except Exception:
+            game_info["black_player"] = szBlackPlayerName[:ucBlackPlayerNameLen].decode(
+                "GB18030"
+            )
+        except (UnicodeDecodeError, ValueError):
             pass
 
     if ucTitleLen > 0:
         try:
             game_info["title"] = szTitle[:ucTitleLen].decode("GB18030")
-        except Exception:
+        except (UnicodeDecodeError, ValueError):
             pass
 
     if ucMatchNameLen > 0:
         try:
             game_info["event"] = szMatchName[:ucMatchNameLen].decode("GB18030")
-        except Exception:
+        except (UnicodeDecodeError, ValueError):
             pass
 
-    if (version <= 0x0A):
+    if version <= 0x0A:
         keys = None
         chess_mans = __init_chess_board(ucBoard, version)
         step_base_buff = XQFBuffDecoder(contents[0x400:])
@@ -408,12 +440,24 @@ def read_from_xqf(full_file_name, read_annotation=True):
 
     board = ChessBoard()
 
-    chessman_kinds = \
-            (
-                    'R',  'N',  'B',  'A', 'K', 'A',  'B',  'N', 'R' , \
-                    'C', 'C', \
-                    'P','P','P','P','P'
-            )
+    chessman_kinds = (
+        "R",
+        "N",
+        "B",
+        "A",
+        "K",
+        "A",
+        "B",
+        "N",
+        "R",
+        "C",
+        "C",
+        "P",
+        "P",
+        "P",
+        "P",
+        "P",
+    )
 
     for side in range(2):
         for man_index in range(16):
@@ -436,40 +480,43 @@ def read_from_xqf(full_file_name, read_annotation=True):
     else:
         game.init_board.move_player = ChessPlayer(RED)
 
-    game.info['move_player'] = str(game.init_board.move_player)
+    game.info["move_player"] = str(game.init_board.move_player)
 
     return game
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 def _encode_pos(pos):
     return pos[0] * 10 + pos[1]
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class XQMove:
-    """表示一步棋及其变招"""
+    """表示一步棋及其变招。"""
 
-    def __init__(self,
-                 start_pos: Tuple[int, int],
-                 end_pos: Tuple[int, int],
-                 annote: str = "",
-                 has_variation=False):
+    def __init__(
+        self,
+        start_pos: Tuple[int, int],
+        end_pos: Tuple[int, int],
+        annote: str = "",
+        has_variation=False,
+    ):
         self.start_pos = start_pos  # (x, y) 元组
         self.end_pos = end_pos  # (x, y) 元组
         self.annote = annote
         self.has_variation = has_variation
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class XQFWriter:
+    """从 `Game` 对象写入 XQF 格式文件的写入器。"""
 
     def __init__(self, game):
         self.game = game
-        self.header = bytearray(b'\x00' * 1024)  # 头部固定1024字节
+        self.header = bytearray(b"\x00" * 1024)  # 头部固定1024字节
 
         # 设置文件标记和版本
-        self._set_bytes(0, b'XQ')  # 文件标记
+        self._set_bytes(0, b"XQ")  # 文件标记
         self.header[2] = 0x0A  # 版本号 1.0
 
         # 设置默认初始局面
@@ -480,13 +527,13 @@ class XQFWriter:
         self.set_game_type(0x00)  # 默认全局文件
 
         # 设置棋局信息
-        self.set_title(game.info['title'])
-        self.set_event(game.info['event'])
-        self.set_date(game.info['date'])
-        self.set_location(game.info['location'])
-        self.set_red_player(game.info['red_player'])
-        self.set_black_player(game.info['black_player'])
-        self.set_commentator(game.info['commentator'])
+        self.set_title(game.info["title"])
+        self.set_event(game.info["event"])
+        self.set_date(game.info["date"])
+        self.set_location(game.info["location"])
+        self.set_red_player(game.info["red_player"])
+        self.set_black_player(game.info["black_player"])
+        self.set_commentator(game.info["commentator"])
         self.set_author("cchess")
 
     def _set_bytes(self, offset: int, data: bytes):
@@ -502,9 +549,9 @@ class XQFWriter:
 
         # 转换为GBK编码（XQF使用GBK编码）
         try:
-            encoded = text.encode('gbk')
-        except Exception:
-            encoded = text.encode('gbk', errors='ignore')
+            encoded = text.encode("gbk")
+        except (UnicodeEncodeError, LookupError):
+            encoded = text.encode("gbk", errors="ignore")
 
         length = min(len(encoded), max_length - 1)
         self.header[offset] = length
@@ -513,30 +560,30 @@ class XQFWriter:
     def set_initial_position(self):
         """设置初始局面"""
         # 默认初始局面（红方和黑方从右到左排列）
-        #default_position = [
+        # default_position = [
         #    0x50, 0x46, 0x3C, 0x32, 0x28, 0x1E, 0x14, 0x0A,  # 红方车马相士帅士相马
         #    0x00, 0x48, 0x0C, 0x53, 0x3F, 0x2B, 0x17, 0x03,  # 红方车炮炮兵兵兵兵兵
         #    0x09, 0x13, 0x1D, 0x27, 0x31, 0x3B, 0x45, 0x4F,  # 黑方车马象士将士象马
         #    0x59, 0x11, 0x4D, 0x06, 0x1A, 0x2E, 0x42, 0x56   # 黑方车炮炮卒卒卒卒卒
-        #]
+        # ]
 
         position = bytearray(32)
 
         board = self.game.init_board
         pieces_dict = {}
-        for key in ['R', 'N', 'B', 'A', 'K', 'C', 'P']:
+        for key in ["R", "N", "B", "A", "K", "C", "P"]:
             pieces_dict[key] = board.get_fenchs(key)
             key_lower = key.lower()
             pieces_dict[key_lower] = board.get_fenchs(key_lower)
 
-        fenchs = ('RNBAKABNRCCPPPPP')
+        fenchs = "RNBAKABNRCCPPPPP"
         for x in range(2):
             for i, fench in enumerate(fenchs):
                 key = fench.lower() if x > 0 else fench
                 pos_list = pieces_dict[key]
                 pos_index = x * 16 + i
                 if len(pos_list) == 0:
-                    position[pos_index] = 0xff
+                    position[pos_index] = 0xFF
                 else:
                     pos = pos_list.pop(0)
                     position[pos_index] = _encode_pos(pos)
@@ -622,41 +669,42 @@ class XQFWriter:
         annote_data = b""
         if move.annote:
             try:
-                annote_data = move.annote.encode('gbk')
-            except Exception:
-                annote_data = move.annote.encode('gbk', errors='ignore')
+                annote_data = move.annote.encode("gbk")
+            except (UnicodeEncodeError, LookupError):
+                annote_data = move.annote.encode("gbk", errors="ignore")
 
         # 设置注解长度（32位整数，小端序）
         annote_length = len(annote_data)
-        move_record[4:8] = struct.pack('<I', annote_length)
+        move_record[4:8] = struct.pack("<I", annote_length)
 
         return bytes(move_record + annote_data)
 
     def save(self, file_name):
-        with open(file_name, 'wb') as f:
+        """将游戏数据序列化并保存到指定 XQF 文件。"""
+        with open(file_name, "wb") as f:
             move_lines = []
             lines = self.game.dump_moves(is_tree_mode=True)
             for line in lines:
                 w_line = []
-                for index, move in enumerate(line['moves']):
+                for _index, move in enumerate(line["moves"]):
                     has_variation = move.variation_next is not None
                     w_line.append(
-                        XQMove(move.p_from, move.p_to, move.annote,
-                               has_variation))
+                        XQMove(move.p_from, move.p_to, move.annote, has_variation)
+                    )
                 move_lines.append(w_line)
 
             f.write(self.header)
 
             if len(move_lines) == 0:
                 # 只有初始局面，没有着法记录
-                f.write(b'\x18\x20\x00\xFF\x00\x00\x00\x00')
+                f.write(b"\x18\x20\x00\xff\x00\x00\x00\x00")
                 return
 
             # 有棋谱记录
-            f.write(b'\x18\x20\xF0\xFF\x00\x00\x00\x00')
+            f.write(b"\x18\x20\xf0\xff\x00\x00\x00\x00")
             for line in move_lines:
                 for i, move in enumerate(line):
-                    is_last = (i == len(line) - 1)
+                    is_last = i == len(line) - 1
                     move_record = self._encode_move(move, is_last)
                     # 写入招法记录
                     f.write(move_record)
