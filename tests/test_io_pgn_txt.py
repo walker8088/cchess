@@ -207,6 +207,7 @@ class TestPGNParser:
 
 class TestPGNWriter:
     def setup_method(self):
+        os.chdir(os.path.join(os.path.dirname(__file__), ".."))
         board = ChessBoard(FULL_INIT_FEN)
         self.game = Game(board)
 

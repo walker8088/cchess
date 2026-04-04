@@ -27,7 +27,7 @@ import cchess.__main__ as rt_main
 
 class TestReaderXQF:
     def setup_method(self):
-        os.chdir(os.path.dirname(__file__))
+        os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
     def teardown_method(self):
         pass

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2014  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,21 +14,20 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
 import os
 from pathlib import Path
 from cchess import Game, ChessBoard, FULL_INIT_FEN
 
 
-class TestGameExtended():
-
+class TestGameExtended:
     def setup_method(self):
-        os.chdir(os.path.dirname(__file__))
+        os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
     def test_game_mirror_flip_swap(self):
         game = Game()
-        test_fen = 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABN1 w'
+        test_fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABN1 w"
         game.init_board.from_fen(test_fen)
         original_fen = game.init_board.to_fen()
 
@@ -77,7 +76,7 @@ class TestGameExtended():
         assert isinstance(board_dump, list)
         assert len(board_dump) == 22  # 棋盘有10行，打印出来22行数据
 
-    '''
+    """
     def test_dump_moves_line(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
@@ -107,12 +106,12 @@ class TestGameExtended():
             text, annote = moves_with_annote[0][0]
             assert isinstance(text, str)
             assert isinstance(annote, str)
-    '''
+    """
 
     def test_append_first_move(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move_text('车九进一')
+        move1 = board.copy().move_text("车九进一")
 
         result = game.append_first_move(move1)
         assert result == move1
@@ -120,17 +119,17 @@ class TestGameExtended():
         assert game.last_move == move1
 
         # 添加第二个move作为分支
-        move2 = board.copy().move_text('炮八退一')
+        move2 = board.copy().move_text("炮八退一")
         game.append_first_move(move2)
         assert len(game.first_move.variations_all) == 2
 
     def test_append_next_move(self):
         game = Game()
         board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.move_text('车九进一')
+        move1 = board.move_text("车九进一")
         game.append_first_move(move1)
         board.next_turn()
-        move2 = board.move_text('炮2平5')
+        move2 = board.move_text("炮2平5")
         game.append_next_move(move2)
 
         assert game.first_move == move1

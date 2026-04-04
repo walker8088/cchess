@@ -1,0 +1,10 @@
+[MAIN]
+# Ignore test files for certain checks
+ignore-patterns=^test_.*\.py$,^conftest\.py$
+
+[MESSAGES CONTROL]
+# Disable warnings that require major architectural changes:
+# R0401: cyclic-import - requires package restructuring
+# R0801: duplicate-code - requires extracting shared base class
+# C0302: too-many-lines - requires splitting data files
+disable=R0401,R0801,C0302

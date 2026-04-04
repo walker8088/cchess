@@ -10,8 +10,8 @@ import json
 import subprocess
 import pytest
 
-# Ensure tests run from the tests directory for file path tests
-os.chdir(os.path.dirname(__file__))
+# Ensure tests run from the project root for file path tests
+os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
 from cchess import (
     ChessBoard,

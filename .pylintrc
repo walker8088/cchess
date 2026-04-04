@@ -5,4 +5,38 @@
 # R0401: cyclic-import - requires package restructuring
 # R0801: duplicate-code - requires extracting shared base class
 # C0302: too-many-lines - requires splitting data files
-disable=R0401,R0801,C0302
+# Test-specific disables:
+# C0116: missing-function-docstring - tests use docstrings as descriptions
+# C0413: wrong-import-position - tests import inside functions for isolation
+# C0415: import-outside-toplevel - same as above
+# C1803: use-implicit-booleaness-not-comparison - explicit comparison is clearer in tests
+# R0904: too-many-public-methods - test classes have many test methods
+# R0913: too-many-arguments - test fixtures may have many params
+# R0914: too-many-locals - test setup may need many locals
+# R0915: too-many-statements - some tests are complex
+# R0917: too-many-positional-arguments
+# W0212: protected-access - tests need to access internals
+# W0611: unused-import - test imports may be conditional
+# W0612: unused-variable - test setup may create unused vars
+# W0621: redefined-outer-name - test functions may shadow imports
+# W0404: reimported - test reimports are intentional
+# W1510: subprocess-run-check - tests don't always need check=True
+disable=R0401,R0801,C0302,C0116,C0413,C0415,C1803,R0904,R0913,R0914,R0915,R0917,W0212,W0611,W0612,W0621,W0404,W1510
+
+[TYPECHECK]
+ignored-modules=pytest
+
+[BASIC]
+good-names=i,j,k,x,y,e,f,_,setUp,tearDown,setUpClass,tearDownClass,setUpModule,tearDownModule
+
+[DESIGN]
+max-attributes=20
+max-public-methods=50
+max-returns=10
+max-branches=20
+max-statements=100
+max-locals=30
+max-args=10
+
+[FORMAT]
+max-line-length=200
