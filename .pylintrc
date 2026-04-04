@@ -40,3 +40,7 @@ max-args=10
 
 [FORMAT]
 max-line-length=200
+
+[MASTER]
+# 忽略 tests 目录（以及子目录）
+ignore-paths=^(.*/)?tests/.*$
