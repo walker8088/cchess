@@ -25,8 +25,6 @@ classifiers = [
 
 requires-python = ">=3.6"
 dependencies = [
-    "pytest>=7.0.1",
-    "pytest-coverage>=0.0",
     "chardet>=5.0",
 ]
 
@@ -56,10 +54,3 @@ explicit = true
 
 [tool.pytest.ini_options]
 addopts = "--tb=short"
-
-[tool.pylint.MASTER]
-ignore-paths = [
-    "^(.*/)?tests/.*$",
-    # 如果还有其他目录，也可以继续添加，例如：
-    # "^(.*/)?test/.*$",
-]
