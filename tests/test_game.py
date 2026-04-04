@@ -49,8 +49,7 @@ class TestReaderXQF:
     """
 
     def test_base(self):
-        game = read_from_xqf(Path("data", "game_test.xqf"))
-        moves = game.dump_moves()
+        read_from_xqf(Path("data", "game_test.xqf"))
         # assert moves == ''
 
     def test_k1(self):

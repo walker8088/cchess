@@ -56,3 +56,10 @@ explicit = true
 
 [tool.pytest.ini_options]
 addopts = "--tb=short"
+
+[tool.pylint.MASTER]
+ignore-paths = [
+    "^(.*/)?tests/.*$",
+    # 如果还有其他目录，也可以继续添加，例如：
+    # "^(.*/)?test/.*$",
+]

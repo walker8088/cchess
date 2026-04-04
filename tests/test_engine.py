@@ -17,11 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-import sys
 import time
 from pathlib import Path
-import logging
-import pytest
 
 import cchess
 from cchess import (
@@ -29,13 +26,9 @@ from cchess import (
     UcciEngine,
     UciEngine,
     EngineManager,
-    EngineErrorException,
-    FenCache,
     Game,
     ChessBoard,
     ChessPlayer,
-    iccs2pos,
-    pos2iccs,
 )
 
 result_dict = {"红胜": "1-0", "黑胜": "0-1", "和棋": "1/2-1/2"}
@@ -70,15 +63,13 @@ class TestEngineException:
 
     def test_engine_error(self):
         self.engine = UciEngine()
-        ret, err_msg = self.engine.load("..\\Engine\\pikafish_230408\\pikafishh.exe")
-        assert ret == False
+        ret, _err_msg = self.engine.load("Engine\\pikafish_230408\\pikafishh.exe")
+        assert ret is False
         assert self.engine.engine_status == EngineStatus.ERROR
 
     def test_engine_exception(self):
         self.engine = UciEngine()
-        ret, err_msg = self.engine.load(
-            "..\\Engine\\pikafish_230408\\pikafish-vnni512.exe"
-        )
+        self.engine.load("Engine\\pikafish_230408\\pikafish-vnni512.exe")
         # print(self.engine.engine_status)
         # assert self.engine.engine_status == EngineStatus.ERROR
 
@@ -90,12 +81,11 @@ class TestUcci:
     def teardown_method(self):
         pass
 
-    @pytest.mark.skip(reason="requires eleeye.exe engine")
     def test_ucci(self):
         self.engine = UcciEngine()
         assert self.engine.load("eleeye")[0] is False
 
-        assert self.engine.load("..\\Engine\\eleeye\\eleeye.exe")[0] is True
+        assert self.engine.load("Engine\\eleeye\\eleeye.exe")[0] is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
 
@@ -122,7 +112,6 @@ class TestUcci:
                     move_txt = board.move_iccs(iccs).to_text()
                     print(move_txt)
                     assert move_txt == moves.pop(0)
-                    last_player = board.move_player
                     board.next_turn()
                     break
                 elif action == "dead":
@@ -145,22 +134,81 @@ class TestUcci:
 
 
 class TestUci:
-    @pytest.mark.skip(reason="requires pikafish engine")
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
         self.engine = UciEngine()
 
-        ret, err_msg = self.engine.load(
-            "..\\Engine\\pikafish_32bit\\pikafish-sse41.exe"
-        )
+        ret, _err_msg = self.engine.load("Engine\\pikafish_32bit\\pikafish-sse41.exe")
         assert ret is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
 
     def teardown_method(self):
-        pass
+        if self.engine.process is not None and self.engine.process.returncode is None:
+            try:
+                self.engine.quit()
+            except Exception:
+                pass
 
-    @pytest.mark.skip(reason="requires pikafish engine")
+    def test_uci_endgame(self):
+        fen, moves, result = load_iccs_txt(Path("data", "uci_test_move.txt"))
+        # print(moves)
+        board = ChessBoard(fen)
+
+        dead = False
+        while not dead:
+            self.engine.go_from(board.to_fen(), {"depth": 8})
+            while True:
+                output = self.engine.get_action()
+                if output is None:
+                    time.sleep(0.2)
+                    continue
+                # print(output)
+                action = output["action"]
+                if action == "bestmove":
+                    # print(output)
+                    iccs = output["move"]
+                    move = board.move_iccs(iccs)
+                    print(move.to_text())
+                    assert move.to_iccs() == moves.pop(0)
+                    board.next_turn()
+                    break
+                elif action == "dead":
+                    # print(output)
+                    if board.move_player == cchess.RED:
+                        assert result == S_BLACK_WIN
+                    else:
+                        assert result == S_RED_WIN
+                    dead = True
+                    break
+                elif action == "draw":
+                    dead = True
+                    break
+
+            self.engine.stop_thinking()
+
+        self.engine.quit()
+
+        time.sleep(0.5)
+
+
+class TestUci:
+    def setup_method(self):
+        os.chdir(os.path.join(os.path.dirname(__file__), ".."))
+        self.engine = UciEngine()
+
+        ret, err_msg = self.engine.load("Engine\\pikafish_32bit\\pikafish-sse41.exe")
+        assert ret is True
+        assert self.engine.wait_for_ready() is True
+        assert self.engine.engine_status == EngineStatus.READY
+
+    def teardown_method(self):
+        if self.engine.process is not None and self.engine.process.returncode is None:
+            try:
+                self.engine.quit()
+            except Exception:
+                pass
+
     def test_uci_endgame(self):
         fen, moves, result = load_iccs_txt(Path("data", "uci_test_move.txt"))
         # print(moves)
@@ -204,7 +252,6 @@ class TestUci:
 
             self.engine.stop_thinking()
 
-    @pytest.mark.skip(reason="requires pikafish engine")
     def test_uci_game(self):
         board = ChessBoard(cchess.FULL_INIT_FEN)
 
@@ -246,14 +293,11 @@ class TestEngineManager:
         if self.mgr.engine is not None:
             self.mgr.quit()
 
-    @pytest.mark.skip(reason="requires pikafish engine")
     def test_game_score(self):
         options = {"LU_Output": "false", "Threads ": "8", "Hash ": "2000"}
 
         go_params = {"depth": 6}
-        self.mgr.load_uci(
-            "..\\Engine\\pikafish_230408\\pikafish.exe", options, go_params
-        )
+        self.mgr.load_uci("Engine\\pikafish_230408\\pikafish.exe", options, go_params)
         file_name = Path("data", "030-黄松轩先胜冯敬如.XQF")
         game = Game.read_from(file_name)
         assert game.info["branchs"] == 2

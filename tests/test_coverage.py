@@ -20,8 +20,6 @@ from cchess import (
     RED,
     BLACK,
     CChessException,
-    pos2iccs,
-    iccs2pos,
     iccs_mirror,
     iccs_flip,
     iccs_swap,
@@ -30,12 +28,6 @@ from cchess import (
     fen_swap,
 )
 from cchess.common import (
-    iccs_mirror as common_iccs_mirror,
-    iccs_flip as common_iccs_flip,
-    iccs_swap as common_iccs_swap,
-    fen_mirror as common_fen_mirror,
-    fen_flip as common_fen_flip,
-    fen_swap as common_fen_swap,
     get_fen_type_detail,
     full2half,
     half2full,
@@ -207,7 +199,7 @@ class TestMoveToTextDetail:
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
         move.annote = "good move"
-        txt, annote = move.to_text_detail(show_variation=False, show_annote=True)
+        _, annote = move.to_text_detail(show_variation=False, show_annote=True)
         assert annote == "good move"
 
 
@@ -267,7 +259,6 @@ class TestMoveFromTextMultiPiece:
     """Tests for Move.from_text() multi-piece selection (lines 472-500)."""
 
     def test_from_text_a_b_piece_ping_returns_none(self):
-        board = ChessBoard(FULL_INIT_FEN)
         # Advisor and Bishop cannot do 平 (horizontal move)
         result = Move.text_move_to_std_move("a", RED, (3, 0), "平五")
         assert result is None
@@ -277,25 +268,21 @@ class TestMoveFromTextMultiPiece:
         assert result is None
 
     def test_from_text_invalid_direction(self):
-        board = ChessBoard(FULL_INIT_FEN)
         result = Move.text_move_to_std_move("r", RED, (0, 0), "左一")
         assert result is None
 
     def test_from_text_king_ping(self):
-        board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
         result = Move.text_move_to_std_move("k", RED, (4, 0), "平六")
         assert result is not None
-        assert result == (3, 0)  # 平六 means to column '六' which is x=3 for red
+        assert result == (3, 0)
 
     def test_from_text_chinese_numeral_fallback(self):
-        board = ChessBoard(FULL_INIT_FEN)
         # Test with Chinese numerals that need fallback mapping
         result = Move.text_move_to_std_move("r", RED, (0, 0), "进一")
         assert result is not None
         assert result == (0, 1)
 
     def test_from_text_chinese_numeral_fallback_black(self):
-        board = ChessBoard(FULL_INIT_FEN)
         result = Move.text_move_to_std_move("r", BLACK, (0, 9), "进一")
         assert result is not None
         assert result == (0, 8)
@@ -310,14 +297,14 @@ class TestMoveFromTextMultiPiece:
     def test_from_text_multi_pieces_returns_none_when_no_valid(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 前兵 - no pawns in multi positions on initial board
-        result = Move.from_text(board, "前兵进一")
+        Move.from_text(board, "前兵进一")
         # May return a valid move or None depending on board state
 
     def test_from_text_chinese_digit_black_reversed(self):
         board = ChessBoard(FULL_INIT_FEN)
         board.next_turn()
         # Black pawn selection
-        result = Move.from_text(board, "一卒进1")
+        Move.from_text(board, "一卒进1")
         # May be None if no valid move, but should go through the black reversed path
         # Just ensure no exception is raised
 
@@ -339,7 +326,7 @@ class TestMoveTextParsingChineseNumerals:
 
     def test_chinese_digit_pawn_same_column_sort_black(self):
         board = ChessBoard("4k4/9/9/9/4p4/4p4/9/9/9/4K4 b")
-        result = Move.from_text(board, "一卒进1")
+        Move.from_text(board, "一卒进1")
         # Should not raise, goes through black pawn sorting path
 
     def test_chinese_digit_no_poss_returns_none(self):
@@ -350,7 +337,7 @@ class TestMoveTextParsingChineseNumerals:
     def test_chinese_digit_fallback_to_all_pieces(self):
         board = ChessBoard(FULL_INIT_FEN)
         # If no piece on target column, falls back to all pieces
-        result = Move.from_text(board, "一车进一")
+        Move.from_text(board, "一车进一")
         # Should find the rook on column 0 (一 for red maps to x=8)
         # If no valid move found, may return None
 
@@ -361,14 +348,14 @@ class TestMoveTreeOperations:
     def test_multi_pieces_select_returns_none(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 前/中/后 with no matching pieces - no knights in multi positions
-        result = Move.from_text(board, "前象进一")
+        Move.from_text(board, "前象进一")
         # May return None or a valid move
 
     def test_multi_pieces_select_middle(self):
         board = ChessBoard(
             "r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w"
         )
-        result = Move.from_text(board, "中炮平五")
+        Move.from_text(board, "中炮平五")
         # Should go through the middle piece selection path
 
 
@@ -524,7 +511,7 @@ class TestReadPGN:
             f.write(raw)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            read_from_pgn(tmp_path)
             # Should not crash even with bad encoding
         finally:
             os.unlink(tmp_path)
@@ -606,7 +593,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            read_from_pgn(tmp_path)
             # Should return game object, not crash
         finally:
             os.unlink(tmp_path)
@@ -678,7 +665,7 @@ class TestReadCBR:
 
     def test_read_from_cbr_buffer_move_side_black(self):
         """Test read_from_cbr_buffer with black to move (line 225)."""
-        from cchess.read_cbr import read_from_cbr_buffer, piece_dict
+        from cchess.read_cbr import read_from_cbr_buffer
         import struct
 
         # Build a minimal valid CBR buffer
@@ -1234,13 +1221,13 @@ class TestCommon:
         """Test get_fen_type_detail edge case with unusual piece counts (lines 332, 359-373)."""
         # 3 rooks - edge case for p_count_dict lookup
         fen = "4k4/9/9/9/9/9/9/9/9/3K1R1R1 w"
-        red_title, black_title = get_fen_type_detail(fen)
+        red_title, _black_title = get_fen_type_detail(fen)
         assert red_title is not None
 
     def test_get_fen_type_detail_with_a_b_pieces(self):
         """Test get_fen_type_detail with advisors and bishops."""
         fen = "4k4/9/9/9/9/9/9/9/4A4/4K4 w"
-        red_title, black_title = get_fen_type_detail(fen)
+        red_title, _black_title = get_fen_type_detail(fen)
         assert "仕" in red_title
 
     def test_full2half(self):
@@ -1672,7 +1659,7 @@ class TestEngine:
         fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         mirrored = fen_mirror(fen)
         cache.fen_dict[mirrored] = {"a0a1": {"score": 100}}
-        info, state = cache.get(fen)
+        info, _state = cache.get(fen)
         assert info is not None
         # state may be '' or 'mirror' depending on whether fen == mirrored
 
@@ -1881,7 +1868,7 @@ class TestMain:
             f.write(b"\x00\x01\x02\x03\x04\x05")
             tmp_path = f.name
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [sys.executable, "-m", "cchess", "-i", tmp_path, "-o", "output.xqf"],
                 capture_output=True,
                 text=True,
@@ -1900,7 +1887,7 @@ class TestMain:
             f.write(data)
             tmp_path = f.name
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [sys.executable, "-m", "cchess", "-r", tmp_path],
                 capture_output=True,
                 text=True,
@@ -1914,7 +1901,7 @@ class TestMain:
             f.write(b"\x00\x01\x02\x03\x04\x05")
             tmp_path = f.name
         try:
-            result = subprocess.run(
+            subprocess.run(
                 [sys.executable, "-m", "cchess", "-r", tmp_path],
                 capture_output=True,
                 text=True,

@@ -146,7 +146,7 @@ class TestReaderXQF:
         game = Game.read_from(Path("data", "WildHouse.xqf"))
         assert game.info["branchs"] == 139
 
-        moves = game.dump_iccs_moves()
+        game.dump_iccs_moves()
         #######assert game.verify_moves() is True
 
         moves = game.dump_text_moves(show_branch=True)

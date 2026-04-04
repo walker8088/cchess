@@ -1,10 +1,6 @@
-import os
-from pathlib import Path
-
-import cchess
 from cchess import Game
 
-ubb_str = '''
+ubb_str = """
     [DhtmlXQHTML]
     [DhtmlXQ_init]500,350[/DhtmlXQ_init]
     [DhtmlXQ_binit]8979695949392919097717866646260600102030405060708012720323436383[/DhtmlXQ_binit]
@@ -34,13 +30,12 @@ ubb_str = '''
     [DhtmlXQ_refer]网上收集[/DhtmlXQ_refer]
     [DhtmlXQ_generator]南山象棋谱[/DhtmlXQ_generator]
     [/DhtmlXQHTML]
-'''
+"""
 
 
-class TestReaderCbr():
-
+class TestReaderCbr:
     def setup_method(self):
-        #os.chdir(os.path.dirname(__file__))
+        # os.chdir(os.path.dirname(__file__))
         pass
 
     def teardown_method(self):
@@ -55,6 +50,6 @@ class TestReaderCbr():
 
         moves = game.dump_moves(is_tree_mode=False)
 
-        for index, m_line in enumerate(moves):
-            txt = ','.join([x.to_text() for x in m_line['moves']])
+        for _index, m_line in enumerate(moves):
+            txt = ",".join([x.to_text() for x in m_line["moves"]])
             print("招法：", txt)

@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-import cchess
 from cchess import Game
 
 # lib = cchess.read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')

@@ -27,12 +27,12 @@ class TestEngineExtended:
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
     def test_is_int(self):
-        assert is_int("123") == True
-        assert is_int("-123") == True
-        assert is_int("0") == True
-        assert is_int("abc") == False
-        assert is_int("12.3") == False
-        assert is_int("") == False
+        assert is_int("123") is True
+        assert is_int("-123") is True
+        assert is_int("0") is True
+        assert is_int("abc") is False
+        assert is_int("12.3") is False
+        assert is_int("") is False
 
     def test_parse_engine_info_to_dict(self):
         # 测试解析引擎信息

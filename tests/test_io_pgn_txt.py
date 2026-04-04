@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -150,22 +149,23 @@ class TestPGNParser:
     def test_parse_moves_simple(self):
         text = "1. 兵七进一 马８进７ 2. 兵三进一"
         tokens = self.parser.tokenize(text)
-        moves, result = self.parser.parse_moves(tokens)
+        moves, _result = self.parser.parse_moves(tokens)
         assert moves is not None
         assert moves.move.san == "兵七进一"
         assert moves.next is not None
         assert moves.next.move.san == "马８进７"
 
     def test_parse_moves_empty(self):
-        moves, result = self.parser.parse_moves([])
+        moves, _result = self.parser.parse_moves([])
         assert moves is None
-        assert result is None
+        assert _result is None
 
     def test_parse_moves_with_result(self):
         # Result parsing works when result token is actually produced
         text = "兵七进一 马８进７ ½-½"
         tokens = self.parser.tokenize(text)
         moves, result = self.parser.parse_moves(tokens)
+        assert moves is not None
         assert result == "½-½"
 
     def test_parse_moves_with_annote(self):

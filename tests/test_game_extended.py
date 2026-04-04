@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-from pathlib import Path
 from cchess import Game, ChessBoard, FULL_INIT_FEN
 
 
