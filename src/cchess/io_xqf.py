@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=invalid-name
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-# pylint: disable=too-many-arguments,too-many-positional-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods
 
 # import os
 import struct
