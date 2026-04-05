@@ -25,8 +25,6 @@ from enum import Enum
 #from .board import ChessBoard
 
 #-----------------------------------------------------#
-
-
 class Color(Enum):
     """棋子颜色枚举。"""
     RED = "red"
@@ -181,10 +179,7 @@ class PGNParser:
         return headers
 
     # pylint: disable=too-many-locals,too-many-branches
-    def parse_moves(
-        self,
-        tokens: List[Dict[str,
-                          Any]]) -> tuple[Optional[MoveNode], Optional[str]]:
+    def parse_moves(self, tokens):
         """解析棋步序列"""
         if not tokens:
             return None, None
@@ -256,7 +251,7 @@ class PGNParser:
         return root.next, result
     # pylint: enable=too-many-locals,too-many-branches
 
-    def parse(self, pgn_text: str) -> PGNGame:
+    def parse(self, pgn_text):
         """解析完整的PGN文本"""
         game = PGNGame()
 
@@ -305,7 +300,7 @@ class PGNWriter:
         self.indent_level = 0
         self.game = game
 
-    def write_headers(self) -> str:
+    def write_headers(self):
         """写入头信息"""
         lines = []
         standard_headers = ['Event', 'Date', 'Round', 'Red', 'Black', 'Result']
@@ -330,7 +325,7 @@ class PGNWriter:
 
         return '\n'.join(lines)
 
-    def write_moves(self, move, curr_sibling_index=0) -> str:
+    def write_moves(self, move, curr_sibling_index=0):
         """递归写入棋步"""
         if move is None:
             return ""
@@ -364,7 +359,7 @@ class PGNWriter:
 
         return ' '.join(lines)
 
-    def write_lines(self) -> str:
+    def write_lines(self):
         """写入完整的PGN"""
         lines = []
 

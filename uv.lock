@@ -3,11 +3,8 @@ revision = 3
 requires-python = ">=3.6"
 resolution-markers = [
     "python_full_version >= '3.10'",
-    "python_full_version == '3.9.*'",
-    "python_full_version == '3.8.*'",
-    "python_full_version == '3.7.*'",
-    "python_full_version >= '3.6.8' and python_full_version < '3.7'",
-    "python_full_version < '3.6.8'",
+    "python_full_version >= '3.7' and python_full_version < '3.10'",
+    "python_full_version < '3.7'",
 ]
 
 [[package]]
@@ -28,8 +25,7 @@ name = "chardet"
 version = "5.0.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.6.8' and python_full_version < '3.7'",
-    "python_full_version < '3.6.8'",
+    "python_full_version < '3.7'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/31/a2/12c090713b3d0e141f367236d3a8bdc3e5fca0d83ff3647af4892c16c205/chardet-5.0.0.tar.gz", hash = "sha256:0368df2bfd78b5fc20572bb4e9bb7fb53e2c094f60ae9993339e8671d0afb8aa", size = 2021116, upload-time = "2022-06-25T04:27:57.204Z" }
 wheels = [
@@ -41,9 +37,7 @@ name = "chardet"
 version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version == '3.9.*'",
-    "python_full_version == '3.8.*'",
-    "python_full_version == '3.7.*'",
+    "python_full_version >= '3.7' and python_full_version < '3.10'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f3/0d/f7b6ab21ec75897ed80c17d79b15951a719226b9fababf1e40ea74d69079/chardet-5.2.0.tar.gz", hash = "sha256:1b3b6ff479a8c414bc3fa2c0852995695c4a026dcd6d0633b2dd092ca39c1cf7", size = 2069618, upload-time = "2023-08-01T19:23:02.662Z" }
 wheels = [
