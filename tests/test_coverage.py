@@ -1472,10 +1472,10 @@ class TestBoard:
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
         assert board.is_checking() is False
 
-    def test_board_no_moves_no_king(self):
-        """Test ChessBoard.no_moves with no king (lines 429-431)."""
+    def test_board_has_no_legal_moves_no_king(self):
+        """Test ChessBoard.has_no_legal_moves with no king (lines 429-431)."""
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
-        assert board.no_moves() is True
+        assert board.has_no_legal_moves() is True
 
     def test_board_get_king_no_king(self):
         """Test ChessBoard.get_king when no king exists (line 296)."""

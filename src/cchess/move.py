@@ -180,10 +180,10 @@ class Move:
 
     def get_variation_index(self):
         """返回当前走子在分支列表中的索引及分支总数。"""
-        slibling_count = len(self.variations_all)
+        sibling_count = len(self.variations_all)
         for index, m in enumerate(self.variations_all):
             if m == self:
-                return (index, slibling_count)
+                return (index, sibling_count)
         return None
 
     def add_variation(self, chess_move):
@@ -214,7 +214,7 @@ class Move:
         node = self
         while node.variation_next:
             if node.variation_next == chess_move:
-                next_node = node.variation_next.slibling_next
+                next_node = node.variation_next.sibling_next
                 node.variation_next = next_node
                 chess_move.variation_next = None
 
@@ -549,15 +549,15 @@ class Move:
         """
         move_str = half2full(move_str)
 
-        # TODO测试黑方
-        move_indexs = ["前", "中", "后", "一", "二", "三", "四", "五"]
+        # TODO 测试黑方
+        move_indices = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
         multi_pieces = False
         multi_lines = False
 
-        if move_str[0] in move_indexs:
+        if move_str[0] in move_indices:
             multi_pieces = True
-            man_index = move_indexs.index(move_str[0])
+            man_index = move_indices.index(move_str[0])
             if man_index > 2:
                 multi_lines = True
             piece_name = move_str[1]
@@ -644,8 +644,8 @@ class Move:
             if move_player == BLACK:
                 poss.reverse()
 
-            move_indexs = {"前": -1, "中": 1, "后": 0}
-            pos = poss[move_indexs[move_str[0]]]
+            move_indices = {"前": -1, "中": 1, "后": 0}
+            pos = poss[move_indices[move_str[0]]]
 
             # print(piece_fench, move_player, pos, move_str[2:])
             move = Move.text_move_to_std_move(

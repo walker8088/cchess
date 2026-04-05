@@ -41,12 +41,12 @@ class TestBoard:
         assert board.get_king(RED) is None
         assert board.get_king(BLACK) is None
         assert board.is_checking() is False
-        assert board.no_moves() is True
+        assert board.has_no_legal_moves() is True
         assert board.is_mirror() is True
 
         board = ChessBoard(FULL_INIT_FEN)
         assert board.is_checking() is False
-        assert board.no_moves() is False
+        assert board.has_no_legal_moves() is False
         assert board.is_checkmate() is False
         assert board.is_mirror() is True
 
@@ -113,7 +113,7 @@ class TestBoard:
         assert (k.x, k.y) == (4, 9)
 
         assert board.is_checking() is False
-        assert board.no_moves() is False
+        assert board.has_no_legal_moves() is False
         assert board.is_checkmate() is False
 
         # 不存在的棋子的移动
@@ -138,7 +138,7 @@ class TestBoard:
         board.from_fen("rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w")
         assert board.is_checking() is False
         # assert  is True board.is_checked()
-        assert board.no_moves() is True
+        assert board.has_no_legal_moves() is True
 
         board.from_fen(
             "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w"

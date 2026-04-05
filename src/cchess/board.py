@@ -422,10 +422,10 @@ class ChessBoard:
         """判断当前局面在对方回合是否为将死（无路可走）。"""
         board = self.copy()
         board.move_player.next()
-        return board.no_moves()
+        return board.has_no_legal_moves()
 
-    def no_moves(self):
-        """判断当前走子方是否没有任何合法且不留被将军的走法。"""
+    def has_no_legal_moves(self):
+        """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
         king = self.get_king(self.move_player)
         if not king:
             return True
