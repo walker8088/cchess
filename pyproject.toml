@@ -7,7 +7,7 @@ readme = "README.md"
 authors = [
     { name = "Walker Lee", email = "walker8088@gmail.com" }
 ]
-license = "LGPL-3.0-or-later"
+license = { file = "LICENSE" }
 keywords = ["XiangQi", "Xiang Qi", 'ChineseChess']
 classifiers = [
 	"Intended Audience :: Developers",
