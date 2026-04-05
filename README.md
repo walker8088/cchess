@@ -32,7 +32,7 @@ print(move.to_text())
 
 ##产生某个棋子的合法走子
 ```
-moves = board.create_piece_moves((0,0))
+moves = list(board.create_piece_moves((0,0)))  # 返回生成器，需 list() 转换
 for mv in moves:
     move = board.copy().move(*mv)
     print(move.to_text())
@@ -40,7 +40,7 @@ for mv in moves:
 
 ##产生所有合法走子
 ```
-moves = board.create_moves()
+moves = list(board.create_moves())  # 返回生成器，需 list() 转换
 for mv in moves:
     move = board.copy().move(*mv)
     print(move.to_text())
@@ -60,8 +60,8 @@ print(board.is_checkmate())      #True
 ##走子被将军检测
 ```
 board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b - - 0 1')
-mv = move.from_iccs('d9e9') 
-print(board.is_checked_move(*mv)) #True
+mv = board.move_iccs('d9e9')  # 注意：是 board.move_iccs 不是 move.from_iccs
+print(board.is_checked_move(mv.p_from, mv.p_to)) #True
 ```
 
 ##被对方将死检测
