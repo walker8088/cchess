@@ -1819,18 +1819,25 @@ class TestMain:
 
     def test_convert_format_unsupported_input(self):
         """Test convert_format with unsupported input format (lines 53-55)."""
-        with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as f:
-            f.write(b"test")
-            tmp_path = f.name
+        f = tempfile.NamedTemporaryFile(suffix=".xyz", delete=False)
+        f.write(b"test")
+        f.close()
+        tmp_path = f.name
+        output_path = os.path.join(os.path.dirname(tmp_path), "output.xqf")
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "cchess", "-i", tmp_path, "-o", "output.xqf"],
+                [sys.executable, "-m", "cchess", "-i", tmp_path, "-o", output_path],
                 capture_output=True,
                 text=True,
             )
             assert result.returncode != 0
         finally:
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            if os.path.exists(output_path):
+                os.unlink(output_path)
 
     def test_convert_format_unsupported_output(self):
         """Test convert_format with unsupported output format (lines 57-59)."""
@@ -1864,17 +1871,24 @@ class TestMain:
 
     def test_convert_format_read_error(self):
         """Test convert_format with read error (lines 65-69)."""
-        with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="wb") as f:
-            f.write(b"\x00\x01\x02\x03\x04\x05")
-            tmp_path = f.name
+        f = tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="wb")
+        f.write(b"\x00\x01\x02\x03\x04\x05")
+        f.close()
+        tmp_path = f.name
+        output_path = os.path.join(os.path.dirname(tmp_path), "output.xqf")
         try:
             subprocess.run(
-                [sys.executable, "-m", "cchess", "-i", tmp_path, "-o", "output.xqf"],
+                [sys.executable, "-m", "cchess", "-i", tmp_path, "-o", output_path],
                 capture_output=True,
                 text=True,
             )
         finally:
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            if os.path.exists(output_path):
+                os.unlink(output_path)
 
     def test_main_read_cbl(self):
         """Test main() reading .cbl file (lines 98-101)."""

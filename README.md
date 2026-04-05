@@ -107,4 +107,3 @@ for game in lib['games']:
 
 ##加载引擎进行对弈
 支持 UCCI引擎（eyeele “象眼”引擎）和UCI引擎（pikafish “皮卡鱼”引擎）
-参见demo/end_game_master.py
