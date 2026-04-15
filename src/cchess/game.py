@@ -302,7 +302,6 @@ class Game:  # pylint: disable=too-many-public-methods
         if ext == '.cbl':
             return read_from_cbl(file_name)
         raise ValueError(f"Unknown lib file format:{file_name}")
-    """
     def save_to_pgn(self, file_name):
         """将棋局按简化 PGN 文本格式保存到文件。"""
 
@@ -336,7 +335,6 @@ class Game:  # pylint: disable=too-many-public-methods
 
             f.write('   *\n')
             f.write('  =========\n')
-    """
     def save_to(self, file_name):
         """根据文件扩展名写入对应格式的棋谱文件。
         参数:
