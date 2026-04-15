@@ -19,7 +19,7 @@ from cchess import (
     FULL_INIT_FEN,
     RED,
     BLACK,
-    CChessException,
+    CChessError,
     iccs_mirror,
     iccs_flip,
     iccs_swap,
@@ -1365,13 +1365,13 @@ class TestBoard:
     def test_board_from_fen_invalid_turn(self):
         """Test ChessBoard.from_fen with invalid turn value (lines 502-504)."""
         board = ChessBoard()
-        with pytest.raises(CChessException, match="走子合理的值"):
+        with pytest.raises(CChessError, match="走子合理的值"):
             board.from_fen("9/9/9/9/9/9/9/9/9/9 x")
 
     def test_board_from_fen_out_of_bounds(self):
         """Test ChessBoard.from_fen with out of bounds (line 483)."""
         board = ChessBoard()
-        with pytest.raises(CChessException, match="行列超出界限"):
+        with pytest.raises(CChessError, match="行列超出界限"):
             board.from_fen("1111111111/9/9/9/9/9/9/9/9/9 w")
 
     def test_board_pop_fench(self):
@@ -1804,8 +1804,8 @@ class TestException:
         assert str(exc) == "test error"
 
     def test_cchess_exception(self):
-        """Test CChessException."""
-        exc = CChessException("test reason")
+        """Test CChessError."""
+        exc = CChessError("test reason")
         assert exc.reason == "test reason"
 
 

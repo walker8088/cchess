@@ -296,7 +296,8 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         """
         logger.debug("--> %s", cmd_str)
 
-        if self.process.returncode is not None:
+        # 提前检查进程是否已退出，避免写入时管道损坏
+        if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
             raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
 
@@ -309,7 +310,8 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             raise EngineErrorException(
                 f"程序异常退出，退出码：{self.process.returncode}") from e
 
-        if self.process.returncode is not None:
+        # 写入后再次检查进程状态
+        if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
             raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
 

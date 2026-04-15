@@ -41,9 +41,8 @@ include-package-data = true  # 启用包含数据文件
 
 # 明确声明要包含的数据文件
 [tool.setuptools.package-data]
-my_awesome_package = [
+cchess = [
     "ReleaseNote.txt",
-    # 可以在此添加其他数据文件
 ]
 
 [[tool.uv.index]]

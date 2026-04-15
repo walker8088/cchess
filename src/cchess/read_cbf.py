@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from xml.etree import ElementTree as et
 
-from .exception import CChessException
+from .exception import CChessError
 from .board import ChessBoard
 
 #-----------------------------------------------------#
@@ -46,7 +46,7 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
         #print node.tag
 
     if init_fen is None:
-        raise CChessException("Missing FEN in CBF file")
+        raise CChessError("Missing FEN in CBF file")
 
     #books = {}
     board = ChessBoard(init_fen)
@@ -67,7 +67,7 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException(
+            raise CChessError(
                 f"bad move at {step_no} {move_from}, {move_to}")
         step_no += 1
     return game

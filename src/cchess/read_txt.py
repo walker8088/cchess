@@ -17,9 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 import re
 
-from .exception import CChessException
+from .exception import CChessError
 from .common import fench_to_species, FULL_INIT_FEN
-from .board import ChessBoard
+from .board import ChessBoard, ChessPlayer
 
 
 #-----------------------------------------------------#
@@ -42,7 +42,7 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
         board = ChessBoard(FULL_INIT_FEN)
     else:
         if len(pos_txt) != 64:
-            raise CChessException("bad pos_txt")
+            raise CChessError("bad pos_txt")
 
         board = ChessBoard()
         for side in range(2):
@@ -70,7 +70,7 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
 
             if not last_move:
                 _, man_side = fench_to_species(board.get_fench(move_from))
-                board.move_side = man_side
+                board.move_player = ChessPlayer(man_side)
                 game = Game(board)
                 last_move = game
 
@@ -79,7 +79,7 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
             last_move = new_move
             board.next_turn()
         else:
-            raise CChessException(
+            raise CChessError(
                 f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
     if step_no == 0:
@@ -123,7 +123,7 @@ def txt_to_board(pos_txt):
         board = ChessBoard(FULL_INIT_FEN)
     else:
         if len(pos_txt) != 64:
-            raise CChessException("bad pos_txt")
+            raise CChessError("bad pos_txt")
 
         board = ChessBoard()
         for side in range(2):
@@ -152,13 +152,13 @@ def txt_to_moves(board, moves_txt):
 
             if len(moves) == 0:
                 _, man_side = fench_to_species(board.get_fench(move_from))
-                board.move_side = man_side
+                board.move_player = ChessPlayer(man_side)
 
             new_move = board.move(move_from, move_to)
             moves.append(new_move)
             board.next_turn()
         else:
-            raise CChessException(
+            raise CChessError(
                 f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
 

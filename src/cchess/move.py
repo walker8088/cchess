@@ -214,7 +214,7 @@ class Move:
         node = self
         while node.variation_next:
             if node.variation_next == chess_move:
-                next_node = node.variation_next.sibling_next
+                next_node = node.variation_next.variation_next
                 node.variation_next = next_node
                 chess_move.variation_next = None
 

@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
 from cchess import (
-    CChessException,
+    CChessError,
     ChessBoard,
     iccs2pos,
     pos2iccs,
@@ -81,7 +81,7 @@ class TestBoard:
                 (4, 0),
                 (5, 0),
             )
-        except CChessException as e:
+        except CChessError as e:
             assert True
         else:
             assert False
@@ -119,7 +119,7 @@ class TestBoard:
         # 不存在的棋子的移动
         assert board.move((1, 0), (2, 0)) is None
         # 错误fen字符串
-        with pytest.raises(CChessException):
+        with pytest.raises(CChessError):
             board.from_fen(
                 "rnbaka~dnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b"
             )

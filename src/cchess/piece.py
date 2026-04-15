@@ -279,13 +279,16 @@ class Rook(Piece):
 
     def create_moves(self):
         """生成车所有可能的合法走子。"""
-        moves = []
         curr_pos = (self.x, self.y)
+        moves = []
+        # 同一行的所有位置（横向移动）
         for x in range(9):
-            for y in range(10):
-                if self.x == x and self.y == y:
-                    continue
-                moves.append((curr_pos, (x, y)))
+            if x != self.x:
+                moves.append((curr_pos, (x, self.y)))
+        # 同一列的所有位置（纵向移动）
+        for y in range(10):
+            if y != self.y:
+                moves.append((curr_pos, (self.x, y)))
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -316,13 +319,16 @@ class Cannon(Piece):
 
     def create_moves(self):
         """生成炮所有可能的合法走子。"""
-        moves = []
         curr_pos = (self.x, self.y)
+        moves = []
+        # 同一行的所有位置（横向移动）
         for x in range(9):
-            for y in range(10):
-                if self.x == x and self.y == y:
-                    continue
-                moves.append((curr_pos, (x, y)))
+            if x != self.x:
+                moves.append((curr_pos, (x, self.y)))
+        # 同一列的所有位置（纵向移动）
+        for y in range(10):
+            if y != self.y:
+                moves.append((curr_pos, (self.x, y)))
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -373,11 +379,24 @@ class Pawn(Piece):
 
     def create_moves(self):
         """生成兵/卒所有可能的合法走子。"""
-        moves = []
         curr_pos = (self.x, self.y)
-        for x in range(9):
-            for y in range(10):
-                if self.x == x and self.y == y:
-                    continue
-                moves.append((curr_pos, (x, y)))
+        moves = []
+        # 前进方向
+        if self.color == RED:
+            forward = (self.x, self.y + 1)
+        else:  # BLACK
+            forward = (self.x, self.y - 1)
+        # 检查前进位置是否在棋盘范围内
+        if 0 <= forward[0] < 9 and 0 <= forward[1] <= 9:
+            moves.append((curr_pos, forward))
+        
+        # 如果已经过河，可以左右移动
+        if self.is_crossed_river():
+            left = (self.x - 1, self.y)
+            right = (self.x + 1, self.y)
+            if 0 <= left[0] < 9:
+                moves.append((curr_pos, left))
+            if 0 <= right[0] < 9:
+                moves.append((curr_pos, right))
+        
         return filter(self.board.is_valid_move_t, moves)

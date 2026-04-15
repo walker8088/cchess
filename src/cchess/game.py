@@ -249,8 +249,8 @@ class Game:  # pylint: disable=too-many-public-methods
                     line_move += f' {text}'
                 if show_annote and annote:
                     line_move += f'[{annote}]'
-                i += 1
-                if (i % (steps_per_line * 2)) == 0:
+ 
+                if (i % (steps_per_line * 2)) == 1:
                     print(line_move)
                     line_move = ''
             if line_move:

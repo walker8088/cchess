@@ -22,19 +22,11 @@ from collections import OrderedDict
 # pylint: disable=missing-function-docstring,import-outside-toplevel
 
 # -----------------------------------------------------#
-NO_COLOR, RED, BLACK = (0, 1, 2)
+from .constants import NO_COLOR, RED, BLACK, EMPTY_BOARD, FULL_INIT_BOARD, EMPTY_FEN, FULL_INIT_FEN  # noqa: F401
 
 
 def opposite_color(color):
     return 3 - color
-
-
-# -----------------------------------------------------#
-EMPTY_BOARD = "9/9/9/9/9/9/9/9/9/9"
-FULL_INIT_BOARD = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR"
-
-EMPTY_FEN = f"{EMPTY_BOARD} w"
-FULL_INIT_FEN = f"{FULL_INIT_BOARD} w"
 
 # -----------------------------------------------------#
 _h_dict = {
@@ -177,23 +169,18 @@ def get_move_color(fen):
 
 def fen_mirror(fen):
     from .board import ChessBoard
-
-    b = ChessBoard(fen)
-    return b.mirror().to_fen()
+    return ChessBoard.fen_mirror(fen)
 
 
 def fen_flip(fen):
     from .board import ChessBoard
-
-    b = ChessBoard(fen)
-    return b.flip().to_fen()
+    return ChessBoard.fen_flip(fen)
 
 
 def fen_swap(fen):
     from .board import ChessBoard
+    return ChessBoard.fen_swap(fen)
 
-    b = ChessBoard(fen)
-    return b.swap().to_fen()
 
 
 # -----------------------------------------------------#

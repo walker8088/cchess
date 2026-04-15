@@ -20,7 +20,7 @@ import re
 
 import chardet
 
-from .exception import CChessException
+from .exception import CChessError
 from .common import FULL_INIT_FEN
 from .board import ChessBoard
 
@@ -96,7 +96,7 @@ def __get_headers(game, lines):
                     game.info[name] = value
 
         # if len(items) < 3:
-        #    raise CChessException(f"Format Error on line {index + 1}")
+        #    raise CChessError(f"Format Error on line {index + 1}")
 
         # self.infos[str(items[0]).strip()] = items[1].strip()
 
@@ -127,7 +127,7 @@ def __get_comments(lines):
         index += 1
 
     # 代码能运行到这里，就是出了异常了
-    raise CChessException("Comments not closed")
+    raise CChessError("Comments not closed")
 
 
 def __get_steps(game, lines):

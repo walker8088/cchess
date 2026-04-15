@@ -29,5 +29,6 @@ class TestPiece():
 
         side = ChessPlayer(RED)
         assert side.opposite() == BLACK
-        assert side.next() == BLACK
-        assert side.next() == RED
+        next_player = side.next()
+        assert next_player == BLACK
+        assert next_player.next() == RED

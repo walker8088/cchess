@@ -20,8 +20,9 @@ import copy
 import json
 from functools import reduce
 
-from .exception import CChessException
-from .common import fench_to_species, fench_to_txt_name, NO_COLOR, RED, BLACK, iccs2pos
+from .exception import CChessError
+from .common import fench_to_species, fench_to_txt_name, iccs2pos
+from .constants import NO_COLOR, RED, BLACK
 from .piece import Piece
 from .move import Move
 from .zhash_data import z_c90, z_pieces, Z_RED_KEY, Z_HASH_TABLE
@@ -94,9 +95,9 @@ class ChessPlayer:
         如果当前颜色为 `NO_COLOR`（未指定），则保持不变。
         返回一个新的 `ChessPlayer`，避免就地修改引用带来的副作用。
         """
-        if self.color != NO_COLOR:
-            self.color = 3 - self.color
-        return ChessPlayer(self.color)
+        if self.color == NO_COLOR:
+            return ChessPlayer(NO_COLOR)
+        return ChessPlayer(3 - self.color)
 
     def opposite(self):
         """返回与当前颜色相反的颜色值（整数）。
@@ -182,9 +183,27 @@ class ChessBoard:
             [swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)
         ]
 
-        b.move_player.next()
+        b.move_player = b.move_player.next()
 
         return b
+
+    @staticmethod
+    def fen_mirror(fen):
+        """返回给定 FEN 字符串的镜像局面 FEN。"""
+        b = ChessBoard(fen)
+        return b.mirror().to_fen()
+
+    @staticmethod
+    def fen_flip(fen):
+        """返回给定 FEN 字符串的翻转局面 FEN。"""
+        b = ChessBoard(fen)
+        return b.flip().to_fen()
+
+    @staticmethod
+    def fen_swap(fen):
+        """返回给定 FEN 字符串的交换局面 FEN。"""
+        b = ChessBoard(fen)
+        return b.swap().to_fen()
 
     def is_mirror(self):
         """判断当前棋盘是否关于竖中线对称（镜像局面）。"""
@@ -377,7 +396,8 @@ class ChessBoard:
 
     def next_turn(self):
         """切换到下一个走子方并返回新的 `ChessPlayer` 实例（工具方法）。"""
-        return self.move_player.next()
+        self.move_player = self.move_player.next()
+        return self.move_player
 
     def create_moves(self):
         """生成当前走子方的所有候选走法（每个为 (from, to) 元组）。"""
@@ -392,12 +412,12 @@ class ChessBoard:
 
     def is_checked_move(self, pos_from, pos_to):
         """判断执行给定走子后己方是否处于被将军状态。
-        若走子非法，抛出 `CChessException('Invalid Move')`。"""
+        若走子非法，抛出 `CChessError('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
-            raise CChessException("Invalid Move")
+            raise CChessError("Invalid Move")
         board = self.copy()
         board._move_piece(pos_from, pos_to)
-        board.move_player.next()
+        board.move_player = board.move_player.next()
         return board.is_checking()
 
     def is_checking_move(self, pos_from, pos_to):
@@ -421,7 +441,7 @@ class ChessBoard:
     def is_checkmate(self):
         """判断当前局面在对方回合是否为将死（无路可走）。"""
         board = self.copy()
-        board.move_player.next()
+        board.move_player = board.move_player.next()
         return board.has_no_legal_moves()
 
     def has_no_legal_moves(self):
@@ -480,7 +500,7 @@ class ChessBoard:
         y = 9
         for i, ch in enumerate(fen0):
             if (x > 9) or (y < 0):
-                raise CChessException(f"fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}")
+                raise CChessError(f"fen:{fen} 行列超出界限:{i}, 列:{x}, 行:{y}")
             if ch == "/":
                 x = 0
                 y -= 1
@@ -490,7 +510,7 @@ class ChessBoard:
                 b.put_fench(ch, (x, y))
                 x += 1
             else:
-                raise CChessException(f"fen:{fen} 不合法的fen字符串:{i},[{ch}]")
+                raise CChessError(f"fen:{fen} 不合法的fen字符串:{i},[{ch}]")
 
         self.move_player = ChessPlayer(NO_COLOR)
 
@@ -499,7 +519,7 @@ class ChessBoard:
         elif fen1 in ["w", "r"]:
             b.move_player = ChessPlayer(RED)
         else:
-            raise CChessException(
+            raise CChessError(
                 f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}"
             )
 

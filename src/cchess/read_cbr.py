@@ -21,7 +21,7 @@ import struct
 from .common import RED, BLACK, fench_to_species
 from .board import ChessPlayer, ChessBoard
 from .game import Game
-from .exception import CChessException
+from .exception import CChessError
 
 
 # pylint: disable=too-many-locals,too-many-branches,fixme
@@ -274,7 +274,7 @@ def read_from_cbl(file_name, verify=True):  # pylint: disable=unused-argument
         return lib_info
 
     if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-        raise CChessException(
+        raise CChessError(
             f"文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}"
         )
 
@@ -289,7 +289,7 @@ def read_from_cbl(file_name, verify=True):  # pylint: disable=unused-argument
                 lib_info["games"].append(game)
                 game_index += 1
         except Exception as e:
-            raise CChessException(
+            raise CChessError(
                 f"{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}"
             ) from e
 
@@ -333,7 +333,7 @@ def read_from_cbl_progressing(file_name):
         yield lib_info
     else:
         if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-            raise CChessException(
+            raise CChessError(
                 f"文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}"
             )
 
@@ -350,7 +350,7 @@ def read_from_cbl_progressing(file_name):
                 # else:
                 #    print(count, "no game")
             except Exception as e:
-                raise CChessException(
+                raise CChessError(
                     f"{index}/{count}, {len(contents)}, {len(book_buffer)}, {e}"
                 ) from e
             count += 1

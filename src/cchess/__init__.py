@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .exception import CChessException, EngineErrorException  # noqa: F401
+from .exception import CChessError, EngineErrorException  # noqa: F401
 from .common import (  # noqa: F401
     NO_COLOR,
     RED,
@@ -42,6 +42,7 @@ from .common import (  # noqa: F401
 )
 from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn  # noqa: F401
 from .board import ChessBoard, ChessPlayer  # noqa: F401
+
 from .move import Move  # noqa: F401
 from .game import Game  # noqa: F401
 from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache  # noqa: F401
@@ -51,4 +52,31 @@ from .read_pgn import read_from_pgn  # noqa: F401
 from .read_cbf import read_from_cbf  # noqa: F401
 from .read_cbr import read_from_cbr, read_from_cbl  # noqa: F401
 
-__all__ = []
+__all__ = [
+    # exception
+    'CChessError', 'EngineErrorException',
+    # common
+    'NO_COLOR', 'RED', 'BLACK',
+    'fench_to_species', 'fench_to_text',
+    'iccs2pos', 'pos2iccs',
+    'iccs_mirror', 'iccs_list_mirror', 'iccs_flip', 'iccs_swap',
+    'fen_mirror', 'fen_flip', 'fen_swap',
+    'get_move_color', 'get_fen_type', 'get_fen_type_detail',
+    'FULL_INIT_BOARD', 'FULL_INIT_FEN', 'EMPTY_BOARD', 'EMPTY_FEN',
+    # piece
+    'Piece', 'King', 'Advisor', 'Bishop', 'Knight', 'Rook', 'Cannon', 'Pawn',
+    # board
+    'ChessBoard', 'ChessPlayer',
+    # move
+    'Move',
+    # game
+    'Game',
+    # engine
+    'EngineStatus', 'UcciEngine', 'UciEngine', 'EngineManager', 'FenCache',
+    # io
+    'read_from_xqf', 'read_from_pgn', 'read_from_cbf', 'read_from_cbr', 'read_from_cbl',
+    # version
+    '__version__',
+]
+
+__version__ = "1.26.1"
