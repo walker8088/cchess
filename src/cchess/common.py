@@ -210,13 +210,9 @@ def fen_swap(fen):
 
 
 # -----------------------------------------------------#
-# 全角半角数字转换映射表 (全角 U+FF11-U+FF19, 半角 U+0031-U+0039)
-_DIGIT_MAP_FULL_TO_HALF = str.maketrans(
-    "\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19", "123456789"
-)
-_DIGIT_MAP_HALF_TO_FULL = str.maketrans(
-    "123456789", "\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19"
-)
+# 全角半角数字转换映射表
+_DIGIT_MAP_FULL_TO_HALF = str.maketrans("１２３４５６７８９", "123456789")
+_DIGIT_MAP_HALF_TO_FULL = str.maketrans("123456789", "１２３４５６７８９")
 
 
 def full2half(text):
