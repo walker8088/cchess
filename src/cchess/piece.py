@@ -85,6 +85,36 @@ class Piece:
         moves = [(curr_pos, to_pos) for to_pos in positions]
         return filter(self.board.is_valid_move_t, moves)
 
+    def _create_sliding_moves(self, directions):
+        """生成滑走棋子（车/炮不吃子时）的走法，沿方向扫描直到遇到棋子或边界。
+
+        参数:
+            directions: 方向列表，如 [(0,1), (0,-1), (1,0), (-1,0)]
+
+        返回:
+            合法走子列表
+        """
+        moves = []
+        curr_pos = (self.x, self.y)
+
+        for dx, dy in directions:
+            x, y = self.x + dx, self.y + dy
+
+            while 0 <= x < 9 and 0 <= y <= 9:
+                target = self.board.get_fench((x, y))
+
+                if target is None:
+                    moves.append((curr_pos, (x, y)))
+                else:
+                    if self.board.get_fench_color((x, y)) != self.color:
+                        moves.append((curr_pos, (x, y)))
+                    break
+
+                x += dx
+                y += dy
+
+        return moves
+
     @staticmethod
     def create(board, fench, pos):
         """根据棋子类型字符创建并返回对应的棋子实例。"""
@@ -279,9 +309,13 @@ class Rook(Piece):
 
     def create_moves(self):
         """生成车所有可能的合法走子。"""
-        return self._create_moves_from_offsets(
-            [(dx, 0) for dx in range(-8, 9) if dx != 0]
-            + [(0, dy) for dy in range(-9, 10) if dy != 0]
+        return self._create_sliding_moves(
+            [
+                (0, 1),  # 上
+                (0, -1),  # 下
+                (1, 0),  # 右
+                (-1, 0),  # 左
+            ]
         )
 
 
@@ -311,11 +345,43 @@ class Cannon(Piece):
         return False
 
     def create_moves(self):
-        """生成炮所有可能的合法走子。"""
-        return self._create_moves_from_offsets(
-            [(dx, 0) for dx in range(-8, 9) if dx != 0]
-            + [(0, dy) for dy in range(-9, 10) if dy != 0]
-        )
+        """生成炮所有可能的合法走子。
+
+        炮的走法规则：
+        1. 不吃子时：沿直线行走，不能越子（同车）
+        2. 吃子时：必须隔一个棋子（炮架）才能吃
+        """
+        moves = []
+        curr_pos = (self.x, self.y)
+
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            x, y = self.x + dx, self.y + dy
+            screen_found = False  # 是否找到炮架
+
+            while 0 <= x < 9 and 0 <= y <= 9:
+                target = self.board.get_fench((x, y))
+
+                if not screen_found:
+                    # 寻找炮架阶段
+                    if target is None:
+                        # 空位，可以移动
+                        moves.append((curr_pos, (x, y)))
+                    else:
+                        # 遇到第一个棋子，作为炮架
+                        screen_found = True
+                else:
+                    # 炮架后阶段
+                    if target is not None:
+                        # 遇到第二个棋子，可以吃（仅限敌方）
+                        if self.board.get_fench_color((x, y)) != self.color:
+                            moves.append((curr_pos, (x, y)))
+                        # 无论是否吃子，都停止扫描
+                        break
+
+                x += dx
+                y += dy
+
+        return moves
 
 
 # -----------------------------------------------------#

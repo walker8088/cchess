@@ -504,7 +504,9 @@ class ChessBoard:
         """生成指定位置棋子的所有候选走法。"""
         piece = self.get_piece(pos)
         if piece:
-            yield from piece.create_moves()
+            _, piece_color = fench_to_species(piece.fench)
+            if piece_color == self.move_player.color:
+                yield from piece.create_moves()
 
     def is_checked_move(self, pos_from, pos_to):
         """判断执行给定走子后己方是否处于被将军状态。
