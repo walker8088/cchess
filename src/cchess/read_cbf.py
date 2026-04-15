@@ -30,6 +30,7 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
     from .game import Game  # pylint: disable=import-outside-toplevel
 
     def decode_move(move_str):
+        """decode_move 函数。"""
         p_from = (int(move_str[0]), 9 - int(move_str[1]))
         p_to = (int(move_str[3]), 9 - int(move_str[4]))
 

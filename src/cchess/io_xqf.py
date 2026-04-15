@@ -73,6 +73,7 @@ class XQFBuffDecoder:
     """
 
     def __init__(self, buffer):
+        """__init__ 方法。"""
         self.buffer = buffer
         self.index = 0
         self.length = len(buffer)
@@ -487,6 +488,7 @@ def read_from_xqf(full_file_name, read_annotation=True):  # pylint: disable=unus
 
 # -----------------------------------------------------#
 def _encode_pos(pos):
+    """_encode_pos 函数。"""
     return pos[0] * 10 + pos[1]
 
 
@@ -501,6 +503,7 @@ class XQMove:
         annote: str = "",
         has_variation=False,
     ):
+        """__init__ 方法。"""
         self.start_pos = start_pos  # (x, y) 元组
         self.end_pos = end_pos  # (x, y) 元组
         self.annote = annote
@@ -512,6 +515,7 @@ class XQFWriter:
     """从 `Game` 对象写入 XQF 格式文件的写入器。"""
 
     def __init__(self, game):
+        """__init__ 方法。"""
         self.game = game
         self.header = bytearray(b"\x00" * 1024)  # 头部固定1024字节
 

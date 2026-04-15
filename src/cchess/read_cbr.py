@@ -53,6 +53,7 @@ result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
 # -----------------------------------------------------#
 def _decode_pos(p):
+    """_decode_pos 函数。"""
     return (p % 9, 9 - p // 9)
 
 
@@ -73,12 +74,14 @@ class CbrBuffDecoder:
     """对 CBR 文件缓冲区提供顺序读取辅助。"""
 
     def __init__(self, buffer, coding):
+        """__init__ 方法。"""
         self.buffer = buffer
         self.index = 0
         self.length = len(buffer)
         self.coding = coding
 
     def __read(self, size):
+        """__read 方法。"""
         start = self.index
         stop = min(self.index + size, self.length)
 

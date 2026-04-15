@@ -72,6 +72,7 @@ def read_from_pgn(file_name):
 
 
 def __get_headers(game, lines):
+    """__get_headers 函数。"""
     index = 0
     for it in lines:
         line = it.strip()
@@ -106,6 +107,7 @@ def __get_headers(game, lines):
 
 
 def __get_comments(lines):
+    """__get_comments 函数。"""
     if lines[0][0] != "{":
         return (lines, None)
 
@@ -131,6 +133,7 @@ def __get_comments(lines):
 
 
 def __get_steps(game, lines):
+    """__get_steps 函数。"""
     steps = []
 
     board = game.init_board.copy()
@@ -156,7 +159,7 @@ def __get_steps(game, lines):
                 move = board.move_text(it)
             if move is None:
                 return game
-            board.next_turn()
+
             game.append_next_move(move)
 
     return game

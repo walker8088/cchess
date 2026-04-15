@@ -23,7 +23,7 @@ classifiers = [
 	"Programming Language :: Python :: Implementation :: CPython",
 ]
 
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 dependencies = [
     "chardet>=5.0",
 ]

@@ -21,6 +21,7 @@ class CChessError(Exception):
     """中国象棋库通用异常。"""
 
     def __init__(self, reason):
+        """__init__ 方法。"""
         super().__init__(reason)
         self.reason = reason
 
@@ -29,5 +30,6 @@ class EngineErrorException(Exception):
     """引擎通信或执行过程中发生的异常。"""
 
     def __init__(self, reason):
+        """__init__ 方法。"""
         super().__init__(reason)
         self.reason = reason

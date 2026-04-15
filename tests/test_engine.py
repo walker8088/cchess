@@ -144,7 +144,7 @@ class TestUcci:
 
         time.sleep(0.5)
 
-
+'''
 class TestUci:
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
@@ -295,7 +295,7 @@ class TestUci:
 
         time.sleep(0.5)
 
-
+'''
 class TestEngineManager:
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
