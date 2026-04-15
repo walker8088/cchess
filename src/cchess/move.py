@@ -211,16 +211,30 @@ class Move:
         self.variations_all.remove(chess_move)
 
         # 从链上摘下
-        node = self
-        while node.variation_next:
-            if node.variation_next == chess_move:
-                next_node = node.variation_next.variation_next
-                node.variation_next = next_node
+        # 找到链表头节点（第一个兄弟节点）
+        head = self.variations_all[0]
+        
+        # 如果要删除的是头节点
+        if chess_move == head:
+            # 更新链表头为下一个兄弟节点
+            new_head = head.variation_next
+            # 将原头节点从链表中断开
+            chess_move.variation_next = None
+            # 注意：variations_all 已经更新，head 已经变为新的头节点
+        else:
+            # 遍历链表找到前驱节点
+            prev = head
+            while prev.variation_next and prev.variation_next != chess_move:
+                prev = prev.variation_next
+            if prev.variation_next == chess_move:
+                # 跳过要删除的节点
+                prev.variation_next = chess_move.variation_next
                 chess_move.variation_next = None
 
         # 更新兄弟表到所有的兄弟
         for node in self.get_variations():
             node.variations_all = self.variations_all
+
 
     def append_next_move(self, chess_move):
         """将 `chess_move` 作为当前走子的后继加入走子树。
