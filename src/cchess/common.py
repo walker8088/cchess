@@ -22,11 +22,21 @@ from collections import OrderedDict
 # pylint: disable=missing-function-docstring,import-outside-toplevel
 
 # -----------------------------------------------------#
-from .constants import NO_COLOR, RED, BLACK, EMPTY_BOARD, FULL_INIT_BOARD, EMPTY_FEN, FULL_INIT_FEN  # noqa: F401
+from .constants import (
+    NO_COLOR,
+    RED,
+    BLACK,
+    EMPTY_BOARD,
+    FULL_INIT_BOARD,
+    EMPTY_FEN,
+    FULL_INIT_FEN,
+)  # noqa: F401
 
 
 def opposite_color(color):
+    """opposite_color 函数。"""
     return 3 - color
+
 
 # -----------------------------------------------------#
 _h_dict = {
@@ -57,6 +67,7 @@ _v_dict = {
 
 # -----------------------------------------------------#
 def pos2iccs(p_from, p_to):
+    """pos2iccs 函数。"""
     return (
         chr(ord("a") + p_from[0])
         + str(p_from[1])
@@ -66,6 +77,7 @@ def pos2iccs(p_from, p_to):
 
 
 def iccs2pos(iccs):
+    """iccs2pos 函数。"""
     return (
         (ord(iccs[0]) - ord("a"), int(iccs[1])),
         (ord(iccs[2]) - ord("a"), int(iccs[3])),
@@ -73,18 +85,22 @@ def iccs2pos(iccs):
 
 
 def iccs_mirror(iccs):
+    """iccs_mirror 函数。"""
     return f"{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}"
 
 
 def iccs_flip(iccs):
+    """iccs_flip 函数。"""
     return f"{iccs[0]}{_v_dict[iccs[1]]}{iccs[2]}{_v_dict[iccs[3]]}"
 
 
 def iccs_swap(iccs):
+    """iccs_swap 函数。"""
     return f"{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}"
 
 
 def iccs_list_mirror(iccs_list):
+    """iccs_list_mirror 函数。"""
     return [iccs_mirror(x) for x in iccs_list]
 
 
@@ -140,6 +156,7 @@ _fench_txt_name_dict = {
 
 # -----------------------------------------------------#
 def fench_to_txt_name(fench):
+    """fench_to_txt_name 函数。"""
     if fench not in _fench_txt_name_dict:
         return None
 
@@ -147,10 +164,12 @@ def fench_to_txt_name(fench):
 
 
 def fench_to_text(fench):
+    """fench_to_text 函数。"""
     return _fench_name_dict[fench]
 
 
 def text_to_fench(text, color):
+    """text_to_fench 函数。"""
     if text not in _name_fench_dict:
         return None
     fench = _name_fench_dict[text]
@@ -158,68 +177,56 @@ def text_to_fench(text, color):
 
 
 def fench_to_species(fen_ch):
+    """fench_to_species 函数。"""
     return fen_ch.lower(), BLACK if fen_ch.islower() else RED
 
 
 # -----------------------------------------------------#
 def get_move_color(fen):
+    """get_move_color 函数。"""
     color = fen.rstrip().split(" ")[1].lower()
     return RED if color == "w" else BLACK
 
 
 def fen_mirror(fen):
+    """fen_mirror 函数。"""
     from .board import ChessBoard
+
     return ChessBoard.fen_mirror(fen)
 
 
 def fen_flip(fen):
+    """fen_flip 函数。"""
     from .board import ChessBoard
+
     return ChessBoard.fen_flip(fen)
 
 
 def fen_swap(fen):
+    """fen_swap 函数。"""
     from .board import ChessBoard
+
     return ChessBoard.fen_swap(fen)
 
 
-
 # -----------------------------------------------------#
-def full2half(text):
-    # 全角到半角的映射
-    fullwidth_map = {
-        "１": "1",
-        "２": "2",
-        "３": "3",
-        "４": "4",
-        "５": "5",
-        "６": "6",
-        "７": "7",
-        "８": "8",
-        "９": "9",
-    }
+# 全角半角数字转换映射表 (全角 U+FF11-U+FF19, 半角 U+0031-U+0039)
+_DIGIT_MAP_FULL_TO_HALF = str.maketrans(
+    "\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19", "123456789"
+)
+_DIGIT_MAP_HALF_TO_FULL = str.maketrans(
+    "123456789", "\uff11\uff12\uff13\uff14\uff15\uff16\uff17\uff18\uff19"
+)
 
-    # 使用 translate 方法进行批量替换
-    translation_table = str.maketrans(fullwidth_map)
-    return text.translate(translation_table)
+
+def full2half(text):
+    """将全角数字转换为半角数字。"""
+    return text.translate(_DIGIT_MAP_FULL_TO_HALF)
 
 
 def half2full(text):
-    # 半角到全角的映射
-    halfwidth_map = {
-        "1": "１",
-        "2": "２",
-        "3": "３",
-        "4": "４",
-        "5": "５",
-        "6": "６",
-        "7": "７",
-        "8": "８",
-        "9": "９",
-    }
-
-    # 使用 translate 方法进行批量替换
-    translation_table = str.maketrans(halfwidth_map)
-    return text.translate(translation_table)
+    """将半角数字转换为全角数字。"""
+    return text.translate(_DIGIT_MAP_HALF_TO_FULL)
 
 
 # -----------------------------------------------------#
@@ -253,6 +260,7 @@ p_dict = {
 
 # -----------------------------------------------------#
 def get_fen_pieces(fen):
+    """get_fen_pieces 函数。"""
     pieces = OrderedDict()
     fen_base = fen.split(" ")[0]
     for ch in fen_base:
@@ -265,6 +273,7 @@ def get_fen_pieces(fen):
 
 
 def get_fen_type(fen):
+    """get_fen_type 函数。"""
     pieces = get_fen_pieces(fen)
     for ch in ["K", "A", "B"]:
         if ch in pieces:
@@ -284,6 +293,7 @@ def get_fen_type(fen):
 
 # -----------------------------------------------------#
 def get_fen_type_detail(fen):
+    """get_fen_type_detail 函数。"""
     pieces = get_fen_pieces(fen)
 
     title_red = ""

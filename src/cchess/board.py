@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
 import json
-from functools import reduce
 
 from .exception import CChessError
 from .common import fench_to_species, fench_to_txt_name, iccs2pos
@@ -591,19 +590,11 @@ class ChessBoard:
 
     def count_x_line_in(self, y, x_from, x_to):
         """统计同一行 y 上 x_from 与 x_to 之间（不含端点）被占用的格子数。"""
-        return reduce(
-            lambda count, fench: count + 1 if fench else count,
-            self.x_line_in(y, x_from, x_to),
-            0,
-        )
+        return sum(1 for f in self.x_line_in(y, x_from, x_to) if f)
 
     def count_y_line_in(self, x, y_from, y_to):
         """统计同一列 x 上 y_from 与 y_to 之间（不含端点）被占用的格子数。"""
-        return reduce(
-            lambda count, fench: count + 1 if fench else count,
-            self.y_line_in(x, y_from, y_to),
-            0,
-        )
+        return sum(1 for f in self.y_line_in(x, y_from, y_to) if f)
 
     def x_line_in(self, y, x_from, x_to):
         """返回水平方向上两个 x 之间（不含端点）的格子内容列表。"""
