@@ -71,6 +71,20 @@ class Piece:
             return f"b{self.fench}"
         return f"r{self.fench.lower()}"
 
+    def _create_moves_from_offsets(self, offsets):
+        """从偏移量列表生成候选走子。
+
+        参数:
+            offsets: 相对当前位置的偏移量列表，如 [(1, 1), (-1, -1)]
+
+        返回:
+            过滤后的合法走子迭代器
+        """
+        curr_pos = (self.x, self.y)
+        positions = [(self.x + dx, self.y + dy) for dx, dy in offsets]
+        moves = [(curr_pos, to_pos) for to_pos in positions]
+        return filter(self.board.is_valid_move_t, moves)
+
     @staticmethod
     def create(board, fench, pos):
         """根据棋子类型字符创建并返回对应的棋子实例。"""
@@ -172,15 +186,7 @@ class Advisor(Piece):
 
     def create_moves(self):
         """生成士/仕所有可能的合法走子。"""
-        positions = [
-            (self.x + 1, self.y + 1),
-            (self.x + 1, self.y - 1),
-            (self.x - 1, self.y + 1),
-            (self.x - 1, self.y - 1),
-        ]
-        curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in positions]
-        return filter(self.board.is_valid_move_t, moves)
+        return self._create_moves_from_offsets([(1, 1), (1, -1), (-1, 1), (-1, -1)])
 
 
 # -----------------------------------------------------#
@@ -212,15 +218,7 @@ class Bishop(Piece):
 
     def create_moves(self):
         """生成象/相所有可能的合法走子。"""
-        positions = [
-            (self.x + 2, self.y + 2),
-            (self.x + 2, self.y - 2),
-            (self.x - 2, self.y + 2),
-            (self.x - 2, self.y - 2),
-        ]
-        curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in positions]
-        return filter(self.board.is_valid_move_t, moves)
+        return self._create_moves_from_offsets([(2, 2), (2, -2), (-2, 2), (-2, -2)])
 
 
 # -----------------------------------------------------#
@@ -281,17 +279,10 @@ class Rook(Piece):
 
     def create_moves(self):
         """生成车所有可能的合法走子。"""
-        curr_pos = (self.x, self.y)
-        moves = []
-        # 同一行的所有位置（横向移动）
-        for x in range(9):
-            if x != self.x:
-                moves.append((curr_pos, (x, self.y)))
-        # 同一列的所有位置（纵向移动）
-        for y in range(10):
-            if y != self.y:
-                moves.append((curr_pos, (self.x, y)))
-        return filter(self.board.is_valid_move_t, moves)
+        return self._create_moves_from_offsets(
+            [(dx, 0) for dx in range(-8, 9) if dx != 0]
+            + [(0, dy) for dy in range(-9, 10) if dy != 0]
+        )
 
 
 # -----------------------------------------------------#
@@ -321,17 +312,10 @@ class Cannon(Piece):
 
     def create_moves(self):
         """生成炮所有可能的合法走子。"""
-        curr_pos = (self.x, self.y)
-        moves = []
-        # 同一行的所有位置（横向移动）
-        for x in range(9):
-            if x != self.x:
-                moves.append((curr_pos, (x, self.y)))
-        # 同一列的所有位置（纵向移动）
-        for y in range(10):
-            if y != self.y:
-                moves.append((curr_pos, (self.x, y)))
-        return filter(self.board.is_valid_move_t, moves)
+        return self._create_moves_from_offsets(
+            [(dx, 0) for dx in range(-8, 9) if dx != 0]
+            + [(0, dy) for dy in range(-9, 10) if dy != 0]
+        )
 
 
 # -----------------------------------------------------#
