@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 import pathlib
 import datetime as dt
 from collections import defaultdict
@@ -302,7 +302,7 @@ class Game:  # pylint: disable=too-many-public-methods
         if ext == '.cbl':
             return read_from_cbl(file_name)
         raise ValueError(f"Unknown lib file format:{file_name}")
-
+    """
     def save_to_pgn(self, file_name):
         """将棋局按简化 PGN 文本格式保存到文件。"""
 
@@ -336,7 +336,7 @@ class Game:  # pylint: disable=too-many-public-methods
 
             f.write('   *\n')
             f.write('  =========\n')
-
+    """
     def save_to(self, file_name):
         """根据文件扩展名写入对应格式的棋谱文件。
         参数:
