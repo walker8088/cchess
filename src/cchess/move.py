@@ -554,9 +554,16 @@ class Move:
     def text_move_to_std_move(piece_fench, move_player, p_from, move_str):
         """将中文走法片段转换为目标坐标。
 
-        根据棋子类型 `piece_fench`、走子方 `move_player` 与起点 `p_from`，
-        解析 `move_str` 并返回目标坐标 `(x, y)`。会对中文数字与全角
-        数字做简单归一化，否则在无法解析时返回 None。
+        使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
+
+        参数:
+            piece_fench: 棋子类型字符
+            move_player: 走子方（保留参数以兼容旧 API，实际不使用）
+            p_from: 起点坐标
+            move_str: 走法字符串（如'进一'、'平五'等）
+
+        返回:
+            tuple: 目标坐标 (x, y)，无法解析返回 None
         """
 
         # 移动规则检查
@@ -565,16 +572,20 @@ class Move:
         if move_str[0] not in ["进", "退", "平"]:
             return None
 
-        # 王,车,炮,兵的移动规则
+        # 规范局面下：始终使用红方索引 [1]
+        h_index = _h_level_index[move_player]
+        v_index = _v_change_index[move_player]
+
+        # 王，车，炮，兵的移动规则
         if piece_fench in ["k", "r", "c", "p"]:
             # 平移
             if move_str[0] == "平":
-                new_x = _h_level_index[move_player].index(move_str[1])
+                new_x = h_index.index(move_str[1])
                 return (new_x, p_from[1])
             # 王，车，炮，兵的前进和后退
-            # 支持不同形式的数字（如中文数字 '一' 与全角数字 '１'），尝试归一化后查找
+            # 支持不同形式的数字（如中文数字 '一' 与全角数字 '1'），尝试归一化后查找
             try:
-                diff = _v_change_index[move_player].index(move_str[1])
+                diff = v_index.index(move_str[1])
             except ValueError:
                 # 简单映射常见中文数字到全角数字
                 zh_to_full = {
@@ -589,35 +600,33 @@ class Move:
                     "九": "９",
                 }
                 ch = zh_to_full.get(move_str[1], move_str[1])
-                diff = _v_change_index[move_player].index(ch)
+                diff = v_index.index(ch)
 
             if move_str[0] == "退":
                 diff = -diff
 
+            # 规范局面：始终假设是红方，前进是 y 增加方向
             if move_player == BLACK:
                 diff = -diff
-
             return (p_from[0], p_from[1] + diff)
 
         # 仕的移动规则
         if piece_fench == "a":
-            new_x = _h_level_index[move_player].index(move_str[1])
+            new_x = h_index.index(move_str[1])
             diff_y = -1 if move_str[0] == "进" else 1
-            if move_player == BLACK:
-                diff_y = -diff_y
+            # 规范局面：红方仕，进是 y 减小（向九宫格中心）
             return (new_x, p_from[1] - diff_y)
 
         # 象的移动规则
         if piece_fench == "b":
-            new_x = _h_level_index[move_player].index(move_str[1])
+            new_x = h_index.index(move_str[1])
             diff_y = -2 if move_str[0] == "进" else 2
-            if move_player == BLACK:
-                diff_y = -diff_y
+            # 规范局面：红方象，进是 y 减小
             return (new_x, p_from[1] - diff_y)
 
         # 马的移动规则
         if piece_fench == "n":
-            new_x = _h_level_index[move_player].index(move_str[1])
+            new_x = h_index.index(move_str[1])
             diff_x = abs(p_from[0] - new_x)
 
             if move_str[0] == "进":
@@ -625,23 +634,21 @@ class Move:
             else:
                 diff_y = [-3, -2, -1][diff_x]
 
-            if move_player == RED:
-                diff_y = -diff_y
+            # 规范局面：红方马，进是 y 增加
+            diff_y = -diff_y
 
             return (new_x, p_from[1] - diff_y)
 
         return None
-
     @staticmethod
     def from_text(board, move_str):
-        """解析中文走法字符串，返回标准化的走子 `((p_from, p_to))`。
-
-        支持形式如 '前/中/后' 的歧义消除以及 '一'..'五' 的列选择。
-        若无法解析或找不到合法走子，返回 `None`。
+        """解析中文走法字符串，返回标准化的走子 ((p_from, p_to))。
+        
+        使用规范局面：将黑方走子转换为红方视角处理棋子移动逻辑。
+        但 move_str 解析仍需根据原始走子方选择索引数组。
         """
         move_str = half2full(move_str)
 
-        # TODO 测试黑方
         move_indices = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
         multi_pieces = False
@@ -653,99 +660,93 @@ class Move:
             if man_index > 2:
                 multi_lines = True
             piece_name = move_str[1]
-
         else:
             piece_name = move_str[0]
 
-        # 先将文字名称解析为 fench，以便在多行定位时使用
-        fench = text_to_fench(piece_name, board.move_player)
+        # 保存原始走子方，用于索引数组选择
+        original_move_player = board.move_player.color
+        
+        # 获取规范局面
+        is_flipped = not board.is_normalized()
+        normalized_board = board.normalized()
+        
+        # 在规范局面下获取棋子 fench
+        fench = text_to_fench(piece_name, RED)
         if not fench:
             return None
 
-        piece_fench, move_player = fench_to_species(fench)
+        piece_fench = fench.lower()
 
         if multi_lines:
-            # 草案实现：支持以中文数字（'一','二','三','四','五'）指定某一列（文件）
-            # 优先在该列查找对应棋子；若无则在全盘匹配中选择候选。
-            # 对于兵（piece_fench == 'p'），若同列有多个兵，则选择更靠前方的兵：
-            # - 红方（RED）选择 y 最大的兵
-            # - 黑方（BLACK）选择 y 最小的兵
             chinese_digit = move_str[0]
             target_x = None
             try:
-                target_x = _h_level_index[move_player].index(chinese_digit)
+                # 根据原始走子方选择索引数组
+                target_x = _h_level_index[original_move_player].index(chinese_digit)
             except ValueError:
                 target_x = None
 
             positions = []
             if target_x is not None:
-                positions = board.get_fenchs_x(fench, target_x)
+                positions = normalized_board.get_fenchs_x(fench, target_x)
 
             if not positions:
-                positions = board.get_fenchs(fench)
+                positions = normalized_board.get_fenchs(fench)
 
-            # 如果是黑方，从玩家视角选取顺序可能相反，保持与其他分支处理一致
-            if move_player == BLACK:
-                positions = list(reversed(positions))
-
-            # 对兵在同列多子情况做优先级选择
             if piece_fench == "p" and len(positions) > 1:
-                if move_player == RED:
-                    positions.sort(key=lambda p: p[1], reverse=True)
-                else:
-                    positions.sort(key=lambda p: p[1])
+                # 规范局面下：兵选择 y 最大的（最靠前的）
+                positions.sort(key=lambda p: p[1], reverse=True)
 
             if len(positions) == 0:
                 return None
 
             for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, move_player, pos, move_str[2:]
-                )
+                move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
                 if move:
+                    if is_flipped:
+                        pos = board.denormalize_pos(pos)
+                        move = board.denormalize_pos(move)
                     return [(pos, move)]
 
             return None
 
         if not multi_pieces:
-            # 单子移动
+            # 根据原始走子方选择索引数组
+            x = _h_level_index[original_move_player].index(move_str[1])
+            positions = normalized_board.get_fenchs_x(fench, x)
 
-            x = _h_level_index[move_player].index(move_str[1])
-            positions = board.get_fenchs_x(fench, x)
-
-            # 无子可走
             if len(positions) == 0:
                 return None
 
-            # 同一行选出来多个，只有士象是可以多个子尝试移动而不用标明前后的
             if (len(positions) > 1) and (piece_fench not in ["a", "b"]):
                 return None
 
             moves = []
             for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, move_player, pos, move_str[2:]
-                )
+                move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
                 if move:
+                    if is_flipped:
+                        pos = board.denormalize_pos(pos)
+                        move = board.denormalize_pos(move)
                     moves.append((pos, move))
 
             return moves
 
-        # 多选一移动
         if move_str[0] in ["前", "中", "后"]:
-            positions = board.get_fenchs(fench)
-            if move_player == BLACK:
-                positions.reverse()
+            positions = normalized_board.get_fenchs(fench)
+            # 根据原始走子方决定前后顺序
+            if original_move_player == BLACK:
+                positions = list(reversed(positions))
+            
+            move_idx = {"前": -1, "中": 1, "后": 0}
+            pos = positions[move_idx[move_str[0]]]
 
-            move_indices = {"前": -1, "中": 1, "后": 0}
-            pos = positions[move_indices[move_str[0]]]
-
-            # print(piece_fench, move_player, pos, move_str[2:])
-            move = Move.text_move_to_std_move(
-                piece_fench, move_player, pos, move_str[2:]
-            )
+            move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
             if move:
+                if is_flipped:
+                    pos = board.denormalize_pos(pos)
+                    move = board.denormalize_pos(move)
                 return [(pos, move)]
             return None
-        # 多兵选一移动
         return None
+

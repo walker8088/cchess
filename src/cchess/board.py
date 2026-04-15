@@ -257,6 +257,37 @@ class ChessBoard:
         b = self.mirror()
         return self.to_fen() == b.to_fen()
 
+    def normalized(self):
+        """返回规范局面：当前走子方始终视为红方。
+
+        如果当前是黑方走子，返回 swap().flip() 后的棋盘。
+        如果当前是红方走子，返回棋盘的副本。
+
+        返回:
+            ChessBoard: 规范局面棋盘
+        """
+        if self.move_player.color == BLACK:
+            return self.swap().flip()
+        return self.copy()
+
+    def is_normalized(self):
+        """判断当前是否为规范局面（红方走子）。"""
+        return self.move_player.color == RED
+
+    def denormalize_pos(self, pos):
+        """将规范局面坐标转换回原局面。
+
+        规范局面中：原点在左下角，x 向右，y 向上
+        黑方视角：需要 flip 回去，坐标变换为 (8-x, 9-y)
+
+        参数:
+            pos: 规范局面中的坐标 (x, y)
+
+        返回:
+            tuple: 原局面中的坐标
+        """
+        return (8 - pos[0], 9 - pos[1])
+
     def set_move_color(self, color):
         """设置当前走子方为指定颜色（整数或 `ChessPlayer` 内部值）。"""
         self.move_player = ChessPlayer(color)
@@ -373,7 +404,10 @@ class ChessBoard:
         return self.is_valid_move(move_from, move_to)
 
     def is_valid_move(self, pos_from, pos_to):
-        """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度"""
+        """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。
+
+        使用规范局面：将黑方走子转换为红方视角处理，简化棋子类逻辑。
+        """
 
         if not 0 <= pos_to[0] <= 8:
             return False
@@ -395,9 +429,17 @@ class ChessBoard:
             if from_color == to_color:
                 return False
 
-        piece = self.get_piece(pos_from)
+        # 使用规范局面检查棋子走法
+        is_flipped = not self.is_normalized()
+        normalized_board = self.normalized()
 
-        return piece.is_valid_move(pos_to)
+        # 转换坐标到规范局面
+        norm_pos_from = self.denormalize_pos(pos_from) if is_flipped else pos_from
+        norm_pos_to = self.denormalize_pos(pos_to) if is_flipped else pos_to
+
+        piece = normalized_board.get_piece(norm_pos_from)
+
+        return piece.is_valid_move(norm_pos_to) if piece else False
 
     def _move_piece(self, pos_from, pos_to):
         """在内部执行棋子移动（不做合法性检查），并返回被移动的 fench。"""
@@ -496,17 +538,46 @@ class ChessBoard:
         return self.move_player
 
     def create_moves(self):
-        """生成当前走子方的所有候选走法（每个为 (from, to) 元组）。"""
-        for piece in self.get_pieces(self.move_player):
-            yield from piece.create_moves()
+        """生成当前走子方的所有候选走法（每个为 (from, to) 元组）。
+
+        使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
+        """
+        is_flipped = not self.is_normalized()
+        normalized_board = self.normalized()
+
+        for piece in normalized_board.get_pieces(RED):
+            for from_pos, to_pos in piece.create_moves():
+                if is_flipped:
+                    from_pos = self.denormalize_pos(from_pos)
+                    to_pos = self.denormalize_pos(to_pos)
+                yield (from_pos, to_pos)
 
     def create_piece_moves(self, pos):
-        """生成指定位置棋子的所有候选走法。"""
+        """生成指定位置棋子的所有候选走法。
+
+        使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
+        """
         piece = self.get_piece(pos)
-        if piece:
-            _, piece_color = fench_to_species(piece.fench)
-            if piece_color == self.move_player.color:
-                yield from piece.create_moves()
+        if not piece:
+            return
+
+        _, piece_color = fench_to_species(piece.fench)
+        if piece_color != self.move_player.color:
+            return
+
+        is_flipped = not self.is_normalized()
+        normalized_board = self.normalized()
+
+        # 在规范局面中找到对应位置的棋子
+        norm_pos = self.denormalize_pos(pos) if is_flipped else pos
+        norm_piece = normalized_board.get_piece(norm_pos)
+
+        if norm_piece:
+            for from_pos, to_pos in norm_piece.create_moves():
+                if is_flipped:
+                    from_pos = self.denormalize_pos(from_pos)
+                    to_pos = self.denormalize_pos(to_pos)
+                yield (from_pos, to_pos)
 
     def is_checked_move(self, pos_from, pos_to):
         """判断执行给定走子后己方是否处于被将军状态。
