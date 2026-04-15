@@ -16,6 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import annotations
+
 from .common import (
     RED,
     BLACK,
@@ -49,39 +51,71 @@ _v_change_index = (
 class Move:
     """表示一步棋及其在走子树中的关系（含变招、注释等）。"""
 
-    def __init__(self, board, p_from, p_to, is_checking=False):
+    def __init__(self, move_info: MoveInfo, is_checking=False, is_checkmate=False):
         """初始化一个走子对象。
 
-        复制传入的 `board`，记录起点 `p_from` 与终点 `p_to`，并设置
-        是否触发将军等元信息。计算被吃掉的子（若有），构造执行
-        走子后的 `board_done`，并初始化用于走子树和引擎交互的字段。
+        基于 MoveInfo 创建走子记录，包含移动前后棋盘状态。
         """
+        from .board import ChessBoard
 
-        self.board = board.copy()
-        self.p_from = p_from
-        self.p_to = p_to
+        self.move_info = move_info
+        self.p_from = move_info.from_pos
+        self.p_to = move_info.to_pos
         self.is_checking = is_checking
+        self.is_checkmate = is_checkmate
         self.step_index = 0
         self.score = None
         self.annote = ""
         self.parent = None
-
-        if self.is_checking:
-            self.is_checkmate = self.board.is_checkmate()
-        else:
-            self.is_checkmate = False
-
-        self.captured = self.board.get_fench(p_to)
-        self.board_done = board.copy()
-        self.board_done._move_piece(p_from, p_to)
-        self.board_done.next_turn()  # TODO 默认红走一步，黑走一步，对于让先的处理后续考虑
         self.next_move = None
-
         self.variation_next = None
         self.variations_all = [self]
-
         self.move_list_for_engine = []
         self.fen_for_engine = None
+
+        # 延迟计算的棋盘快照
+        self._board_cache = None
+        self._board_done_cache = None
+
+        # 设置被吃棋子
+        self.captured = move_info.captured_fench
+
+    @property
+    def board(self):
+        """移动前的棋盘状态（延迟生成的快照）"""
+        if self._board_cache is None:
+            from .board import ChessBoard
+
+            # 创建新棋盘实例，复制移动前状态
+            b = ChessBoard()
+            b._board = [row[:] for row in self.move_info.board_before]
+            b.move_player = self.move_info.prev_move_player
+            b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
+            # 攻击矩阵缓存保持默认（脏标志为 True 时会被重新计算）
+            self._board_cache = b
+        return self._board_cache
+
+    @property
+    def board_done(self):
+        """移动后的棋盘状态（延迟生成的快照）"""
+        if self._board_done_cache is None:
+            from .board import ChessBoard
+
+            # 基于移动前棋盘创建，应用移动
+            b = ChessBoard()
+            b._board = [row[:] for row in self.move_info.board_before]
+            b.move_player = self.move_info.prev_move_player
+            b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
+
+            # 执行移动
+            moving_fench = b._board[self.p_from[1]][self.p_from[0]]
+            b._board[self.p_to[1]][self.p_to[0]] = moving_fench
+            b._board[self.p_from[1]][self.p_from[0]] = None
+            b._attack_matrix_dirty = True
+            b.move_player = b.move_player.next()
+
+            self._board_done_cache = b
+        return self._board_done_cache
 
     @property
     def move_player(self):
@@ -99,10 +133,21 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        self.board = self.board.mirror()
+        from .board import ChessBoard
+
+        # 镜像棋盘数组
+        temp_board = ChessBoard()
+        temp_board._board = self.move_info.board_before
+        mirrored_board = temp_board.mirror()
+        self.move_info.board_before = mirrored_board._board
+
+        # 更新坐标
         self.p_from = (8 - self.p_from[0], self.p_from[1])
         self.p_to = (8 - self.p_to[0], self.p_to[1])
-        self.board_done = self.board_done.mirror()
+
+        # 清除缓存，让 property 重新生成
+        self._board_cache = None
+        self._board_done_cache = None
 
         for move in self.get_variations():
             move.mirror()
@@ -117,10 +162,21 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        self.board = self.board.flip()
+        from .board import ChessBoard
+
+        # 翻转棋盘数组
+        temp_board = ChessBoard()
+        temp_board._board = self.move_info.board_before
+        flipped_board = temp_board.flip()
+        self.move_info.board_before = flipped_board._board
+
+        # 更新坐标
         self.p_from = (self.p_from[0], 9 - self.p_from[1])
         self.p_to = (self.p_to[0], 9 - self.p_to[1])
-        self.board_done = self.board_done.flip()
+
+        # 清除缓存，让 property 重新生成
+        self._board_cache = None
+        self._board_done_cache = None
 
         for move in self.get_variations():
             move.flip()
@@ -134,8 +190,31 @@ class Move:
         对当前走子、`board_done` 及所有分支和 `next_move` 做视角
         交换，使之从另一方视角表示。
         """
-        self.board = self.board.swap()
-        self.board_done = self.board_done.swap()
+        from .board import ChessBoard
+
+        # 交换棋盘数组（红黑互换）
+        temp_board = ChessBoard()
+        temp_board._board = self.move_info.board_before
+        swapped_board = temp_board.swap()
+        self.move_info.board_before = swapped_board._board
+
+        # 更新移动棋子和被吃棋子的大小写
+        def swap_fench(fench):
+            """swap_fench 函数。"""
+            if fench is None:
+                return None
+            return fench.upper() if fench.islower() else fench.lower()
+
+        self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
+        self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
+
+        # 更新移动前的走子方（交换后切换）
+        self.move_info.prev_move_player = self.move_info.prev_move_player.next()
+
+        # 注意：swap 不改变坐标，只改变棋子大小写
+        # 清除缓存，让 property 重新生成
+        self._board_cache = None
+        self._board_done_cache = None
 
         for move in self.get_variations():
             move.swap()
@@ -213,7 +292,7 @@ class Move:
         # 从链上摘下
         # 找到链表头节点（第一个兄弟节点）
         head = self.variations_all[0]
-        
+
         # 如果要删除的是头节点
         if chess_move == head:
             # 更新链表头为下一个兄弟节点
@@ -234,7 +313,6 @@ class Move:
         # 更新兄弟表到所有的兄弟
         for node in self.get_variations():
             node.variations_all = self.variations_all
-
 
     def append_next_move(self, chess_move):
         """将 `chess_move` 作为当前走子的后继加入走子树。
@@ -599,28 +677,28 @@ class Move:
             except ValueError:
                 target_x = None
 
-            poss = []
+            positions = []
             if target_x is not None:
-                poss = board.get_fenchs_x(fench, target_x)
+                positions = board.get_fenchs_x(fench, target_x)
 
-            if not poss:
-                poss = board.get_fenchs(fench)
+            if not positions:
+                positions = board.get_fenchs(fench)
 
             # 如果是黑方，从玩家视角选取顺序可能相反，保持与其他分支处理一致
             if move_player == BLACK:
-                poss = list(reversed(poss))
+                positions = list(reversed(positions))
 
             # 对兵在同列多子情况做优先级选择
-            if piece_fench == "p" and len(poss) > 1:
+            if piece_fench == "p" and len(positions) > 1:
                 if move_player == RED:
-                    poss.sort(key=lambda p: p[1], reverse=True)
+                    positions.sort(key=lambda p: p[1], reverse=True)
                 else:
-                    poss.sort(key=lambda p: p[1])
+                    positions.sort(key=lambda p: p[1])
 
-            if len(poss) == 0:
+            if len(positions) == 0:
                 return None
 
-            for pos in poss:
+            for pos in positions:
                 move = Move.text_move_to_std_move(
                     piece_fench, move_player, pos, move_str[2:]
                 )
@@ -631,19 +709,20 @@ class Move:
 
         if not multi_pieces:
             # 单子移动
+
             x = _h_level_index[move_player].index(move_str[1])
-            poss = board.get_fenchs_x(fench, x)
+            positions = board.get_fenchs_x(fench, x)
 
             # 无子可走
-            if len(poss) == 0:
+            if len(positions) == 0:
                 return None
 
-            # 同一行选出来多个,这种情况下, 只有士象是可以多个子尝试移动而不用标明前后的
-            if (len(poss) > 1) and (piece_fench not in ["a", "b"]):
+            # 同一行选出来多个，只有士象是可以多个子尝试移动而不用标明前后的
+            if (len(positions) > 1) and (piece_fench not in ["a", "b"]):
                 return None
 
             moves = []
-            for pos in poss:
+            for pos in positions:
                 move = Move.text_move_to_std_move(
                     piece_fench, move_player, pos, move_str[2:]
                 )
@@ -654,12 +733,12 @@ class Move:
 
         # 多选一移动
         if move_str[0] in ["前", "中", "后"]:
-            poss = board.get_fenchs(fench)
+            positions = board.get_fenchs(fench)
             if move_player == BLACK:
-                poss.reverse()
+                positions.reverse()
 
             move_indices = {"前": -1, "中": 1, "后": 0}
-            pos = poss[move_indices[move_str[0]]]
+            pos = positions[move_indices[move_str[0]]]
 
             # print(piece_fench, move_player, pos, move_str[2:])
             move = Move.text_move_to_std_move(

@@ -87,6 +87,7 @@ class ChessPlayer:
     """
 
     def __init__(self, color):
+        """__init__ 方法。"""
         self.color = color
 
     def next(self):
@@ -109,6 +110,7 @@ class ChessPlayer:
         return 3 - self.color
 
     def __str__(self):
+        """__str__ 方法。"""
         return PLAYER[self.color]
 
     def __eq__(self, other):
@@ -121,6 +123,24 @@ class ChessPlayer:
         if isinstance(other, int):
             return self.color == other
         return False
+
+
+# -----------------------------------------------------#
+from dataclasses import dataclass
+from typing import Optional, Tuple, List
+
+
+@dataclass
+class MoveInfo:
+    """记录棋盘移动的增量状态信息，用于撤销操作"""
+
+    from_pos: Tuple[int, int]
+    to_pos: Tuple[int, int]
+    moving_fench: str  # 移动的棋子字符
+    captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
+    prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志
+    prev_move_player: ChessPlayer  # 移动前走子方
+    board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
 
 
 # -----------------------------------------------------#
@@ -144,26 +164,52 @@ class ChessBoard:
         """清空棋盘并将走子方设为未指定（`NO_COLOR`）。"""
         self._board = [[None for x in range(9)] for y in range(10)]
         self.move_player = ChessPlayer(NO_COLOR)
+        # 攻击矩阵缓存
+        self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
+        self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
+        self._attack_matrix_dirty = True
 
     def copy(self):
-        """返回棋盘的深拷贝（用于模拟走子或回溯）。"""
-        return copy.deepcopy(self)
+        """返回棋盘的快照（独立副本）。"""
+        return self.snapshot()
+
+    def snapshot(self):
+        """返回完全独立的棋盘副本（需要时使用）。"""
+        b = self.__class__()
+        b._board = [row[:] for row in self._board]
+        b.move_player = self.move_player
+        b._red_attacks = [row[:] for row in self._red_attacks]
+        b._black_attacks = [row[:] for row in self._black_attacks]
+        b._attack_matrix_dirty = self._attack_matrix_dirty
+        return b
 
     def from_board(self, b):
         """从另一个ChessBoard Copy属性"""
         self._board = b._board
         self.move_player = b.move_player
+        # 复制攻击矩阵缓存（如果存在）
+        if hasattr(b, "_red_attacks"):
+            self._red_attacks = b._red_attacks
+            self._black_attacks = b._black_attacks
+            self._attack_matrix_dirty = b._attack_matrix_dirty
+        else:
+            # 旧版本棋盘没有这些属性，标记为脏
+            self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
+            self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
+            self._attack_matrix_dirty = True
 
     def mirror(self):
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
+        b._attack_matrix_dirty = True
         return b
 
     def flip(self):
         """返回新棋盘: 绕横轴翻转（上下翻转）+ 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[9 - y][8 - x] for x in range(9)] for y in range(10)]
+        b._attack_matrix_dirty = True
         return b
 
     def swap(self):
@@ -174,6 +220,7 @@ class ChessBoard:
         """
 
         def swap_fench(fench):
+            """swap_fench 函数。"""
             if fench is None:
                 return None
             return fench.upper() if fench.islower() else fench.lower()
@@ -184,6 +231,7 @@ class ChessBoard:
         ]
 
         b.move_player = b.move_player.next()
+        b._attack_matrix_dirty = True
 
         return b
 
@@ -228,6 +276,7 @@ class ChessBoard:
         assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
 
         self._board[pos[1]][pos[0]] = fench
+        self._attack_matrix_dirty = True
 
     def pop_fench(self, pos):
         """移除并返回指定位置的棋子（若为空则返回 None）。"""
@@ -235,6 +284,7 @@ class ChessBoard:
 
         fench = self._board[pos[1]][pos[0]]
         self._board[pos[1]][pos[0]] = None
+        self._attack_matrix_dirty = True
         return fench
 
     def get_fench(self, pos):
@@ -254,20 +304,20 @@ class ChessBoard:
 
     def get_fenchs(self, fench):
         """返回棋盘上所有与给定 fench 相同的坐标列表。"""
-        poss = []
+        positions = []
         for x in range(9):
             for y in range(10):
                 if self._board[y][x] == fench:
-                    poss.append((x, y))
-        return poss
+                    positions.append((x, y))
+        return positions
 
     def get_fenchs_x(self, fench, x):
         """返回指定列 x 上匹配 fench 的所有坐标。"""
-        poss = []
+        positions = []
         for y in range(10):
             if self._board[y][x] == fench:
-                poss.append((x, y))
-        return poss
+                positions.append((x, y))
+        return positions
 
     def get_piece(self, pos):
         """返回指定位置的 `Piece` 实例（若有棋子），否则返回 None。"""
@@ -355,8 +405,56 @@ class ChessBoard:
         fench = self._board[pos_from[1]][pos_from[0]]
         self._board[pos_to[1]][pos_to[0]] = fench
         self._board[pos_from[1]][pos_from[0]] = None
+        self._attack_matrix_dirty = True
 
         return fench
+
+    def make_move(self, pos_from, pos_to) -> MoveInfo:
+        """执行移动并返回状态记录，不进行合法性检查"""
+        # 记录移动前状态
+        prev_attack_matrix_dirty = self._attack_matrix_dirty
+        prev_move_player = self.move_player
+        moving_fench = self._board[pos_from[1]][pos_from[0]]
+        captured_fench = self._board[pos_to[1]][pos_to[0]]
+        board_before = [row[:] for row in self._board]  # 深拷贝棋盘数组
+
+        # 执行移动
+        self._move_piece(pos_from, pos_to)
+        # 切换走子方，除非吃掉对方将帅
+        if captured_fench not in ("k", "K"):
+            self.move_player = self.move_player.next()
+
+        # 返回状态记录
+        return MoveInfo(
+            from_pos=pos_from,
+            to_pos=pos_to,
+            moving_fench=moving_fench,
+            captured_fench=captured_fench,
+            prev_attack_matrix_dirty=prev_attack_matrix_dirty,
+            prev_move_player=prev_move_player,
+            board_before=board_before,
+        )
+
+    def unmake_move(self, move_info: MoveInfo) -> None:
+        """根据 MoveInfo 撤销移动，恢复棋盘状态"""
+        # 恢复被吃棋子（如果有）
+        if move_info.captured_fench is not None:
+            self._board[move_info.to_pos[1]][move_info.to_pos[0]] = (
+                move_info.captured_fench
+            )
+        else:
+            self._board[move_info.to_pos[1]][move_info.to_pos[0]] = None
+
+        # 将移动棋子移回原位置
+        self._board[move_info.from_pos[1]][move_info.from_pos[0]] = (
+            move_info.moving_fench
+        )
+
+        # 恢复攻击矩阵脏标志
+        self._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
+
+        # 恢复走子方
+        self.move_player = move_info.prev_move_player
 
     def move(self, pos_from, pos_to, check=True):
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
@@ -364,15 +462,14 @@ class ChessBoard:
         if not self.is_valid_move(pos_from, pos_to):
             return None
 
-        # 保存board移动之前的状态
-        board = self.copy()
-        self._move_piece(pos_from, pos_to)
-        move = Move(board, pos_from, pos_to)
+        # 执行移动并记录状态
+        move_info = self.make_move(pos_from, pos_to)
+        move = Move(move_info)
         if check:
-            if self.is_checking():
-                move.is_checking = True
-                if self.is_checkmate():
-                    move.is_checkmate = True
+            is_checking = self.is_checking()
+            move.is_checking = is_checking
+            # 无论是否将军，都明确设置将死状态
+            move.is_checkmate = is_checking and self.is_checkmate()
 
         return move
 
@@ -415,34 +512,70 @@ class ChessBoard:
         若走子非法，抛出 `CChessError('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
             raise CChessError("Invalid Move")
-        board = self.copy()
-        board._move_piece(pos_from, pos_to)
-        board.move_player = board.move_player.next()
-        return board.is_checking()
+        move_info = self.make_move(pos_from, pos_to)
+        checking = self.is_checking()
+        self.unmake_move(move_info)
+        return checking
 
     def is_checking_move(self, pos_from, pos_to):
         """判断执行该走子后是否对对方形成将军（不切换走子方）。"""
-        board = self.copy()
-        board._move_piece(pos_from, pos_to)
-        return board.is_checking()
+        move_info = self.make_move(pos_from, pos_to)
+        # 临时恢复走子方到移动前，以检查移动是否将军
+        original_player = self.move_player
+        self.move_player = move_info.prev_move_player
+        checking = self.is_checking()
+        # 恢复回切换后的走子方，以便 unmake_move 正确工作
+        self.move_player = original_player
+        self.unmake_move(move_info)
+        return checking
+
+    def _compute_piece_attacks(self, piece):
+        """返回棋子可以攻击到的坐标列表（包括吃子位置）。"""
+        attacks = []
+        for from_pos, to_pos in piece.create_moves():
+            attacks.append(to_pos)
+        return attacks
+
+    def _recompute_attack_matrix(self):
+        """重新计算红黑双方的攻击矩阵，并将脏标志设置为 False。"""
+        # 清空攻击矩阵
+        for y in range(10):
+            for x in range(9):
+                self._red_attacks[y][x] = False
+                self._black_attacks[y][x] = False
+        # 遍历所有棋子，填充攻击矩阵
+        for piece in self.get_pieces():
+            attacks = self._compute_piece_attacks(piece)
+            color = piece.color
+            if color == RED:
+                matrix = self._red_attacks
+            else:
+                matrix = self._black_attacks
+            for x, y in attacks:
+                matrix[y][x] = True
+        self._attack_matrix_dirty = False
 
     def is_checking(self):
         """判断当前走子方是否对对方构成将军（对方王被攻击）。"""
+        if self._attack_matrix_dirty:
+            self._recompute_attack_matrix()
         king = self.get_king(self.move_player.opposite())
         if not king:
             return False
-
-        for piece in self.get_pieces(self.move_player):
-            if piece.is_valid_move((king.x, king.y)):
-                return True
-
-        return False
+        if self.move_player.color == RED:
+            matrix = self._red_attacks
+        else:
+            matrix = self._black_attacks
+        return matrix[king.y][king.x]
 
     def is_checkmate(self):
         """判断当前局面在对方回合是否为将死（无路可走）。"""
-        board = self.copy()
-        board.move_player = board.move_player.next()
-        return board.has_no_legal_moves()
+        original_player = self.move_player
+        self.move_player = self.move_player.next()
+        try:
+            return self.has_no_legal_moves()
+        finally:
+            self.move_player = original_player
 
     def has_no_legal_moves(self):
         """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
@@ -519,9 +652,7 @@ class ChessBoard:
         elif fen1 in ["w", "r"]:
             b.move_player = ChessPlayer(RED)
         else:
-            raise CChessError(
-                f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}"
-            )
+            raise CChessError(f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}")
 
         # 事务性转换
         self.from_board(b)
@@ -639,12 +770,15 @@ class ChessBoard:
             print(s)
 
     def __str__(self):
+        """__str__ 方法。"""
         return self.to_fen()
 
     def __repr__(self):
+        """__repr__ 方法。"""
         return self.to_fen()
 
     def __eq__(self, other):
+        """__eq__ 方法。"""
         if isinstance(other, str):
             return self.to_fen() == other
         if isinstance(other, ChessBoard):
@@ -657,6 +791,7 @@ class ChessBoardOneHot(ChessBoard):
     """基于 `ChessBoard` 的独热编码棋盘表示。"""
 
     def __init__(self, fen="", chess_dict=None):
+        """__init__ 方法。"""
         super().__init__(fen)
         self.__chess_dict = chess_dict
 

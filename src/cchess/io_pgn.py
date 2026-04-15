@@ -15,30 +15,35 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import re
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 
-#from .exception import CChessException
-#from .common import FULL_INIT_FEN
-#from .board import ChessBoard
+# from .exception import CChessException
+# from .common import FULL_INIT_FEN
+# from .board import ChessBoard
 
-#-----------------------------------------------------#
+
+# -----------------------------------------------------#
 class Color(Enum):
     """棋子颜色枚举。"""
+
     RED = "red"
     BLACK = "black"
 
 
 @dataclass
-class Move:
+class PGNMove:
     """表示一个棋步"""
+
     san: str
     annote: Optional[str] = None
-    variations: List['MoveNode'] = None
+    variations: List["MoveNode"] = None
 
     def __post_init__(self):
+        """__post_init__ 方法。"""
         if self.variations is None:
             self.variations = []
 
@@ -46,10 +51,11 @@ class Move:
 @dataclass
 class MoveNode:
     """表示棋步树节点"""
-    move: Move
-    next: Optional['MoveNode'] = None
 
-    def add_variation(self, variation: 'MoveNode'):
+    move: PGNMove
+    next_node: Optional["MoveNode"] = None
+
+    def add_variation(self, variation: "MoveNode"):
         """添加变招"""
         self.move.variations.append(variation)
 
@@ -58,6 +64,7 @@ class PGNGame:
     """表示一局棋"""
 
     def __init__(self):
+        """__init__ 方法。"""
         self.headers: Dict[str, str] = {}
         self.moves: Optional[MoveNode] = None
         self.result: Optional[str] = None
@@ -68,25 +75,26 @@ class PGNGame:
 
     def add_move(self, san: str, annote: Optional[str] = None) -> MoveNode:
         """添加主变招的棋步"""
-        move = Move(san, annote)
+        move = PGNMove(san, annote)
         new_node = MoveNode(move)
 
         if self.moves is None:
             self.moves = new_node
         else:
             current = self.moves
-            while current.next:
-                current = current.next
-            current.next = new_node
+            while current.next_node:
+                current = current.next_node
+            current.next_node = new_node
 
         return new_node
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class PGNParser:
     """PGN解析器"""
 
     def __init__(self):
+        """__init__ 方法。"""
         self.tokens = []
         self.current_token_index = 0
 
@@ -105,59 +113,57 @@ class PGNParser:
                 continue
 
             # 注释
-            if char == '{':
-                annote_end = text.find('}', i + 1)
+            if char == "{":
+                annote_end = text.find("}", i + 1)
                 if annote_end == -1:
                     raise ValueError("未匹配的注释结束符 '}'")
-                annote = text[i + 1:annote_end]
-                tokens.append({'type': 'annote', 'value': annote})
+                annote = text[i + 1 : annote_end]
+                tokens.append({"type": "annote", "value": annote})
                 i = annote_end + 1
                 continue
 
             # 变招开始
-            if char == '(':
-                tokens.append({'type': 'variation_start', 'value': '('})
+            if char == "(":
+                tokens.append({"type": "variation_start", "value": "("})
                 i += 1
                 continue
 
             # 变招结束
-            if char == ')':
-                tokens.append({'type': 'variation_end', 'value': ')'})
+            if char == ")":
+                tokens.append({"type": "variation_end", "value": ")"})
                 i += 1
                 continue
 
             # 棋步编号
             if char.isdigit():
                 j = i
-                while j < length and (text[j].isdigit() or text[j] == '.'):
+                while j < length and (text[j].isdigit() or text[j] == "."):
                     j += 1
                 move_number = text[i:j]
-                if '.' in move_number:
-                    tokens.append({
-                        'type': 'move_number',
-                        'value': move_number
-                    })
+                if "." in move_number:
+                    tokens.append({"type": "move_number", "value": move_number})
                 i = j
                 continue
 
             # 棋步（字母、数字、+、#、=等）
-            if char.isalpha() or char in '+#=':
+            if char.isalpha() or char in "+#=":
                 j = i
-                while j < length and (text[j].isalnum() or text[j] in '+#=.'):
+                while j < length and (text[j].isalnum() or text[j] in "+#=."):
                     j += 1
                 move = text[i:j]
-                tokens.append({'type': 'move', 'value': move})
+                tokens.append({"type": "move", "value": move})
                 i = j
                 continue
 
             # 结果
-            if char in ['1', '0', '½'] and any(c in text[i:i + 3]
-                                               for c in ['-', '/']):
+            if char in ["1", "0", "½"] and any(
+                c in text[i : i + 3] for c in ["-", "/"]
+            ):
                 j = i
-                while j < length and text[j] not in ' \t\n)':
+                while j < length and text[j] not in " \t\n)":
                     j += 1
                 result = text[i:j]
-                tokens.append({'type': 'result', 'value': result})
+                tokens.append({"type": "result", "value": result})
                 i = j
                 continue
 
@@ -184,7 +190,7 @@ class PGNParser:
         if not tokens:
             return None, None
 
-        root = MoveNode(Move("root"))
+        root = MoveNode(PGNMove("root"))
         current_line = [root]
         stack = [current_line]
         current_node = root
@@ -194,35 +200,35 @@ class PGNParser:
         while i < len(tokens):
             token = tokens[i]
 
-            if token['type'] == 'move_number':
+            if token["type"] == "move_number":
                 # 跳过棋步编号
                 pass
 
-            elif token['type'] == 'move':
-                new_node = MoveNode(Move(token['value']))
+            elif token["type"] == "move":
+                new_node = MoveNode(PGNMove(token["value"]))
 
                 if current_node == root:
-                    current_node.next = new_node
+                    current_node.next_node = new_node
                     current_node = new_node
                 else:
-                    current_node.next = new_node
+                    current_node.next_node = new_node
                     current_node = new_node
 
                 current_line.append(new_node)
 
-            elif token['type'] == 'annote':
+            elif token["type"] == "annote":
                 if current_node != root:
-                    current_node.move.annote = token['value']
+                    current_node.move.annote = token["value"]
 
-            elif token['type'] == 'variation_start':
+            elif token["type"] == "variation_start":
                 # 保存当前主线
                 stack.append(current_line.copy())
                 # 开始新变招
-                variation_root = MoveNode(Move("variation_root"))
+                variation_root = MoveNode(PGNMove("variation_root"))
                 current_line = [variation_root]
                 current_node = variation_root
 
-            elif token['type'] == 'variation_end':
+            elif token["type"] == "variation_end":
                 # 结束当前变招，回到主线
                 variation_nodes = current_line[1:]  # 跳过根节点
                 if variation_nodes:
@@ -234,7 +240,7 @@ class PGNParser:
                     variation_head = variation_nodes[0]
                     current_var = variation_head
                     for node in variation_nodes[1:]:
-                        current_var.next = node
+                        current_var.next_node = node
                         current_var = node
 
                     parent_node.move.variations.append(variation_head)
@@ -242,13 +248,14 @@ class PGNParser:
                 current_line = stack.pop()
                 current_node = current_line[-1]
 
-            elif token['type'] == 'result':
-                result = token['value']
+            elif token["type"] == "result":
+                result = token["value"]
                 break
 
             i += 1
 
-        return root.next, result
+        return root.next_node, result
+
     # pylint: enable=too-many-locals,too-many-branches
 
     def parse(self, pgn_text):
@@ -256,7 +263,7 @@ class PGNParser:
         game = PGNGame()
 
         # 分割头和棋步部分
-        lines = pgn_text.split('\n')
+        lines = pgn_text.split("\n")
         header_lines = []
         move_lines = []
 
@@ -266,7 +273,7 @@ class PGNParser:
             if not stripped:
                 continue
 
-            if in_headers and stripped.startswith('['):
+            if in_headers and stripped.startswith("["):
                 header_lines.append(stripped)
             else:
                 in_headers = False
@@ -276,7 +283,7 @@ class PGNParser:
         game.headers = self.parse_headers(header_lines)
 
         # 解析棋步
-        moves_text = ' '.join(move_lines)
+        moves_text = " ".join(move_lines)
         tokens = self.tokenize(moves_text)
         moves, result = self.parse_moves(tokens)
 
@@ -287,23 +294,24 @@ class PGNParser:
 
     def read_file(self, file_name):
         """从文件读取 PGN 文本并解析为 `PGNGame`。"""
-        with open(file_name, 'r', encoding='utf-8') as f:
+        with open(file_name, "r", encoding="utf-8") as f:
             txts = f.read()
             return self.parse(txts)
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class PGNWriter:
     """PGN写入器"""
 
     def __init__(self, game):
+        """__init__ 方法。"""
         self.indent_level = 0
         self.game = game
 
     def write_headers(self):
         """写入头信息"""
         lines = []
-        standard_headers = ['Event', 'Date', 'Round', 'Red', 'Black', 'Result']
+        standard_headers = ["Event", "Date", "Round", "Red", "Black", "Result"]
 
         lines.append('[Game "Chinese Chess"]')
         # 先写入标准头信息
@@ -313,17 +321,17 @@ class PGNWriter:
                 lines.append(f'[{header} "{value}"]')
 
         # 写入其他头信息
-        #for header, value in game.headers.items():
+        # for header, value in game.headers.items():
         #    if header not in standard_headers:
         #        lines.append(f'[{header} "{value}"]')
 
-        #写入初始局面
+        # 写入初始局面
         lines.append(f'[Fen "{self.game.init_board.to_fen()}"]')
-        #写入棋局注释
+        # 写入棋局注释
         if self.game.annote:
-            lines.append(f'{{{self.game.annote}}}')
+            lines.append(f"{{{self.game.annote}}}")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def write_moves(self, move, curr_sibling_index=0):
         """递归写入棋步"""
@@ -338,7 +346,7 @@ class PGNWriter:
 
             # 添加棋步编号（红方）
             if current_move_number % 2 == 0:
-                lines.append(f"\n{current_move_number//2+1}.")
+                lines.append(f"\n{current_move_number // 2 + 1}.")
 
             # 添加棋步
             lines.append(current.to_text())
@@ -347,7 +355,7 @@ class PGNWriter:
             if current.annote:
                 lines.append(f"{{{current.annote}}}")
 
-            #只有主变才处理变招，避免循环递归
+            # 只有主变才处理变招，避免循环递归
             if curr_sibling_index == 0:
                 for index, variation in enumerate(current.get_variations()):
                     lines.append("\n(")
@@ -357,7 +365,7 @@ class PGNWriter:
 
             current = current.next_move
 
-        return ' '.join(lines)
+        return " ".join(lines)
 
     def write_lines(self):
         """写入完整的PGN"""
@@ -372,17 +380,17 @@ class PGNWriter:
         lines.append(moves_text)
 
         # 添加结果
-        if 'result' in self.game.info:
+        if "result" in self.game.info:
             lines.append(f"  {self.game.info['result']}")
-            lines.append('  =========')
+            lines.append("  =========")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def save(self, file_name):
         """将生成的 PGN 文本保存到文件。"""
-        with open(file_name, 'w', encoding='utf-8') as f:
+        with open(file_name, "w", encoding="utf-8") as f:
             lines = self.write_lines()
             f.write(lines)
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#

@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import os
 import time
 import enum
@@ -30,31 +31,31 @@ from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, R
 from .board import ChessBoard
 from .exception import EngineErrorException
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 logger = logging.getLogger(__name__)
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 
 
 def is_int(s: str) -> bool:
     """
     判断字符串是否表示一个有效的整数。
-    
+
     支持：
     - 正整数（如 "123"）
     - 负整数（如 "-456"）
     - 零（如 "0"、"-0"、"+0"）
     - 可选的正负号（"+" 或 "-"）
     - 首尾空格（如 " 123 "）
-    
+
     不支持：
     - 小数（如 "123.45"）
     - 前导零（如 "00123"，除了 "0" 本身）
     - 其他非数字字符
-    
+
     参数：
         s (str): 要判断的字符串
-    
+
     返回：
         bool: True 表示是有效整数字符串，False 表示不是
     """
@@ -63,18 +64,18 @@ def is_int(s: str) -> bool:
         return False
 
     # 处理可选的正负号
-    if s[0] in ('+', '-'):
+    if s[0] in ("+", "-"):
         s = s[1:]
 
     if not s:
         return False  # 如 "+" 或 "-"
 
     # 单独处理 "0"
-    if s == '0':
+    if s == "0":
         return True
 
     # 不允许前导零
-    if s[0] == '0':
+    if s[0] == "0":
         return False
 
     # 其余部分必须全为数字
@@ -97,21 +98,25 @@ def parse_engine_info_to_dict(s):
     current_key = None
     info = s.split()
     for index, part in enumerate(info):
-        if part in ['info', 'cp', 'lowerbound',
-                    'upperbound']:  #略过这些关键字,不影响分析结果
+        if part in [
+            "info",
+            "cp",
+            "lowerbound",
+            "upperbound",
+        ]:  # 略过这些关键字,不影响分析结果
             continue
-        if part == 'pv':  ##遇到pv就是到尾了，剩下的都是招法
-            result['moves'] = info[index + 1:]
+        if part == "pv":  ##遇到pv就是到尾了，剩下的都是招法
+            result["moves"] = info[index + 1 :]
             break
 
         if current_key is None:
             current_key = part
-            #替换key
-            if current_key == 'bestmove':
-                current_key = 'move'
+            # 替换key
+            if current_key == "bestmove":
+                current_key = "move"
             continue
 
-        if part == 'mate':  # score mate 这样的字符串，后滑一个关键字
+        if part == "mate":  # score mate 这样的字符串，后滑一个关键字
             current_key = part
             continue
 
@@ -124,10 +129,11 @@ def parse_engine_info_to_dict(s):
     return result
 
 
-#------------------------------------------------------------------------------
-#Engine status
+# ------------------------------------------------------------------------------
+# Engine status
 class EngineStatus(enum.IntEnum):
     """引擎运行状态枚举。"""
+
     ERROR = 0
     BOOTING = 1
     READY = 2
@@ -139,14 +145,14 @@ class EngineStatus(enum.IntEnum):
     BOARD_RESET = 8
 
 
-#ON_POSIX = 'posix' in sys.builtin_module_names
+# ON_POSIX = 'posix' in sys.builtin_module_names
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 class Engine(Thread):  # pylint: disable=too-many-instance-attributes
     """棋力引擎线程封装，负责进程通信与消息解析。"""
 
-    def __init__(self, exec_path=''):
+    def __init__(self, exec_path=""):
         """Engine 进程包装对象。
 
         该类继承自 `Thread`，用于启动和管理外部棋力引擎进程，
@@ -170,7 +176,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         self.pin = None
         self.pout = None
         self.perr = None
-        self.engine_out_queque = Queue()
+        self.engine_out_queue = Queue()
 
         self.last_fen = None
         self.last_go = None
@@ -203,7 +209,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
 
         try:
             startupinfo = None
-            if os.name == 'nt':
+            if os.name == "nt":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(  # pylint: disable=consider-using-with
@@ -225,7 +231,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         self.pin = self.process.stdin
         self.pout = self.process.stdout
         self.perr = self.process.stderr
-        self.engine_out_queque = Queue()
+        self.engine_out_queue = Queue()
         self.engine_status = EngineStatus.BOOTING
 
         self._send_cmd(self.init_cmd())
@@ -248,9 +254,9 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         if params is None:
             params = {}
 
-        self._send_cmd(f'position fen {fen}')
+        self._send_cmd(f"position fen {fen}")
         param_list = [f"{key} {value}" for key, value in params.items()]
-        go_cmd = "go " + ' '.join(param_list)
+        go_cmd = "go " + " ".join(param_list)
 
         ok = self._send_cmd(go_cmd)
         if not ok:
@@ -280,7 +286,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             name (str): 选项名
             value: 选项值
         """
-        cmd = f'setoption name {name} value {value}'
+        cmd = f"setoption name {name} value {value}"
         self._send_cmd(cmd)
 
     def _send_cmd(self, cmd_str):
@@ -299,21 +305,26 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         # 提前检查进程是否已退出，避免写入时管道损坏
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+            raise EngineErrorException(
+                f"程序异常退出，退出码：{self.process.returncode}"
+            )
 
         try:
-            cmd_bytes = f'{cmd_str}\r\n'
+            cmd_bytes = f"{cmd_str}\r\n"
             self.pin.write(cmd_bytes)
             self.pin.flush()
         except (BrokenPipeError, OSError, ValueError) as e:
             logger.error("Send cmd [%s] ERROR: %s", cmd_str, e)
             raise EngineErrorException(
-                f"程序异常退出，退出码：{self.process.returncode}") from e
+                f"程序异常退出，退出码：{self.process.returncode}"
+            ) from e
 
         # 写入后再次检查进程状态
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(f"程序异常退出，退出码：{self.process.returncode}")
+            raise EngineErrorException(
+                f"程序异常退出，退出码：{self.process.returncode}"
+            )
 
         return True
 
@@ -349,7 +360,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         """请求引擎停止正在进行的搜索并读取可能的返回信息。
         发送 'stop' 后尝试多次拉取动作以确保引擎的响应被消费。
         """
-        self._send_cmd('stop')
+        self._send_cmd("stop")
         time.sleep(0.1)
         self.get_action()
         time.sleep(0.1)
@@ -363,21 +374,21 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         while self.running:
             self.run_once()
 
-    #run_once 在线程中运行
+    # run_once 在线程中运行
     def run_once(self):
         """读取一行引擎输出并放入内部队列。"""
-        #readline 会阻塞
+        # readline 会阻塞
         output = self.pout.readline().strip()
         if len(output) > 0:
-            self.engine_out_queque.put(output)
+            self.engine_out_queue.put(output)
 
     def _merge_cached_score(self, move_info):
         """将缓存中的评分字段合并到 bestmove 结果。"""
-        move_key = move_info['move']
+        move_key = move_info["move"]
         if move_key not in self.score_dict:
             return
 
-        for key in ['score', 'mate', 'moves', 'seldepth', 'time']:
+        for key in ["score", "mate", "moves", "seldepth", "time"]:
             if key in self.score_dict[move_key]:
                 move_info[key] = self.score_dict[move_key][key]
 
@@ -389,33 +400,33 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             "action": "info",
         }
 
-        if resp_id == 'nobestmove':
-            move_info["action"] = 'dead'
+        if resp_id == "nobestmove":
+            move_info["action"] = "dead"
             return move_info
 
-        if resp_id == 'bestmove':
-            if out_list[1] in ['null', 'resign', '(none)']:
-                move_info["action"] = 'dead'
+        if resp_id == "bestmove":
+            if out_list[1] in ["null", "resign", "(none)"]:
+                move_info["action"] = "dead"
                 return move_info
-            if out_list[1] == 'draw':
-                move_info["action"] = 'draw'
+            if out_list[1] == "draw":
+                move_info["action"] = "draw"
                 return move_info
 
-            move_info["action"] = 'bestmove'
+            move_info["action"] = "bestmove"
             move_info.update(parse_engine_info_to_dict(output))
             self._merge_cached_score(move_info)
             return move_info
 
-        if resp_id == 'info' and out_list[1] == "depth":
+        if resp_id == "info" and out_list[1] == "depth":
             # info depth 6 score 4 pv b0c2 b9c7  c3c4 h9i7 c2d4 h7e7
             # info depth 1 seldepth 1 multipv 1 score cp -58
             # nodes 28 nps 14000 hashfull 0 tbhits 0 time 2 pv f5c5
-            move_info['action'] = 'info_move'
+            move_info["action"] = "info_move"
             move_info.update(parse_engine_info_to_dict(output))
-            if 'moves' in move_info:
-                move_key = move_info['moves'][0]
+            if "moves" in move_info:
+                move_key = move_info["moves"][0]
                 self.score_dict[move_key] = move_info
-            elif 'currmove' not in move_info:
+            elif "currmove" not in move_info:
                 logger.info(move_info)
 
         return move_info
@@ -424,16 +435,16 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         """处理 BOOTING 状态消息。"""
         move_info = {}
         if resp_id == "id":
-            self.ids[out_list[1]] = ' '.join(out_list[2:])
+            self.ids[out_list[1]] = " ".join(out_list[2:])
         elif resp_id == "option":
             self.options.append(output)
 
         if resp_id == self.ok_resp():
             self.engine_status = EngineStatus.READY
-            move_info["action"] = 'ready'
+            move_info["action"] = "ready"
         return move_info
 
-    #handle_msg_once 在前台运行
+    # handle_msg_once 在前台运行
     def _handle_msg_once(self):
         """处理引擎输出队列中的一条消息（非阻塞）。
 
@@ -443,13 +454,13 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         """
 
         try:
-            output = self.engine_out_queque.get_nowait()
+            output = self.engine_out_queue.get_nowait()
         except Empty:
             return False
 
         logger.debug("<-- %s", output)
 
-        if output in ['bye', '']:  #stop pipe
+        if output in ["bye", ""]:  # stop pipe
             self.process.terminate()
             return True
 
@@ -468,14 +479,16 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         return True
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 class UcciEngine(Engine):
     """UCCI 协议引擎适配器。"""
 
     def init_cmd(self):
+        """init_cmd 方法。"""
         return "ucci"
 
     def ok_resp(self):
+        """ok_resp 方法。"""
         return "ucciok"
 
 
@@ -483,26 +496,28 @@ class UciEngine(Engine):
     """UCI 协议引擎适配器。"""
 
     def init_cmd(self):
+        """init_cmd 方法。"""
         return "uci"
 
     def ok_resp(self):
+        """ok_resp 方法。"""
         return "uciok"
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def action_mirror(action):
     """镜像 action 中的走法字段（move/ponder/moves）。"""
     for key in action:
-        if key in ['move', 'ponder']:
+        if key in ["move", "ponder"]:
             action[key] = iccs_mirror(action[key])
-        if key in ['moves']:
+        if key in ["moves"]:
             action[key] = iccs_list_mirror(action[key])
 
     return action
 
 
-#------------------------------------------------------------------------------
-class FenCache():
+# ------------------------------------------------------------------------------
+class FenCache:
     """FEN 到引擎动作信息的简单缓存。"""
 
     def __init__(self):
@@ -514,7 +529,7 @@ class FenCache():
             need_save (bool): 是否需要保存到文件
         """
         self.fen_dict = {}
-        self.cache_file = ''
+        self.cache_file = ""
         self.need_save = False
 
     def get(self, fen):
@@ -524,11 +539,11 @@ class FenCache():
         否则返回 (None, None)。
         """
         if fen in self.fen_dict:
-            return (self.fen_dict[fen], '')
+            return (self.fen_dict[fen], "")
 
         f_mirror = fen_mirror(fen)
         if f_mirror in self.fen_dict:
-            return (self.fen_dict[f_mirror], 'mirror')
+            return (self.fen_dict[f_mirror], "mirror")
 
         return (None, None)
 
@@ -545,15 +560,15 @@ class FenCache():
         if info is None:
             return None
 
-        actions = list(sorted(info.values(), key=lambda item: item['score']))
+        actions = list(sorted(info.values(), key=lambda item: item["score"]))
 
         if move_color == RED:
             act = actions[0]
         else:
             act = actions[-1]
 
-        if state == 'mirror':
-            #print('mirror')
+        if state == "mirror":
+            # print('mirror')
             return action_mirror(act)
 
         return act
@@ -565,7 +580,7 @@ class FenCache():
         标记 `need_save` 表示需要写回文件。
         """
 
-        iccs = action['move']
+        iccs = action["move"]
         if fen in self.fen_dict:
             self.fen_dict[fen][iccs] = action
             return True
@@ -592,7 +607,7 @@ class FenCache():
         if not Path(cache_file).is_file():
             self.fen_dict = {}
         else:
-            with open(cache_file, 'r', encoding='utf-8') as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 self.fen_dict = json.load(f)
 
         self.cache_file = cache_file
@@ -600,13 +615,13 @@ class FenCache():
 
     def save(self):
         """将内存缓存以 JSON 格式写回 `cache_file` 并清除 `need_save` 标志。"""
-        with open(self.cache_file, 'w', encoding='utf-8') as f:
+        with open(self.cache_file, "w", encoding="utf-8") as f:
             json.dump(self.fen_dict, f)
         self.need_save = False
 
 
-#------------------------------------------------------------------------------
-class EngineManager():
+# ------------------------------------------------------------------------------
+class EngineManager:
     """引擎加载与查询的门面管理器。"""
 
     def __init__(self, fen_cache=None):
@@ -654,7 +669,7 @@ class EngineManager():
         if not ok:
             return False
 
-        #self.engine_options = options
+        # self.engine_options = options
         for name, value in options.items():
             self.engine.set_option(name, value)
 
@@ -685,7 +700,7 @@ class EngineManager():
         board = ChessBoard(fen)
         self.engine.go_from(fen, self.go_params)
 
-        #print('go:', fen, self.go_params)
+        # print('go:', fen, self.go_params)
         while True:
             action = self.engine.get_action()
 
@@ -693,36 +708,36 @@ class EngineManager():
                 time.sleep(0.2)
                 continue
 
-            action_id = action['action']
-            if action_id == 'info_move':
-                #print(action['raw_msg'])
+            action_id = action["action"]
+            if action_id == "info_move":
+                # print(action['raw_msg'])
                 pass
-            elif action_id in ['dead']:
-                print(action['raw_msg'])
-                action['score'] = 30000
-                action['mate'] = 0
+            elif action_id in ["dead"]:
+                print(action["raw_msg"])
+                action["score"] = 30000
+                action["mate"] = 0
                 return action
 
-            elif action_id == 'bestmove':
+            elif action_id == "bestmove":
                 iccs = action["move"]
                 move = board.move_iccs(iccs)
                 if move is None:
                     continue
 
                 board.next_turn()
-                #fen_next = board.to_fen()
-                #action['move_text'] = move.to_text()
+                # fen_next = board.to_fen()
+                # action['move_text'] = move.to_text()
 
-                #本步的得分是下一步的负值
-                for key in ['score', 'mate']:
+                # 本步的得分是下一步的负值
+                for key in ["score", "mate"]:
                     if key in action:
                         action[key] = -action[key]
 
-                #再处理出现mate时，score没分的情况
-                if ('score' not in action) and ('mate' in action):
-                    mate_v = action['mate']
+                # 再处理出现mate时，score没分的情况
+                if ("score" not in action) and ("mate" in action):
+                    mate_v = action["mate"]
                     mate_flag = 1 if mate_v > 0 else -1
-                    action['score'] = (30000 - abs(mate_v)) * mate_flag
+                    action["score"] = (30000 - abs(mate_v)) * mate_flag
 
                 self.cache.save_action(fen, action)
 
@@ -734,4 +749,4 @@ class EngineManager():
         time.sleep(0.5)
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------

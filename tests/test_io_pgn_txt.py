@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from cchess.io_pgn import Move, MoveNode, PGNGame, PGNParser, PGNWriter
+from cchess.io_pgn import PGNMove, MoveNode, PGNGame, PGNParser, PGNWriter
 from cchess.read_txt import (
     decode_txt_pos,
     read_from_txt,
@@ -37,20 +37,20 @@ from cchess.game import Game
 
 class TestMove:
     def test_move_creation(self):
-        m = Move("兵七进一")
+        m = PGNMove("兵七进一")
         assert m.san == "兵七进一"
         assert m.annote is None
 
     def test_move_with_annote(self):
-        m = Move("炮二平五", "开局")
+        m = PGNMove("炮二平五", "开局")
         assert m.san == "炮二平五"
         assert m.annote == "开局"
 
 
 class TestMoveNode:
     def test_add_variation(self):
-        root = MoveNode(Move("root"))
-        node = MoveNode(Move("兵七进一"))
+        root = MoveNode(PGNMove("root"))
+        node = MoveNode(PGNMove("兵七进一"))
         root.add_variation(node)
         assert len(root.move.variations) == 1
         assert root.move.variations[0].move.san == "兵七进一"
@@ -72,8 +72,8 @@ class TestPGNGame:
         game = PGNGame()
         game.add_move("兵七进一")
         game.add_move("马８进７")
-        assert game.moves.next is not None
-        assert game.moves.next.move.san == "马８进７"
+        assert game.moves.next_node is not None
+        assert game.moves.next_node.move.san == "马８进７"
 
     def test_add_move_with_annote(self):
         game = PGNGame()
@@ -152,8 +152,8 @@ class TestPGNParser:
         moves, _result = self.parser.parse_moves(tokens)
         assert moves is not None
         assert moves.move.san == "兵七进一"
-        assert moves.next is not None
-        assert moves.next.move.san == "马８进７"
+        assert moves.next_node is not None
+        assert moves.next_node.move.san == "马８进７"
 
     def test_parse_moves_empty(self):
         moves, _result = self.parser.parse_moves([])

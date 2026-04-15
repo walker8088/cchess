@@ -116,12 +116,13 @@ class King(Piece):
     def is_valid_move(self, pos_to):
         """判断将/帅移动到目标位置是否合法（含白脸将规则）。"""
         k2 = self.board.get_king(opposite_color(self.color))
-        if (
-            (self.x == k2.x)
-            and (pos_to[1] == k2.y)
-            and (self.board.count_y_line_in(self.x, self.y, k2.y) == 0)
-        ):
-            return True
+        if k2 is not None:
+            if (
+                (self.x == k2.x)
+                and (pos_to[1] == k2.y)
+                and (self.board.count_y_line_in(self.x, self.y, k2.y) == 0)
+            ):
+                return True
 
         if not self.is_valid_pos(pos_to):
             return False
@@ -132,7 +133,7 @@ class King(Piece):
 
     def create_moves(self):
         """生成将/帅所有可能的合法走子。"""
-        poss = [
+        positions = [
             (self.x + 1, self.y),
             (self.x - 1, self.y),
             (self.x, self.y + 1),
@@ -140,10 +141,11 @@ class King(Piece):
         ]
 
         k2 = self.board.get_king(opposite_color(self.color))
-        poss.append((k2.x, k2.y))
+        if k2 is not None:
+            positions.append((k2.x, k2.y))
 
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in poss]
+        moves = [(curr_pos, to_pos) for to_pos in positions]
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -170,14 +172,14 @@ class Advisor(Piece):
 
     def create_moves(self):
         """生成士/仕所有可能的合法走子。"""
-        poss = [
+        positions = [
             (self.x + 1, self.y + 1),
             (self.x + 1, self.y - 1),
             (self.x - 1, self.y + 1),
             (self.x - 1, self.y - 1),
         ]
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in poss]
+        moves = [(curr_pos, to_pos) for to_pos in positions]
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -210,14 +212,14 @@ class Bishop(Piece):
 
     def create_moves(self):
         """生成象/相所有可能的合法走子。"""
-        poss = [
+        positions = [
             (self.x + 2, self.y + 2),
             (self.x + 2, self.y - 2),
             (self.x - 2, self.y + 2),
             (self.x - 2, self.y - 2),
         ]
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in poss]
+        moves = [(curr_pos, to_pos) for to_pos in positions]
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -242,7 +244,7 @@ class Knight(Piece):
 
     def create_moves(self):
         """生成马所有可能的合法走子。"""
-        poss = [
+        positions = [
             (self.x + 1, self.y + 2),
             (self.x + 1, self.y - 2),
             (self.x - 1, self.y + 2),
@@ -253,7 +255,7 @@ class Knight(Piece):
             (self.x - 2, self.y - 1),
         ]
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in poss]
+        moves = [(curr_pos, to_pos) for to_pos in positions]
         return filter(self.board.is_valid_move_t, moves)
 
 
@@ -389,7 +391,7 @@ class Pawn(Piece):
         # 检查前进位置是否在棋盘范围内
         if 0 <= forward[0] < 9 and 0 <= forward[1] <= 9:
             moves.append((curr_pos, forward))
-        
+
         # 如果已经过河，可以左右移动
         if self.is_crossed_river():
             left = (self.x - 1, self.y)
@@ -398,5 +400,5 @@ class Pawn(Piece):
                 moves.append((curr_pos, left))
             if 0 <= right[0] < 9:
                 moves.append((curr_pos, right))
-        
+
         return filter(self.board.is_valid_move_t, moves)
