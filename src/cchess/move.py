@@ -18,8 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .common import (
-    RED,
     BLACK,
     fench_to_species,
     fench_to_text,
@@ -27,6 +28,9 @@ from .common import (
     pos2iccs,
     half2full,
 )
+
+if TYPE_CHECKING:
+    from .board import MoveInfo
 
 # pylint: disable=too-many-instance-attributes,too-many-public-methods
 # pylint: disable=too-many-return-statements,too-many-branches,too-many-statements
@@ -56,7 +60,6 @@ class Move:
 
         基于 MoveInfo 创建走子记录，包含移动前后棋盘状态。
         """
-        from .board import ChessBoard
 
         self.move_info = move_info
         self.p_from = move_info.from_pos
@@ -295,8 +298,6 @@ class Move:
 
         # 如果要删除的是头节点
         if chess_move == head:
-            # 更新链表头为下一个兄弟节点
-            new_head = head.variation_next
             # 将原头节点从链表中断开
             chess_move.variation_next = None
             # 注意：variations_all 已经更新，head 已经变为新的头节点

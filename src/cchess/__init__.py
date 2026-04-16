@@ -54,29 +54,60 @@ from .read_cbr import read_from_cbr, read_from_cbl  # noqa: F401
 
 __all__ = [
     # exception
-    'CChessError', 'EngineErrorException',
+    "CChessError",
+    "EngineErrorException",
     # common
-    'NO_COLOR', 'RED', 'BLACK',
-    'fench_to_species', 'fench_to_text',
-    'iccs2pos', 'pos2iccs',
-    'iccs_mirror', 'iccs_list_mirror', 'iccs_flip', 'iccs_swap',
-    'fen_mirror', 'fen_flip', 'fen_swap',
-    'get_move_color', 'get_fen_type', 'get_fen_type_detail',
-    'FULL_INIT_BOARD', 'FULL_INIT_FEN', 'EMPTY_BOARD', 'EMPTY_FEN',
+    "NO_COLOR",
+    "RED",
+    "BLACK",
+    "fench_to_species",
+    "fench_to_text",
+    "iccs2pos",
+    "pos2iccs",
+    "iccs_mirror",
+    "iccs_list_mirror",
+    "iccs_flip",
+    "iccs_swap",
+    "fen_mirror",
+    "fen_flip",
+    "fen_swap",
+    "get_move_color",
+    "get_fen_type",
+    "get_fen_type_detail",
+    "FULL_INIT_BOARD",
+    "FULL_INIT_FEN",
+    "EMPTY_BOARD",
+    "EMPTY_FEN",
     # piece
-    'Piece', 'King', 'Advisor', 'Bishop', 'Knight', 'Rook', 'Cannon', 'Pawn',
+    "Piece",
+    "King",
+    "Advisor",
+    "Bishop",
+    "Knight",
+    "Rook",
+    "Cannon",
+    "Pawn",
     # board
-    'ChessBoard', 'ChessPlayer',
+    "ChessBoard",
+    "ChessPlayer",
     # move
-    'Move',
+    "Move",
     # game
-    'Game',
+    "Game",
     # engine
-    'EngineStatus', 'UcciEngine', 'UciEngine', 'EngineManager', 'FenCache',
+    "EngineStatus",
+    "UcciEngine",
+    "UciEngine",
+    "EngineManager",
+    "FenCache",
     # io
-    'read_from_xqf', 'read_from_pgn', 'read_from_cbf', 'read_from_cbr', 'read_from_cbl',
+    "read_from_xqf",
+    "read_from_pgn",
+    "read_from_cbf",
+    "read_from_cbr",
+    "read_from_cbl",
     # version
-    '__version__',
+    "__version__",
 ]
 
 __version__ = "1.26.1"

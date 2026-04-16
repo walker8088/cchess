@@ -16,7 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import copy
+from dataclasses import dataclass
+from typing import Optional, Tuple, List
 import json
 
 from .exception import CChessError
@@ -125,10 +126,6 @@ class ChessPlayer:
 
 
 # -----------------------------------------------------#
-from dataclasses import dataclass
-from typing import Optional, Tuple, List
-
-
 @dataclass
 class MoveInfo:
     """记录棋盘移动的增量状态信息，用于撤销操作"""

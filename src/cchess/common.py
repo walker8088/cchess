@@ -22,15 +22,16 @@ from collections import OrderedDict
 # pylint: disable=missing-function-docstring,import-outside-toplevel
 
 # -----------------------------------------------------#
-from .constants import (
-    NO_COLOR,
+# 从 constants 导入并重新导出，方便其他模块使用
+from .constants import (  # noqa: F401
+    NO_COLOR,  # 导出给 __init__.py 使用
     RED,
     BLACK,
-    EMPTY_BOARD,
-    FULL_INIT_BOARD,
-    EMPTY_FEN,
-    FULL_INIT_FEN,
-)  # noqa: F401
+    EMPTY_BOARD,  # 导出给 __init__.py 使用
+    FULL_INIT_BOARD,  # 导出给 __init__.py 使用
+    EMPTY_FEN,  # 导出给 __init__.py 使用
+    FULL_INIT_FEN,  # game.py, read_pgn.py, read_txt.py 使用
+)
 
 
 def opposite_color(color):
