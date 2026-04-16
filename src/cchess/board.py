@@ -296,6 +296,11 @@ class ChessBoard:
         """返回当前走子方的颜色整数值。"""
         return self.move_player.color
 
+    def _validate_pos(self, pos):
+        """验证坐标是否在棋盘范围内。"""
+        if not (0 <= pos[0] <= 8 and 0 <= pos[1] <= 9):
+            raise ValueError(f"Position {pos} out of board bounds (0-8, 0-9)")
+
     def put_fench(self, fench, pos):
         """在指定位置放置棋子（不做合法性检查）。
 
@@ -303,15 +308,13 @@ class ChessBoard:
             fench (str): 棋子字符，例如 'K' 或 'p'
             pos (tuple): 目标坐标 (x, y)
         """
-        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-
+        self._validate_pos(pos)
         self._board[pos[1]][pos[0]] = fench
         self._attack_matrix_dirty = True
 
     def pop_fench(self, pos):
         """移除并返回指定位置的棋子（若为空则返回 None）。"""
-        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-
+        self._validate_pos(pos)
         fench = self._board[pos[1]][pos[0]]
         self._board[pos[1]][pos[0]] = None
         self._attack_matrix_dirty = True
@@ -319,8 +322,7 @@ class ChessBoard:
 
     def get_fench(self, pos):
         """返回指定位置的棋子字符。"""
-        assert (0 <= pos[0] <= 8) and (0 <= pos[1] <= 9)
-
+        self._validate_pos(pos)
         return self._board[pos[1]][pos[0]]
 
     def get_fench_color(self, pos):
