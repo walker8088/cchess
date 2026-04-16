@@ -34,6 +34,9 @@ _bishop_pos = (
     ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)),
 )
 
+# 滑走棋子方向常量（车、炮）
+_SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
+
 
 # -----------------------------------------------------#
 def abs_diff(x, y):
@@ -97,19 +100,23 @@ class Piece:
             合法走子列表
         """
         moves = []
-        curr_pos = (self.x, self.y)
+        curr_x, curr_y = self.x, self.y
 
         for dx, dy in directions:
-            x, y = self.x + dx, self.y + dy
+            x, y = curr_x + dx, curr_y + dy
 
             while 0 <= x < 9 and 0 <= y <= 9:
-                target = self.board.get_fench((x, y))
+                target = self.board._board[y][x]
 
                 if target is None:
-                    moves.append((curr_pos, (x, y)))
+                    moves.append(((curr_x, curr_y), (x, y)))
                 else:
-                    if self.board.get_fench_color((x, y)) != self.color:
-                        moves.append((curr_pos, (x, y)))
+                    # 直接判断颜色：大写=RED，小写=BLACK
+                    is_enemy = (target.isupper() and self.color == BLACK) or (
+                        target.islower() and self.color == RED
+                    )
+                    if is_enemy:
+                        moves.append(((curr_x, curr_y), (x, y)))
                     break
 
                 x += dx
@@ -321,14 +328,7 @@ class Rook(Piece):
 
     def create_moves(self):
         """生成车所有可能的合法走子。"""
-        return self._create_sliding_moves(
-            [
-                (0, 1),  # 上
-                (0, -1),  # 下
-                (1, 0),  # 右
-                (-1, 0),  # 左
-            ]
-        )
+        return self._create_sliding_moves(_SLIDING_DIRECTIONS)
 
 
 # -----------------------------------------------------#
@@ -366,20 +366,20 @@ class Cannon(Piece):
         2. 吃子时：必须隔一个棋子（炮架）才能吃
         """
         moves = []
-        curr_pos = (self.x, self.y)
+        curr_x, curr_y = self.x, self.y
 
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            x, y = self.x + dx, self.y + dy
+        for dx, dy in _SLIDING_DIRECTIONS:
+            x, y = curr_x + dx, curr_y + dy
             screen_found = False  # 是否找到炮架
 
             while 0 <= x < 9 and 0 <= y <= 9:
-                target = self.board.get_fench((x, y))
+                target = self.board._board[y][x]
 
                 if not screen_found:
                     # 寻找炮架阶段
                     if target is None:
                         # 空位，可以移动
-                        moves.append((curr_pos, (x, y)))
+                        moves.append(((curr_x, curr_y), (x, y)))
                     else:
                         # 遇到第一个棋子，作为炮架
                         screen_found = True
@@ -387,8 +387,11 @@ class Cannon(Piece):
                     # 炮架后阶段
                     if target is not None:
                         # 遇到第二个棋子，可以吃（仅限敌方）
-                        if self.board.get_fench_color((x, y)) != self.color:
-                            moves.append((curr_pos, (x, y)))
+                        is_enemy = (target.isupper() and self.color == BLACK) or (
+                            target.islower() and self.color == RED
+                        )
+                        if is_enemy:
+                            moves.append(((curr_x, curr_y), (x, y)))
                         # 无论是否吃子，都停止扫描
                         break
 
