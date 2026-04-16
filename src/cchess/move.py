@@ -640,10 +640,11 @@ class Move:
             return (new_x, p_from[1] - diff_y)
 
         return None
+
     @staticmethod
     def from_text(board, move_str):
         """解析中文走法字符串，返回标准化的走子 ((p_from, p_to))。
-        
+
         使用规范局面：将黑方走子转换为红方视角处理棋子移动逻辑。
         但 move_str 解析仍需根据原始走子方选择索引数组。
         """
@@ -665,13 +666,9 @@ class Move:
 
         # 保存原始走子方，用于索引数组选择
         original_move_player = board.move_player.color
-        
-        # 获取规范局面
-        is_flipped = not board.is_normalized()
-        normalized_board = board.normalized()
-        
-        # 在规范局面下获取棋子 fench
-        fench = text_to_fench(piece_name, RED)
+
+        # 在原始棋盘上获取棋子 fench
+        fench = text_to_fench(piece_name, original_move_player)
         if not fench:
             return None
 
@@ -681,31 +678,32 @@ class Move:
             chinese_digit = move_str[0]
             target_x = None
             try:
-                # 根据原始走子方选择索引数组
                 target_x = _h_level_index[original_move_player].index(chinese_digit)
             except ValueError:
                 target_x = None
 
             positions = []
             if target_x is not None:
-                positions = normalized_board.get_fenchs_x(fench, target_x)
+                positions = board.get_fenchs_x(fench, target_x)
 
             if not positions:
-                positions = normalized_board.get_fenchs(fench)
+                positions = board.get_fenchs(fench)
 
             if piece_fench == "p" and len(positions) > 1:
-                # 规范局面下：兵选择 y 最大的（最靠前的）
-                positions.sort(key=lambda p: p[1], reverse=True)
+                # 黑方兵选择 y 最小的（最靠前的），红方兵选择 y 最大的
+                if original_move_player == BLACK:
+                    positions.sort(key=lambda p: p[1])
+                else:
+                    positions.sort(key=lambda p: p[1], reverse=True)
 
             if len(positions) == 0:
                 return None
 
             for pos in positions:
-                move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, original_move_player, pos, move_str[2:]
+                )
                 if move:
-                    if is_flipped:
-                        pos = board.denormalize_pos(pos)
-                        move = board.denormalize_pos(move)
                     return [(pos, move)]
 
             return None
@@ -713,7 +711,7 @@ class Move:
         if not multi_pieces:
             # 根据原始走子方选择索引数组
             x = _h_level_index[original_move_player].index(move_str[1])
-            positions = normalized_board.get_fenchs_x(fench, x)
+            positions = board.get_fenchs_x(fench, x)
 
             if len(positions) == 0:
                 return None
@@ -723,30 +721,27 @@ class Move:
 
             moves = []
             for pos in positions:
-                move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, original_move_player, pos, move_str[2:]
+                )
                 if move:
-                    if is_flipped:
-                        pos = board.denormalize_pos(pos)
-                        move = board.denormalize_pos(move)
                     moves.append((pos, move))
 
             return moves
 
         if move_str[0] in ["前", "中", "后"]:
-            positions = normalized_board.get_fenchs(fench)
+            positions = board.get_fenchs(fench)
             # 根据原始走子方决定前后顺序
             if original_move_player == BLACK:
                 positions = list(reversed(positions))
-            
+
             move_idx = {"前": -1, "中": 1, "后": 0}
             pos = positions[move_idx[move_str[0]]]
 
-            move = Move.text_move_to_std_move(piece_fench, original_move_player, pos, move_str[2:])
+            move = Move.text_move_to_std_move(
+                piece_fench, original_move_player, pos, move_str[2:]
+            )
             if move:
-                if is_flipped:
-                    pos = board.denormalize_pos(pos)
-                    move = board.denormalize_pos(move)
                 return [(pos, move)]
             return None
         return None
-

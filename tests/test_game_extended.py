@@ -127,7 +127,7 @@ class TestGameExtended:
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.move_text("车九进一")
         game.append_first_move(move1)
-        board.next_turn()
+        # Note: move_text already switches turns, so no need to call next_turn()
         move2 = board.move_text("炮2平5")
         game.append_next_move(move2)
 

@@ -404,10 +404,7 @@ class ChessBoard:
         return self.is_valid_move(move_from, move_to)
 
     def is_valid_move(self, pos_from, pos_to):
-        """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。
-
-        使用规范局面：将黑方走子转换为红方视角处理，简化棋子类逻辑。
-        """
+        """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。"""
 
         if not 0 <= pos_to[0] <= 8:
             return False
@@ -429,17 +426,10 @@ class ChessBoard:
             if from_color == to_color:
                 return False
 
-        # 使用规范局面检查棋子走法
-        is_flipped = not self.is_normalized()
-        normalized_board = self.normalized()
-
-        # 转换坐标到规范局面
-        norm_pos_from = self.denormalize_pos(pos_from) if is_flipped else pos_from
-        norm_pos_to = self.denormalize_pos(pos_to) if is_flipped else pos_to
-
-        piece = normalized_board.get_piece(norm_pos_from)
-
-        return piece.is_valid_move(norm_pos_to) if piece else False
+        # 直接使用当前棋盘的 piece 检查
+        # 注：不使用规范化，因为规范化会改变棋子颜色（swap），导致判断复杂
+        piece = self.get_piece(pos_from)
+        return piece.is_valid_move(pos_to) if piece else False
 
     def _move_piece(self, pos_from, pos_to):
         """在内部执行棋子移动（不做合法性检查），并返回被移动的 fench。"""
