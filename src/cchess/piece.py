@@ -50,8 +50,10 @@ def middle_p(x, y):
 class Piece:
     """棋子基类，封装棋子在棋盘上的位置、类型与颜色等通用属性。"""
 
+    __slots__ = ["board", "fench", "species", "color", "x", "y"]
+
     def __init__(self, board, fench, pos):
-        """初始化棋子，记录所属棋盘、FEN字符、种类与颜色及坐标。"""
+        """初始化棋子，记录所属棋盘、FEN 字符、种类与颜色及坐标。"""
         self.board = board
         self.fench = fench
         self.species, self.color = fench_to_species(fench)
@@ -141,6 +143,8 @@ class Piece:
 class King(Piece):
     """将/帅棋子，只能在九宫格内移动。"""
 
+    __slots__ = ()
+
     def is_valid_pos(self, pos):
         """判断位置是否在己方九宫格内。"""
         if not super().is_valid_pos(pos):
@@ -198,6 +202,8 @@ class King(Piece):
 class Advisor(Piece):
     """士/仕棋子，只能在九宫格内斜走。"""
 
+    __slots__ = ()
+
     def is_valid_pos(self, pos):
         """判断位置是否在己方九宫格内的士位上。"""
         if not super().is_valid_pos(pos):
@@ -223,6 +229,8 @@ class Advisor(Piece):
 # 象
 class Bishop(Piece):
     """象/相棋子，走田字，不能过河。"""
+
+    __slots__ = ()
 
     def is_valid_pos(self, pos):
         """判断位置是否在己方半场内的象位上。"""
@@ -255,6 +263,8 @@ class Bishop(Piece):
 # 马
 class Knight(Piece):
     """马棋子，走日字，有蹩马腿限制。"""
+
+    __slots__ = ()
 
     def is_valid_move(self, pos_to):
         """判断马走日字到目标位置是否合法（含蹩马腿检查）。"""
@@ -292,6 +302,8 @@ class Knight(Piece):
 class Rook(Piece):
     """车棋子，沿直线行走，不能越子。"""
 
+    __slots__ = ()
+
     def is_valid_move(self, pos_to):
         """判断车直线移动到目标位置是否合法（不能越子）。"""
         if self.x != pos_to[0]:
@@ -323,6 +335,8 @@ class Rook(Piece):
 # 炮
 class Cannon(Piece):
     """炮棋子，直行不越子，吃子需隔一子（炮架）。"""
+
+    __slots__ = ()
 
     def is_valid_move(self, pos_to):
         """判断炮移动到目标位置是否合法（直行不越子，吃子需隔一子）。"""
@@ -388,6 +402,8 @@ class Cannon(Piece):
 # 兵/卒
 class Pawn(Piece):
     """兵/卒棋子，未过河前只能前进，过河后可左右移动。"""
+
+    __slots__ = ()
 
     def is_valid_pos(self, pos):
         """判断位置是否在兵的合法活动范围内（不能后退）。"""

@@ -176,9 +176,15 @@ def text_to_fench(text, color):
     return fench.lower() if color == BLACK else fench.upper()
 
 
+# 缓存 fench 到 (species, color) 的映射，避免重复计算
+_SPECIES_CACHE = {}
+
+
 def fench_to_species(fen_ch):
     """fench_to_species 函数。"""
-    return fen_ch.lower(), BLACK if fen_ch.islower() else RED
+    if fen_ch not in _SPECIES_CACHE:
+        _SPECIES_CACHE[fen_ch] = (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
+    return _SPECIES_CACHE[fen_ch]
 
 
 # -----------------------------------------------------#
