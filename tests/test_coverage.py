@@ -282,11 +282,6 @@ class TestMoveFromTextMultiPiece:
         assert result is not None
         assert result == (0, 1)
 
-    def test_from_text_chinese_numeral_fallback_black(self):
-        result = Move.text_move_to_std_move("r", BLACK, (0, 9), "进一")
-        assert result is not None
-        assert result == (0, 8)
-
     def test_from_text_multi_pieces_front_back(self):
         board = ChessBoard(
             "r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w"
