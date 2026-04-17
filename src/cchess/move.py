@@ -50,18 +50,101 @@ _v_change_index = (
     ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９"),
 )
 
-# 中文数字到全角数字映射
-_ZH_TO_FULL = {
-    "一": "1",
-    "二": "2",
-    "三": "3",
-    "四": "4",
-    "五": "5",
-    "六": "6",
-    "七": "7",
-    "八": "8",
-    "九": "9",
+# 中文数字到半角数字映射
+_ZH_TO_HALF = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
 }
+
+# 半角数字到中文数字映射
+_HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
+
+
+def _convert_digit_format(digit_char, move_side):
+    """将数字字符转换为指定走子方的索引数组格式。
+
+    参数:
+        digit_char: 数字字符（中文、半角或全角）
+        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
+
+    返回:
+        str: 转换后的数字字符，无法转换返回 None
+    """
+    # 已经是目标格式
+    try:
+        _h_level_index[move_side].index(digit_char)
+        return digit_char
+    except ValueError:
+        pass
+
+    # 半角数字
+    if digit_char.isdigit():
+        half_digit = int(digit_char)
+        if half_digit == 0 or half_digit > 9:
+            return None
+        if move_side == 1:  # RED: 半角转中文
+            return _HALF_TO_ZH[half_digit]
+        else:  # BLACK: 半角转全角
+            return chr(0xFF10 + half_digit)
+
+    # 中文数字
+    if digit_char in _ZH_TO_HALF:
+        half_digit = _ZH_TO_HALF[digit_char]
+        if move_side == 2:  # BLACK: 中文转全角
+            return chr(0xFF10 + half_digit)
+        else:  # RED: 保持中文
+            return _HALF_TO_ZH[half_digit]
+
+    return None
+
+
+def _get_index(digit_char, move_side, use_v_index=False):
+    """获取数字字符在索引数组中的位置。
+
+    参数:
+        digit_char: 数字字符（中文、半角或全角）
+        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
+        use_v_index: True 使用_v_change_index，False 使用_h_level_index
+
+    返回:
+        int: 索引位置 (0-9)，找不到返回 None
+    """
+    index_array = _v_change_index if use_v_index else _h_level_index
+
+    try:
+        return index_array[move_side].index(digit_char)
+    except ValueError:
+        pass
+
+    # 尝试转换格式后查找
+    converted = _convert_digit_format(digit_char, move_side)
+    if converted:
+        try:
+            return index_array[move_side].index(converted)
+        except ValueError:
+            pass
+
+    return None
+
+
+def _get_digit_index(digit_char, move_side):
+    """获取数字字符在列索引数组中的位置。
+
+    参数:
+        digit_char: 数字字符（中文、半角或全角）
+        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
+
+    返回:
+        int: 列索引 (0-8)，找不到返回 None
+    """
+    return _get_index(digit_char, move_side, use_v_index=False)
 
 
 def _get_v_index(step_digit, move_side):
@@ -74,139 +157,25 @@ def _get_v_index(step_digit, move_side):
     返回:
         int: 步数差值，找不到返回 None
     """
-    try:
-        return _v_change_index[move_side].index(step_digit)
-    except ValueError:
-        # 半角数字
-        if step_digit.isdigit():
-            half_digit = int(step_digit)
-            if move_side == 1:  # RED: 半角转中文
-                chinese_digits = [
-                    None,
-                    "一",
-                    "二",
-                    "三",
-                    "四",
-                    "五",
-                    "六",
-                    "七",
-                    "八",
-                    "九",
-                ]
-                if half_digit < len(chinese_digits):
-                    try:
-                        return _v_change_index[move_side].index(
-                            chinese_digits[half_digit]
-                        )
-                    except ValueError:
-                        pass
-            else:  # BLACK: 半角转全角
-                fullwidth_digit = chr(0xFF10 + half_digit)
-                try:
-                    return _v_change_index[move_side].index(fullwidth_digit)
-                except ValueError:
-                    pass
-        # 中文数字转全角（用于 BLACK）
-        if step_digit in _ZH_TO_FULL:
-            half_digit_str = _ZH_TO_FULL[step_digit]
-            if move_side == 2:  # BLACK: 半角转全角
-                fullwidth_digit = chr(0xFF10 + int(half_digit_str))
-            else:  # RED: 使用中文数字
-                chinese_digits = [
-                    None,
-                    "一",
-                    "二",
-                    "三",
-                    "四",
-                    "五",
-                    "六",
-                    "七",
-                    "八",
-                    "九",
-                ]
-                half_digit = int(half_digit_str)
-                if half_digit < len(chinese_digits):
-                    fullwidth_digit = chinese_digits[half_digit]
-                else:
-                    return None
-            try:
-                return _v_change_index[move_side].index(fullwidth_digit)
-            except ValueError:
-                pass
-        return None
+    return _get_index(step_digit, move_side, use_v_index=True)
 
 
-def _get_digit_index(digit_char, move_side):
-    """获取数字字符在索引数组中的位置。
+def _get_target_x(digit_char, move_side):
+    """Get target column index, handling BLACK's reversed indexing.
 
     参数:
         digit_char: 数字字符（中文、半角或全角）
-        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
+        move_side: 走子方
 
     返回:
-        int: 列索引 (0-8)，找不到返回 None
+        int: 目标列索引 (0-8)，无法解析返回 None
     """
-    try:
-        return _h_level_index[move_side].index(digit_char)
-    except ValueError:
-        # 半角数字
-        if digit_char.isdigit():
-            half_digit = int(digit_char)
-            if move_side == 1:  # RED: 使用中文数字
-                # 半角数字转中文：1->一，2->二，...
-                chinese_digits = [
-                    None,
-                    "一",
-                    "二",
-                    "三",
-                    "四",
-                    "五",
-                    "六",
-                    "七",
-                    "八",
-                    "九",
-                ]
-                if half_digit < len(chinese_digits):
-                    try:
-                        return _h_level_index[move_side].index(
-                            chinese_digits[half_digit]
-                        )
-                    except ValueError:
-                        pass
-            else:  # BLACK: 使用全角数字
-                fullwidth_digit = chr(0xFF10 + half_digit)
-                try:
-                    return _h_level_index[move_side].index(fullwidth_digit)
-                except ValueError:
-                    pass
-        # 中文数字转全角（用于 BLACK）
-        if digit_char in _ZH_TO_FULL:
-            half_digit_str = _ZH_TO_FULL[digit_char]
-            if move_side == 2:  # BLACK: 半角转全角
-                fullwidth_digit = chr(0xFF10 + int(half_digit_str))
-            else:  # RED: 使用中文数字
-                chinese_digits = [
-                    None,
-                    "一",
-                    "二",
-                    "三",
-                    "四",
-                    "五",
-                    "六",
-                    "七",
-                    "八",
-                    "九",
-                ]
-                half_digit = int(half_digit_str)
-                if half_digit < len(chinese_digits):
-                    fullwidth_digit = chinese_digits[half_digit]
-                else:
-                    return None
-            try:
-                return _h_level_index[move_side].index(fullwidth_digit)
-            except ValueError:
-                pass
+    digit_index = _get_digit_index(digit_char, move_side)
+    if digit_index is None:
         return None
+    if move_side == BLACK:
+        return 8 - digit_index
+    return digit_index
 
 
 def _advisor_move(move_side, p_from, move_str):
@@ -220,18 +189,12 @@ def _advisor_move(move_side, p_from, move_str):
     返回:
         tuple: 目标坐标 (x, y)
     """
-    # move_str 格式：'进 6'，其中 move_str[0] 是方向，move_str[1:] 是目标列
     direction = move_str[0]
     target_digit = move_str[1:].strip()
 
-    digit_index = _get_digit_index(target_digit, move_side)
-    if digit_index is None:
+    new_x = _get_target_x(target_digit, move_side)
+    if new_x is None:
         return None
-
-    new_x = digit_index
-    # 黑方列索引需要反转
-    if move_side == BLACK:
-        new_x = 8 - new_x
 
     diff_y = -1 if direction == "进" else 1
     if move_side == BLACK:
@@ -251,18 +214,12 @@ def _bishop_move(move_side, p_from, move_str):
     返回:
         tuple: 目标坐标 (x, y)
     """
-    # move_str 格式：'进 5'，其中 move_str[0] 是方向，move_str[1:] 是目标列
     direction = move_str[0]
     target_digit = move_str[1:].strip()
 
-    digit_index = _get_digit_index(target_digit, move_side)
-    if digit_index is None:
+    new_x = _get_target_x(target_digit, move_side)
+    if new_x is None:
         return None
-
-    new_x = digit_index
-    # 黑方列索引需要反转
-    if move_side == BLACK:
-        new_x = 8 - new_x
 
     diff_y = -2 if direction == "进" else 2
     if move_side == BLACK:
@@ -282,18 +239,12 @@ def _knight_move(move_side, p_from, move_str):
     返回:
         tuple: 目标坐标 (x, y)
     """
-    # move_str 格式：'进 5'，其中 move_str[0] 是方向，move_str[1:] 是目标列
     direction = move_str[0]
     target_digit = move_str[1:].strip()
 
-    digit_index = _get_digit_index(target_digit, move_side)
-    if digit_index is None:
+    new_x = _get_target_x(target_digit, move_side)
+    if new_x is None:
         return None
-
-    new_x = digit_index
-    # 黑方列索引需要反转
-    if move_side == BLACK:
-        new_x = 8 - new_x
 
     diff_x = abs(p_from[0] - new_x)
 
@@ -302,7 +253,6 @@ def _knight_move(move_side, p_from, move_str):
     else:
         diff_y = [-3, -2, -1][diff_x]
 
-    # 红方马前进是 y 增加，黑方相反
     diff_y = -diff_y
     if move_side == BLACK:
         diff_y = -diff_y
@@ -405,6 +355,11 @@ class Move:
         """返回此走子的 ICCS 格式字符串表示。"""
         return self.to_iccs()
 
+    def _clear_caches(self):
+        """Clear cached board snapshots to force regeneration."""
+        self._board_cache = None
+        self._board_done_cache = None
+
     def mirror(self):
         """水平镜像当前走子及其所有子节点（就地修改）。
 
@@ -414,19 +369,15 @@ class Move:
         """
         from .board import ChessBoard
 
-        # 镜像棋盘数组
         temp_board = ChessBoard()
         temp_board._board = self.move_info.board_before
         mirrored_board = temp_board.mirror()
         self.move_info.board_before = mirrored_board._board
 
-        # 更新坐标
         self.p_from = (8 - self.p_from[0], self.p_from[1])
         self.p_to = (8 - self.p_to[0], self.p_to[1])
 
-        # 清除缓存，让 property 重新生成
-        self._board_cache = None
-        self._board_done_cache = None
+        self._clear_caches()
 
         for move in self.get_variations():
             move.mirror()
@@ -443,19 +394,15 @@ class Move:
         """
         from .board import ChessBoard
 
-        # 翻转棋盘数组
         temp_board = ChessBoard()
         temp_board._board = self.move_info.board_before
         flipped_board = temp_board.flip()
         self.move_info.board_before = flipped_board._board
 
-        # 更新坐标
         self.p_from = (self.p_from[0], 9 - self.p_from[1])
         self.p_to = (self.p_to[0], 9 - self.p_to[1])
 
-        # 清除缓存，让 property 重新生成
-        self._board_cache = None
-        self._board_done_cache = None
+        self._clear_caches()
 
         for move in self.get_variations():
             move.flip()
@@ -471,13 +418,11 @@ class Move:
         """
         from .board import ChessBoard
 
-        # 交换棋盘数组（红黑互换）
         temp_board = ChessBoard()
         temp_board._board = self.move_info.board_before
         swapped_board = temp_board.swap()
         self.move_info.board_before = swapped_board._board
 
-        # 更新移动棋子和被吃棋子的大小写
         def swap_fench(fench):
             """swap_fench 函数。"""
             if fench is None:
@@ -487,13 +432,9 @@ class Move:
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
         self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
 
-        # 更新移动前的走子方（交换后切换）
         self.move_info.prev_move_side = self.move_info.prev_move_side.next()
 
-        # 注意：swap 不改变坐标，只改变棋子大小写
-        # 清除缓存，让 property 重新生成
-        self._board_cache = None
-        self._board_done_cache = None
+        self._clear_caches()
 
         for move in self.get_variations():
             move.swap()
