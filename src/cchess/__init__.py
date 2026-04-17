@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .exception import CChessError, EngineErrorException  # noqa: F401
+from .exception import CChessError, EngineError  # noqa: F401
 from .common import (  # noqa: F401
     NO_COLOR,
     RED,
@@ -46,6 +46,7 @@ from .board import ChessBoard, ChessPlayer  # noqa: F401
 from .move import Move  # noqa: F401
 from .game import Game  # noqa: F401
 from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache  # noqa: F401
+from .engine_async import AsyncEngine, play_move, analyse_position  # noqa: F401
 
 from .io_xqf import read_from_xqf  # noqa: F401
 from .read_pgn import read_from_pgn  # noqa: F401
@@ -55,7 +56,7 @@ from .read_cbr import read_from_cbr, read_from_cbl  # noqa: F401
 __all__ = [
     # exception
     "CChessError",
-    "EngineErrorException",
+    "EngineError",
     # common
     "NO_COLOR",
     "RED",
@@ -100,6 +101,9 @@ __all__ = [
     "UciEngine",
     "EngineManager",
     "FenCache",
+    "AsyncEngine",
+    "play_move",
+    "analyse_position",
     # io
     "read_from_xqf",
     "read_from_pgn",
