@@ -32,6 +32,7 @@ class TestPGN:
     def test_base(self):
         game = Game.read_from(Path("data", "test.pgn"))
         moves = game.dump_text_moves()
+        print(moves)
         assert len(moves[0]) == 25
         move_line = ",".join(moves[0])
         assert (

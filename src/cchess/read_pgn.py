@@ -140,7 +140,9 @@ def __get_steps(game, lines):
 
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
 
-    piece_chars = set("\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06")  # 马车炮兵士相将
+    piece_chars = set(
+        "\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06\u8c61\u5352"
+    )  # 马车炮兵士相将士象卒
     direction_chars = set("\u8fdb\u9000\u5e73")  # 进退平
 
     for line in lines:
@@ -201,7 +203,8 @@ def __get_steps(game, lines):
                 else:
                     move = board.move_text(it)
                 if move is None:
-                    return game
+                    # 解析失败，跳过此着法继续解析
+                    continue
 
                 game.append_next_move(move)
 

@@ -190,7 +190,7 @@ def _get_v_index(step_digit, move_side):
 
 
 def _get_target_x(digit_char, move_side):
-    """Get target column index, handling BLACK's reversed indexing.
+    """Get target column index.
 
     参数:
         digit_char: 数字字符（中文、半角或全角）
@@ -202,8 +202,6 @@ def _get_target_x(digit_char, move_side):
     digit_index = _get_digit_index(digit_char, move_side)
     if digit_index is None:
         return None
-    if move_side == BLACK:
-        return 8 - digit_index
     return digit_index
 
 
@@ -288,20 +286,15 @@ def _knight_move(move_side, p_from, move_str):
 
     diff_y_magnitude = 2 if diff_x == 1 else 1
 
+    # Calculate y-coordinate
+    # For RED: 进 = y increases (diff_y > 0), 退 = y decreases (diff_y < 0)
+    # For BLACK: 进 = y decreases (diff_y < 0), 退 = y increases (diff_y > 0)
     if direction == "进":
-        diff_y = -diff_y_magnitude
-    else:
-        diff_y = diff_y_magnitude
+        diff_y = diff_y_magnitude if move_side == RED else -diff_y_magnitude
+    else:  # 退
+        diff_y = -diff_y_magnitude if move_side == RED else diff_y_magnitude
 
-    diff_y = -diff_y
-    if move_side == BLACK:
-        diff_y = -diff_y
-
-    diff_y = -diff_y
-    if move_side == BLACK:
-        diff_y = -diff_y
-
-    return (new_x, p_from[1] - diff_y)
+    return (new_x, p_from[1] + diff_y)
 
 
 def _king_rook_cannon_pawn_move(move_side, p_from, move_str):
@@ -866,8 +859,8 @@ class Move:
     def from_text(board, move_str):
         """解析中文走法字符串，返回标准化的走子 ((p_from, p_to))。
 
-        使用规范局面：检测走子方后，黑方走子转换为红方视角处理。
-        所有移动解析统一使用 RED 索引数组。
+        根据数字类型检测走子方：中文数字=RED，阿拉伯数字=BLACK。
+        直接在原始棋盘上查找棋子，不使用规范局面转换。
         """
         move_str = move_str.replace(" ", "")
 
@@ -891,53 +884,47 @@ class Move:
         if work_side == 0:
             work_side = RED
 
-        use_normalized = work_side == BLACK
-        work_board = board.normalized() if use_normalized else board.copy()
-
-        fench = text_to_fench(piece_name, RED)
+        fench = text_to_fench(piece_name, work_side)
         if not fench:
             return None
 
         piece_fench = fench.lower()
 
         if multi_lines:
-            chinese_digit = move_str[0]
-            target_x = None
-            try:
-                target_x = _h_level_index[RED].index(chinese_digit)
-            except ValueError:
-                target_x = None
+            digit_char = move_str[0]
+            target_x = _get_digit_index(digit_char, work_side)
 
             positions = []
             if target_x is not None:
-                positions = work_board.get_fenchs_x(fench, target_x)
+                positions = board.get_fenchs_x(fench, target_x)
 
             if not positions:
-                positions = work_board.get_fenchs(fench)
+                positions = board.get_fenchs(fench)
 
             if piece_fench == "p" and len(positions) > 1:
-                positions.sort(key=lambda p: p[1], reverse=True)
+                if work_side == RED:
+                    positions.sort(key=lambda p: p[1], reverse=True)
+                else:
+                    positions.sort(key=lambda p: p[1])
 
             if len(positions) == 0:
                 return None
 
             for pos in positions:
-                move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, work_side, pos, move_str[2:]
+                )
                 if move:
-                    if use_normalized:
-                        pos_orig = board.denormalize_pos(pos)
-                        move_orig = board.denormalize_pos(move)
-                        return [(pos_orig, move_orig)]
                     return [(pos, move)]
 
             return None
 
         if not multi_pieces:
             digit_char = move_str[1]
-            x = _get_digit_index(digit_char, RED)
+            x = _get_digit_index(digit_char, work_side)
             if x is None:
                 return None
-            positions = work_board.get_fenchs_x(fench, x)
+            positions = board.get_fenchs_x(fench, x)
 
             if len(positions) == 0:
                 return None
@@ -947,29 +934,24 @@ class Move:
 
             moves = []
             for pos in positions:
-                move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
+                move = Move.text_move_to_std_move(
+                    piece_fench, work_side, pos, move_str[2:]
+                )
                 if move:
-                    if use_normalized:
-                        pos_orig = board.denormalize_pos(pos)
-                        move_orig = board.denormalize_pos(move)
-                        moves.append((pos_orig, move_orig))
-                    else:
-                        moves.append((pos, move))
+                    moves.append((pos, move))
 
             return moves
 
         if move_str[0] in ["前", "中", "后"]:
-            positions = work_board.get_fenchs(fench)
+            positions = board.get_fenchs(fench)
 
             move_idx = {"前": -1, "中": 1, "后": 0}
+            if work_side == BLACK:
+                positions.sort(key=lambda p: p[1])
             pos = positions[move_idx[move_str[0]]]
 
-            move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
+            move = Move.text_move_to_std_move(piece_fench, work_side, pos, move_str[2:])
             if move:
-                if use_normalized:
-                    pos_orig = board.denormalize_pos(pos)
-                    move_orig = board.denormalize_pos(move)
-                    return [(pos_orig, move_orig)]
                 return [(pos, move)]
             return None
         return None

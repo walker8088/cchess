@@ -122,7 +122,6 @@ class Game:  # pylint: disable=too-many-public-methods
                 m = board.move_iccs(iccs)
                 if m is None:
                     raise ValueError(f"{index}_{step_no}_{iccs} {','.join(move_line)}")
-                board.next_turn()
 
         return True
 
