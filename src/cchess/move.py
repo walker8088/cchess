@@ -196,6 +196,9 @@ def _advisor_move(move_side, p_from, move_str):
     if new_x is None:
         return None
 
+    if abs(new_x - p_from[0]) != 1:
+        return None
+
     diff_y = -1 if direction == "进" else 1
     if move_side == BLACK:
         diff_y = -diff_y
@@ -219,6 +222,9 @@ def _bishop_move(move_side, p_from, move_str):
 
     new_x = _get_target_x(target_digit, move_side)
     if new_x is None:
+        return None
+
+    if abs(new_x - p_from[0]) != 2:
         return None
 
     diff_y = -2 if direction == "进" else 2
@@ -248,10 +254,19 @@ def _knight_move(move_side, p_from, move_str):
 
     diff_x = abs(p_from[0] - new_x)
 
+    if diff_x not in (1, 2):
+        return None
+
+    diff_y_magnitude = 2 if diff_x == 1 else 1
+
     if direction == "进":
-        diff_y = [3, 2, 1][diff_x]
+        diff_y = -diff_y_magnitude
     else:
-        diff_y = [-3, -2, -1][diff_x]
+        diff_y = diff_y_magnitude
+
+    diff_y = -diff_y
+    if move_side == BLACK:
+        diff_y = -diff_y
 
     diff_y = -diff_y
     if move_side == BLACK:
