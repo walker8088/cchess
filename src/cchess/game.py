@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import pathlib
 import datetime as dt
 from collections import defaultdict
@@ -26,12 +27,12 @@ from .board import ChessBoard
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
 result_str = ("未知", "红胜", "黑胜", "平局")
 
-#存储类型
+# 存储类型
 BOOK_UNKNOWN, BOOK_ALL, BOOK_BEGIN, BOOK_MIDDLE, BOOK_END = range(5)
 book_type_str = ("未知", "全局", "开局", "中局", "残局")
 
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 class Game:  # pylint: disable=too-many-public-methods
     """棋局对象，维护初始棋盘、走子树及元信息。"""
 
@@ -50,20 +51,20 @@ class Game:  # pylint: disable=too-many-public-methods
         else:
             self.init_board = ChessBoard()
         self.annote = annote
-        #初始节点
+        # 初始节点
         self.first_move = None
-        #最后节点，追加新的move时，从这个节点后追加
+        # 最后节点，追加新的move时，从这个节点后追加
         self.last_move = None
 
         self.info = defaultdict(str)
-        #默认一个分支
-        self.info['branchs'] = 1
+        # 默认一个分支
+        self.info["branchs"] = 1
 
     def __str__(self):
         """返回游戏信息的字符串表示（通常用于调试）。"""
         return str(self.info)
 
-    #当第一步走法就有变招的时候，需多次调用这个函数
+    # 当第一步走法就有变招的时候，需多次调用这个函数
     def append_first_move(self, chess_move):
         """将 `chess_move` 添加为游戏的第一个走子节点或作为分支加入。
 
@@ -80,7 +81,7 @@ class Game:  # pylint: disable=too-many-public-methods
 
         return chess_move
 
-    #给当前的最后招法节点增加后续节点，如果已经有后续节点了，则增加后续节点的兄弟节点
+    # 给当前的最后招法节点增加后续节点，如果已经有后续节点了，则增加后续节点的兄弟节点
     def append_next_move(self, chess_move):
         """将 `chess_move` 作为当前游戏的下一个走子追加。
 
@@ -120,8 +121,7 @@ class Game:  # pylint: disable=too-many-public-methods
             for step_no, iccs in enumerate(move_line):
                 m = board.move_iccs(iccs)
                 if m is None:
-                    raise ValueError(
-                        f"{index}_{step_no}_{iccs} {','.join(move_line)}")
+                    raise ValueError(f"{index}_{step_no}_{iccs} {','.join(move_line)}")
                 board.next_turn()
 
         return True
@@ -179,33 +179,43 @@ class Game:  # pylint: disable=too-many-public-methods
 
     def dump_iccs_moves(self):
         """以 ICCS 字符串形式返回所有走子线路（去掉路径前缀）。"""
-        return [[move.to_iccs() for move in move_line['moves']]
-                for move_line in self.dump_moves()]
+        return [
+            [move.to_iccs() for move in move_line["moves"]]
+            for move_line in self.dump_moves()
+        ]
 
     def dump_fen_iccs_moves(self):
         """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
-        return [[[move.board.to_fen(), str(move)]
-                 for move in move_line['moves']]
-                for move_line in self.dump_moves()]
+        return [
+            [[move.board.to_fen(), str(move)] for move in move_line["moves"]]
+            for move_line in self.dump_moves()
+        ]
 
     def dump_text_moves(self, show_branch=False):
         """以中文可读文本形式返回所有走子线路。"""
-        return [[
-            move.to_text_detail(show_branch, show_annote=False)[0]
-            for move in move_line['moves']
-        ] for move_line in self.dump_moves()]
+        return [
+            [
+                move.to_text_detail(show_branch, show_annote=False)[0]
+                for move in move_line["moves"]
+            ]
+            for move_line in self.dump_moves()
+        ]
 
     def dump_text_moves_with_annote(self):
         """返回 (走法文本, 注释) 元组的列表，用于显示含注释的走子。"""
-        return [[(move.to_text(), move.annote) for move in move_line['moves']]
-                for move_line in self.dump_moves()]
+        return [
+            [(move.to_text(), move.annote) for move in move_line["moves"]]
+            for move_line in self.dump_moves()
+        ]
 
     def dump_moves_line(self):
         """返回沿当前选定分支的一条走子线路（线性，不含分支信息）。"""
         if not self.first_move:
             return []
-        return [[str(move) for move in move_line['moves']]
-                for move_line in self.dump_moves()]
+        return [
+            [str(move) for move in move_line["moves"]]
+            for move_line in self.dump_moves()
+        ]
 
     def move_line_to_list(self, move=None):
         """将从给定节点开始的主线转换为列表。"""
@@ -240,19 +250,19 @@ class Game:  # pylint: disable=too-many-public-methods
         moves = self.dump_text_moves_with_annote()
         for index, line in enumerate(moves):
             if len(moves) > 1:
-                print(f'第 {index+1} 分支')
-            line_move = ''
+                print(f"第 {index + 1} 分支")
+            line_move = ""
             for i, (text, annote) in enumerate(line):
                 if (i % 2) == 0:
-                    line_move += f' {(i // 2 + 1):02d}.{text}'
+                    line_move += f" {(i // 2 + 1):02d}.{text}"
                 else:
-                    line_move += f' {text}'
+                    line_move += f" {text}"
                 if show_annote and annote:
-                    line_move += f'[{annote}]'
- 
+                    line_move += f"[{annote}]"
+
                 if (i % (steps_per_line * 2)) == 1:
                     print(line_move)
-                    line_move = ''
+                    line_move = ""
             if line_move:
                 print(line_move)
 
@@ -275,41 +285,42 @@ class Game:  # pylint: disable=too-many-public-methods
         支持的后缀包括 .xqf, .pgn, .cbf, .cbr；函数内部延迟导入对应解析
         模块以避免循环依赖。
         """
-        #在函数开始时才导入以避免循环导入
+        # 在函数开始时才导入以避免循环导入
         from .io_xqf import read_from_xqf  # pylint: disable=import-outside-toplevel
         from .read_pgn import read_from_pgn  # pylint: disable=import-outside-toplevel
         from .read_cbf import read_from_cbf  # pylint: disable=import-outside-toplevel
         from .read_cbr import read_from_cbr  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
-        if ext == '.xqf':
+        if ext == ".xqf":
             return read_from_xqf(file_name)
-        if ext == '.pgn':
+        if ext == ".pgn":
             return read_from_pgn(file_name)
-        if ext == '.cbf':
+        if ext == ".cbf":
             return read_from_cbf(file_name)
-        if ext == '.cbr':
+        if ext == ".cbr":
             return read_from_cbr(file_name)
         raise ValueError(f"Unknown file format:{file_name}")
 
     @staticmethod
     def read_from_lib(file_name):
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
-        #在函数开始时才导入以避免循环导入
+        # 在函数开始时才导入以避免循环导入
         from .read_cbr import read_from_cbl  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
-        if ext == '.cbl':
+        if ext == ".cbl":
             return read_from_cbl(file_name)
         raise ValueError(f"Unknown lib file format:{file_name}")
+
     def save_to_pgn(self, file_name):
         """将棋局按简化 PGN 文本格式保存到文件。"""
 
-        #w = PGNWriter(self)
-        #w.write_file(file_name)
+        # w = PGNWriter(self)
+        # w.write_file(file_name)
 
         init_fen = self.init_board.to_fen()
-        with open(file_name, 'w', encoding='utf-8') as f:
+        with open(file_name, "w", encoding="utf-8") as f:
             f.write('[Game "Chinese Chess"]\n')
             f.write(f'[Date "{dt.date.today()}"]\n')
             f.write('[Red ""]\n')
@@ -318,23 +329,66 @@ class Game:  # pylint: disable=too-many-public-methods
                 f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
 
             if self.annote:
-                f.write(f'{{ {self.annote} }}\n')
+                f.write(f"{{ {self.annote} }}\n")
 
             moves = self.dump_moves()
             if len(moves) > 0:
-                move_line = moves[0]['moves']
-                for index, m in enumerate(move_line):
-                    if (index % 2) == 0:
-                        pre_str = f" {index//2+1}."
+                move_line = moves[0]["moves"]
+                move_pairs = []
+                for i in range(0, len(move_line), 2):
+                    red_move = move_line[i]
+                    black_move = move_line[i + 1] if i + 1 < len(move_line) else None
+                    move_num = i // 2 + 1
+                    if black_move:
+                        if red_move.annote and black_move.annote:
+                            move_pairs.append(
+                                (
+                                    move_num,
+                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
+                                    f"{black_move.to_text()} {{ {black_move.annote} }}",
+                                )
+                            )
+                        elif red_move.annote:
+                            move_pairs.append(
+                                (
+                                    move_num,
+                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
+                                    black_move.to_text(),
+                                )
+                            )
+                        elif black_move.annote:
+                            move_pairs.append(
+                                (
+                                    move_num,
+                                    red_move.to_text(),
+                                    f"{black_move.to_text()} {{ {black_move.annote} }}",
+                                )
+                            )
+                        else:
+                            move_pairs.append(
+                                (move_num, red_move.to_text(), black_move.to_text())
+                            )
                     else:
-                        pre_str = "    "
-                    if m.annote:
-                        f.write(f'{pre_str} {m.to_text()} {{ {m.annote} }}\n')
-                    else:
-                        f.write(f'{pre_str} {m.to_text()}\n')
+                        if red_move.annote:
+                            move_pairs.append(
+                                (
+                                    move_num,
+                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
+                                    None,
+                                )
+                            )
+                        else:
+                            move_pairs.append((move_num, red_move.to_text(), None))
 
-            f.write('   *\n')
-            f.write('  =========\n')
+                for move_num, red_text, black_text in move_pairs:
+                    if black_text:
+                        f.write(f" {move_num}. {red_text} {black_text}\n")
+                    else:
+                        f.write(f" {move_num}. {red_text}\n")
+
+            f.write("   *\n")
+            f.write("  =========\n")
+
     def save_to(self, file_name):
         """根据文件扩展名写入对应格式的棋谱文件。
         参数:
@@ -345,9 +399,9 @@ class Game:  # pylint: disable=too-many-public-methods
         from .io_pgn import PGNWriter  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
-        if ext == '.xqf':
+        if ext == ".xqf":
             writer = XQFWriter(self)
-        elif ext == '.pgn':
+        elif ext == ".pgn":
             writer = PGNWriter(self)
         else:
             raise ValueError(f"Unknown file format:{file_name}")

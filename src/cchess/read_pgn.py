@@ -140,37 +140,70 @@ def __get_steps(game, lines):
 
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
 
+    piece_chars = "\u70ae\u99ac\u76f8\u58eb\u5016\u8eca\u5175\u70ae\u99ac\u76f8\u58eb\u5016\u8eca\u5175"
+    direction_chars = "\u9032\u5e73\u9000"
+
     for line in lines:
-        # 检查游戏结束标记（去除空格）
         stripped = line.strip()
         if stripped in ["*", "1-0", "0-1", "1/2-1/2", "========="]:
             return steps
 
-        # 跳过空行
         if not stripped:
             continue
 
-        # 解析行中的走法（可能包含多个走法，用空格分隔）
-        for _, it in enumerate(stripped.split(" ")):
-            if it in ["*", "1-0", "0-1", "1/2-1/2"]:
-                break
-            # 跳过步数编号（如 "1.", "2." 等）
-            if it.endswith("."):
-                continue
-            # 跳过空字符串
-            if not it:
-                continue
-            if use_iccs:
-                if len(it) == 5:
-                    new_it = it[:2] + it[3:]
-                else:
-                    new_it = it
-                move = board.move_iccs(new_it.lower())
-            else:
-                move = board.move_text(it)
-            if move is None:
-                return game
+        # 清理行尾的结束标记
+        for marker in ["*", "1-0", "0-1", "1/2-1/2", "========="]:
+            if marker in stripped:
+                stripped = stripped.replace(marker, "").strip()
 
-            game.append_next_move(move)
+        # 按步数编号分割
+        parts = re.split(r"(\d+)\.", stripped)
+
+        for i in range(1, len(parts), 2):
+            move_text = parts[i + 1].strip() if i + 1 < len(parts) else ""
+
+            # 移除注释
+            if "{" in move_text:
+                move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
+
+            if not move_text:
+                continue
+
+            # 找到第二个棋子字符的位置来分割红黑走法
+            piece_positions = []
+            for j, char in enumerate(move_text):
+                if char in piece_chars or char in direction_chars:
+                    piece_positions.append(j)
+
+            moves_to_parse = []
+            if len(piece_positions) >= 2:
+                # 在第二个棋子字符前分割
+                split_pos = piece_positions[1]
+                red_move = move_text[:split_pos].strip()
+                black_move = move_text[split_pos:].strip()
+                if red_move:
+                    moves_to_parse.append(red_move)
+                if black_move:
+                    moves_to_parse.append(black_move)
+            else:
+                # 只有一个走法
+                if move_text:
+                    moves_to_parse.append(move_text)
+
+            for it in moves_to_parse:
+                if not it:
+                    continue
+                if use_iccs:
+                    if len(it) == 5:
+                        new_it = it[:2] + it[3:]
+                    else:
+                        new_it = it
+                    move = board.move_iccs(new_it.lower())
+                else:
+                    move = board.move_text(it)
+                if move is None:
+                    return game
+
+                game.append_next_move(move)
 
     return game
