@@ -24,6 +24,24 @@ from .game import Game
 from .exception import CChessError
 
 
+def _append_move_to_game(game, curr_move, parent_move):
+    """将走子添加到游戏树中。
+
+    参数:
+        game: Game 对象
+        curr_move: 当前走子
+        parent_move: 父节点走子
+
+    返回:
+        当前走子（如果成功添加），否则返回 parent_move
+    """
+    if parent_move:
+        parent_move.append_next_move(curr_move)
+    else:
+        game.append_first_move(curr_move)
+    return curr_move
+
+
 # pylint: disable=too-many-locals,too-many-branches,fixme
 
 CODING_PAGE_CBR = "utf-16-le"
@@ -169,11 +187,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
     if board.is_valid_move(move_from, move_to):
         curr_move = board.move(move_from, move_to)
         curr_move.annote = annote
-        if parent_move:
-            parent_move.append_next_move(curr_move)
-        else:
-            game.append_first_move(curr_move)
-        good_move = curr_move
+        good_move = _append_move_to_game(game, curr_move, parent_move)
     else:
         return
 

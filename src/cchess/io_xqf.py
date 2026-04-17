@@ -260,6 +260,24 @@ def __read_init_info(buff_decoder, version, keys):
     return buff_decoder.read_str(annote_len) if (annote_len > 0) else None
 
 
+def _append_move_to_game(game, curr_move, parent_move):
+    """将走子添加到游戏树中。
+
+    参数:
+        game: Game 对象
+        curr_move: 当前走子
+        parent_move: 父节点走子
+
+    返回:
+        当前走子（如果成功添加），否则返回 parent_move
+    """
+    if parent_move:
+        parent_move.append_next_move(curr_move)
+    else:
+        game.append_first_move(curr_move)
+    return curr_move
+
+
 # -----------------------------------------------------#
 def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
@@ -314,11 +332,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
-            if parent_move:
-                parent_move.append_next_move(curr_move)
-            else:
-                game.append_first_move(curr_move)
-            good_move = curr_move
+            good_move = _append_move_to_game(game, curr_move, parent_move)
 
     if has_next_step:
         __read_steps(buff_decoder, version, keys, game, good_move, board)
