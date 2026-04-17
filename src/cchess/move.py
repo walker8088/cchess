@@ -22,11 +22,13 @@ from typing import TYPE_CHECKING
 
 from .common import (
     BLACK,
+    RED,
     fench_to_species,
     fench_to_text,
     text_to_fench,
     pos2iccs,
     half2full,
+    full2half,
 )
 
 if TYPE_CHECKING:
@@ -65,6 +67,34 @@ _ZH_TO_HALF = {
 
 # 半角数字到中文数字映射
 _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
+
+
+def _detect_move_side_from_notation(move_str):
+    """根据着法字符串中的数字类型检测走子方。
+
+    - 含中文数字（一二三...）→ RED
+    - 含阿拉伯数字（123...或 123...）→ BLACK
+
+    参数:
+        move_str: 走法字符串（已去除空格）
+
+    返回:
+        int: RED(1) 或 BLACK(2)，无法判断返回 None
+    """
+    # 检查是否包含中文数字
+    has_chinese = any(ch in _ZH_TO_HALF for ch in move_str)
+
+    # 检查是否包含阿拉伯数字（先转半角再检查）
+    move_str_half = full2half(move_str)
+    has_arabic = any(ch.isdigit() for ch in move_str_half)
+
+    if has_chinese and not has_arabic:
+        return RED
+    elif has_arabic and not has_chinese:
+        return BLACK
+    else:
+        # 混合或都无法判断
+        return None
 
 
 def _convert_digit_format(digit_char, move_side):
@@ -836,11 +866,9 @@ class Move:
     def from_text(board, move_str):
         """解析中文走法字符串，返回标准化的走子 ((p_from, p_to))。
 
-        使用规范局面：将黑方走子转换为红方视角处理棋子移动逻辑。
-        但 move_str 解析仍需根据原始走子方选择索引数组。
+        使用规范局面：检测走子方后，黑方走子转换为红方视角处理。
+        所有移动解析统一使用 RED 索引数组。
         """
-        move_str = half2full(move_str)
-        # 去除空格，支持"炮 2 平 5"和"炮二平五"两种格式
         move_str = move_str.replace(" ", "")
 
         move_indices = ["前", "中", "后", "一", "二", "三", "四", "五"]
@@ -857,16 +885,16 @@ class Move:
         else:
             piece_name = move_str[0]
 
-        # 保存原始走子方，用于索引数组选择
-        original_move_side = board.move_side.color
+        work_side = _detect_move_side_from_notation(move_str)
+        if work_side is None:
+            work_side = board.move_side.color
+        if work_side == 0:
+            work_side = RED
 
-        # 如果走子方未指定，根据棋子颜色推断
-        if original_move_side == 0:  # NO_COLOR
-            # 默认使用红方索引（大多数情况）
-            original_move_side = 1  # RED
+        use_normalized = work_side == BLACK
+        work_board = board.normalized() if use_normalized else board.copy()
 
-        # 在原始棋盘上获取棋子 fench
-        fench = text_to_fench(piece_name, original_move_side)
+        fench = text_to_fench(piece_name, RED)
         if not fench:
             return None
 
@@ -876,44 +904,40 @@ class Move:
             chinese_digit = move_str[0]
             target_x = None
             try:
-                target_x = _h_level_index[original_move_side].index(chinese_digit)
+                target_x = _h_level_index[RED].index(chinese_digit)
             except ValueError:
                 target_x = None
 
             positions = []
             if target_x is not None:
-                positions = board.get_fenchs_x(fench, target_x)
+                positions = work_board.get_fenchs_x(fench, target_x)
 
             if not positions:
-                positions = board.get_fenchs(fench)
+                positions = work_board.get_fenchs(fench)
 
             if piece_fench == "p" and len(positions) > 1:
-                # 黑方兵选择 y 最小的（最靠前的），红方兵选择 y 最大的
-                if original_move_side == BLACK:
-                    positions.sort(key=lambda p: p[1])
-                else:
-                    positions.sort(key=lambda p: p[1], reverse=True)
+                positions.sort(key=lambda p: p[1], reverse=True)
 
             if len(positions) == 0:
                 return None
 
             for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, original_move_side, pos, move_str[2:]
-                )
+                move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
                 if move:
+                    if use_normalized:
+                        pos_orig = board.denormalize_pos(pos)
+                        move_orig = board.denormalize_pos(move)
+                        return [(pos_orig, move_orig)]
                     return [(pos, move)]
 
             return None
 
         if not multi_pieces:
-            # 根据原始走子方选择索引数组
-            # 使用 _get_digit_index 函数统一处理数字格式转换
             digit_char = move_str[1]
-            x = _get_digit_index(digit_char, original_move_side)
+            x = _get_digit_index(digit_char, RED)
             if x is None:
                 return None
-            positions = board.get_fenchs_x(fench, x)
+            positions = work_board.get_fenchs_x(fench, x)
 
             if len(positions) == 0:
                 return None
@@ -923,27 +947,29 @@ class Move:
 
             moves = []
             for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, original_move_side, pos, move_str[2:]
-                )
+                move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
                 if move:
-                    moves.append((pos, move))
+                    if use_normalized:
+                        pos_orig = board.denormalize_pos(pos)
+                        move_orig = board.denormalize_pos(move)
+                        moves.append((pos_orig, move_orig))
+                    else:
+                        moves.append((pos, move))
 
             return moves
 
         if move_str[0] in ["前", "中", "后"]:
-            positions = board.get_fenchs(fench)
-            # 根据原始走子方决定前后顺序
-            if original_move_side == BLACK:
-                positions = list(reversed(positions))
+            positions = work_board.get_fenchs(fench)
 
             move_idx = {"前": -1, "中": 1, "后": 0}
             pos = positions[move_idx[move_str[0]]]
 
-            move = Move.text_move_to_std_move(
-                piece_fench, original_move_side, pos, move_str[2:]
-            )
+            move = Move.text_move_to_std_move(piece_fench, RED, pos, move_str[2:])
             if move:
+                if use_normalized:
+                    pos_orig = board.denormalize_pos(pos)
+                    move_orig = board.denormalize_pos(move)
+                    return [(pos_orig, move_orig)]
                 return [(pos, move)]
             return None
         return None
