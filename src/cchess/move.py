@@ -94,13 +94,12 @@ def _convert_digit_format(digit_char, move_side):
         else:  # BLACK: 半角转全角
             return chr(0xFF10 + half_digit)
 
-    # 中文数字
+    # 中文数字（仅用于红方）
     if digit_char in _ZH_TO_HALF:
-        half_digit = _ZH_TO_HALF[digit_char]
-        if move_side == 2:  # BLACK: 中文转全角
-            return chr(0xFF10 + half_digit)
-        else:  # RED: 保持中文
-            return _HALF_TO_ZH[half_digit]
+        if move_side == 1:  # RED: 保持中文
+            return _HALF_TO_ZH[_ZH_TO_HALF[digit_char]]
+        # BLACK 不接受中文数字，返回 None
+        return None
 
     return None
 
