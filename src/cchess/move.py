@@ -602,20 +602,33 @@ class Move:
         # 仕的移动规则
         if piece_fench == "a":
             new_x = h_index.index(move_str[1])
+            # 黑方列索引需要反转
+            if move_side == BLACK:
+                new_x = 8 - new_x
             diff_y = -1 if move_str[0] == "进" else 1
             # 规范局面：红方仕，进是 y 减小（向九宫格中心）
+            if move_side == BLACK:
+                diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
         # 象的移动规则
         if piece_fench == "b":
             new_x = h_index.index(move_str[1])
+            # 黑方列索引需要反转
+            if move_side == BLACK:
+                new_x = 8 - new_x
             diff_y = -2 if move_str[0] == "进" else 2
             # 规范局面：红方象，进是 y 减小
+            if move_side == BLACK:
+                diff_y = -diff_y
             return (new_x, p_from[1] - diff_y)
 
         # 马的移动规则
         if piece_fench == "n":
             new_x = h_index.index(move_str[1])
+            # 黑方列索引需要反转
+            if move_side == BLACK:
+                new_x = 8 - new_x
             diff_x = abs(p_from[0] - new_x)
 
             if move_str[0] == "进":
@@ -625,6 +638,8 @@ class Move:
 
             # 规范局面：红方马，进是 y 增加
             diff_y = -diff_y
+            if move_side == BLACK:
+                diff_y = -diff_y
 
             return (new_x, p_from[1] - diff_y)
 
@@ -638,6 +653,8 @@ class Move:
         但 move_str 解析仍需根据原始走子方选择索引数组。
         """
         move_str = half2full(move_str)
+        # 去除空格，支持"炮 2 平 5"和"炮二平五"两种格式
+        move_str = move_str.replace(" ", "")
 
         move_indices = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
@@ -704,7 +721,18 @@ class Move:
 
         if not multi_pieces:
             # 根据原始走子方选择索引数组
-            x = _h_level_index[original_move_side].index(move_str[1])
+            # 需要适配不同格式的数字（红方用中文数字，黑方用全角数字）
+            digit_char = move_str[1]
+            try:
+                x = _h_level_index[original_move_side].index(digit_char)
+            except ValueError:
+                # 如果找不到，尝试转换格式
+                # 半角->全角
+                if digit_char.isdigit():
+                    digit_char = chr(0xFF10 + int(digit_char))
+                    x = _h_level_index[original_move_side].index(digit_char)
+                else:
+                    return None
             positions = board.get_fenchs_x(fench, x)
 
             if len(positions) == 0:
