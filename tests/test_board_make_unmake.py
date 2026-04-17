@@ -127,13 +127,13 @@ class TestMakeUnmake:
         board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
         move_info = board.make_move((4, 0), (4, 1))
         # 确保所有字段都存在
-        assert hasattr(move_info, 'from_pos')
-        assert hasattr(move_info, 'to_pos')
-        assert hasattr(move_info, 'moving_fench')
-        assert hasattr(move_info, 'captured_fench')
-        assert hasattr(move_info, 'prev_attack_matrix_dirty')
-        assert hasattr(move_info, 'prev_move_player')
-        assert hasattr(move_info, 'board_before')
+        assert hasattr(move_info, "from_pos")
+        assert hasattr(move_info, "to_pos")
+        assert hasattr(move_info, "moving_fench")
+        assert hasattr(move_info, "captured_fench")
+        assert hasattr(move_info, "prev_attack_matrix_dirty")
+        assert hasattr(move_info, "prev_move_side")
+        assert hasattr(move_info, "board_before")
 
     def test_make_move_invalid(self):
         """测试 make_move 不检查合法性"""
@@ -143,6 +143,7 @@ class TestMakeUnmake:
         # 移动后，棋盘状态会变化（空位移动棋子？实际上 _move_piece 会处理）
         # 这里我们只是确保不会抛出异常
         assert isinstance(move_info, MoveInfo)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
