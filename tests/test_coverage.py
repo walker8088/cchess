@@ -35,7 +35,7 @@ from cchess.common import (
 from cchess.game import Game
 from cchess.piece import Piece, Knight, Rook, Cannon, Pawn
 from cchess.board import ChessPlayer, ChessBoardOneHot
-from cchess.exception import EngineErrorException
+from cchess.exception import EngineError
 from cchess.engine import (
     is_int,
     parse_engine_info_to_dict,
@@ -1798,8 +1798,8 @@ class TestException:
     """Tests for exception.py uncovered lines."""
 
     def test_engine_error_exception(self):
-        """Test EngineErrorException (line 31)."""
-        exc = EngineErrorException("test error")
+        """Test EngineError (line 31)."""
+        exc = EngineError("test error")
         assert exc.reason == "test error"
         assert str(exc) == "test error"
 

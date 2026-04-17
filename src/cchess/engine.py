@@ -29,7 +29,7 @@ from queue import Queue, Empty
 from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED
 
 from .board import ChessBoard
-from .exception import EngineErrorException
+from .exception import EngineError
 
 # -----------------------------------------------------#
 logger = logging.getLogger(__name__)
@@ -292,7 +292,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
     def _send_cmd(self, cmd_str):
         """向引擎进程的 stdin 发送一条命令并刷新。
 
-        在发送前会检查进程是否已经退出，如异常会抛出 `EngineErrorException`。
+        在发送前会检查进程是否已经退出，如异常会抛出 `EngineError`。
 
         参数:
             cmd_str (str): 要发送的命令（单行，不含换行）
@@ -305,7 +305,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         # 提前检查进程是否已退出，避免写入时管道损坏
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(
+            raise EngineError(
                 f"程序异常退出，退出码：{self.process.returncode}"
             )
 
@@ -315,14 +315,14 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             self.pin.flush()
         except (BrokenPipeError, OSError, ValueError) as e:
             logger.error("Send cmd [%s] ERROR: %s", cmd_str, e)
-            raise EngineErrorException(
+            raise EngineError(
                 f"程序异常退出，退出码：{self.process.returncode}"
             ) from e
 
         # 写入后再次检查进程状态
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineErrorException(
+            raise EngineError(
                 f"程序异常退出，退出码：{self.process.returncode}"
             )
 

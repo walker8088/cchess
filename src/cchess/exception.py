@@ -26,7 +26,7 @@ class CChessError(Exception):
         self.reason = reason
 
 
-class EngineErrorException(Exception):
+class EngineError(Exception):
     """引擎通信或执行过程中发生的异常。"""
 
     def __init__(self, reason):

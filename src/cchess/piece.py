@@ -200,8 +200,11 @@ class King(Piece):
             positions.append((k2.x, k2.y))
 
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in positions]
-        return filter(self.board.is_valid_move_t, moves)
+        return (
+            (curr_pos, to_pos)
+            for to_pos in positions
+            if self.board.is_valid_move_t((curr_pos, to_pos))
+        )
 
 
 # -----------------------------------------------------#

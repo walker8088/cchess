@@ -321,9 +321,6 @@ def _king_rook_cannon_pawn_move(move_side, p_from, move_str):
     返回:
         tuple: 目标坐标 (x, y)
     """
-    h_index = _h_level_index[move_side]
-    v_index = _v_change_index[move_side]
-
     # 平移
     if move_str[0] == "平":
         new_x = _get_digit_index(move_str[1], move_side)

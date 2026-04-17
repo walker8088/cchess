@@ -28,7 +28,7 @@ from cchess import (
     EngineManager,
     Game,
     ChessBoard,
-    EngineErrorException,
+    EngineError,
     ChessPlayer,
 )
 
@@ -80,7 +80,7 @@ class TestEngineException:
             if ret:
                 # 等待引擎初始化完成
                 self.engine.wait_for_ready(timeout=5)
-        except EngineErrorException:
+        except EngineError:
             # 引擎崩溃是预期行为
             pass
         # 不 assert 任何状态，只要不抛未捕获的异常就算通过
