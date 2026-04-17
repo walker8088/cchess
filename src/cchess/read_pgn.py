@@ -140,13 +140,13 @@ def __get_steps(game, lines):
 
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
 
-    piece_chars = "\u70ae\u99ac\u76f8\u58eb\u5016\u8eca\u5175\u70ae\u99ac\u76f8\u58eb\u5016\u8eca\u5175"
-    direction_chars = "\u9032\u5e73\u9000"
+    piece_chars = set("\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06")  # 马车炮兵士相将
+    direction_chars = set("\u8fdb\u9000\u5e73")  # 进退平
 
     for line in lines:
         stripped = line.strip()
         if stripped in ["*", "1-0", "0-1", "1/2-1/2", "========="]:
-            return steps
+            return game
 
         if not stripped:
             continue
@@ -194,10 +194,8 @@ def __get_steps(game, lines):
                 if not it:
                     continue
                 if use_iccs:
-                    if len(it) == 5:
-                        new_it = it[:2] + it[3:]
-                    else:
-                        new_it = it
+                    # Handle ICCS format with hyphen: "a0-a1" -> "a0a1"
+                    new_it = it.replace("-", "")
                     move = board.move_iccs(new_it.lower())
                 else:
                     move = board.move_text(it)

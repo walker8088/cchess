@@ -808,6 +808,8 @@ class Move:
             tuple: 目标坐标 (x, y)，无法解析返回 None
         """
         # 移动规则检查
+        if not move_str:
+            return None
         if piece_fench in ["a", "b", "n"] and move_str[0] == "平":
             return None
         if move_str[0] not in ["进", "退", "平"]:
