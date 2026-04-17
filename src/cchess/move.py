@@ -76,9 +76,8 @@ class Move:
         self.move_list_for_engine = []
         self.fen_for_engine = None
 
-        # 延迟计算的棋盘快照
+        # 延迟计算的棋盘快照（仅 board，board_done 已移除）
         self._board_cache = None
-        self._board_done_cache = None
 
         # 设置被吃棋子
         self.captured = move_info.captured_fench
@@ -92,38 +91,16 @@ class Move:
             # 创建新棋盘实例，复制移动前状态
             b = ChessBoard()
             b._board = [row[:] for row in self.move_info.board_before]
-            b.move_player = self.move_info.prev_move_player
+            b.move_side = self.move_info.prev_move_side
             b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
             # 攻击矩阵缓存保持默认（脏标志为 True 时会被重新计算）
             self._board_cache = b
         return self._board_cache
 
     @property
-    def board_done(self):
-        """移动后的棋盘状态（延迟生成的快照）"""
-        if self._board_done_cache is None:
-            from .board import ChessBoard
-
-            # 基于移动前棋盘创建，应用移动
-            b = ChessBoard()
-            b._board = [row[:] for row in self.move_info.board_before]
-            b.move_player = self.move_info.prev_move_player
-            b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
-
-            # 执行移动
-            moving_fench = b._board[self.p_from[1]][self.p_from[0]]
-            b._board[self.p_to[1]][self.p_to[0]] = moving_fench
-            b._board[self.p_from[1]][self.p_from[0]] = None
-            b._attack_matrix_dirty = True
-            b.move_player = b.move_player.next()
-
-            self._board_done_cache = b
-        return self._board_done_cache
-
-    @property
-    def move_player(self):
-        """返回执行此走子的玩家（当前棋盘的 `move_player`）。"""
-        return self.board.move_player
+    def move_side(self):
+        """返回执行此走子的玩家（当前棋盘的 `move_side`）。"""
+        return self.board.move_side
 
     def __str__(self):
         """返回此走子的 ICCS 格式字符串表示。"""
@@ -212,7 +189,7 @@ class Move:
         self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
 
         # 更新移动前的走子方（交换后切换）
-        self.move_info.prev_move_player = self.move_info.prev_move_player.next()
+        self.move_info.prev_move_side = self.move_info.prev_move_side.next()
 
         # 注意：swap 不改变坐标，只改变棋子大小写
         # 清除缓存，让 property 重新生成
@@ -508,16 +485,27 @@ class Move:
 
         return f"[{','.join(txts)}]"
 
-    def prepare_for_engine(self, move_player, history):
+    def prepare_for_engine(self, move_side, history):
         """为引擎查询准备 FEN 与 moves 列表。
 
         如果当前走子为吃子，则引擎的 FEN 应为走子后的局面；否则
         根据历史拼接 moves 列表以便向引擎发送完整走子序列。
         """
         if self.captured:
-            # 吃子移动
-            self.board_done.move_player = move_player
-            self.fen_for_engine = self.board_done.to_fen()
+            # 吃子移动：临时生成走子后的 FEN，不缓存棋盘对象
+            from .board import ChessBoard
+
+            temp_board = ChessBoard()
+            temp_board._board = [row[:] for row in self.move_info.board_before]
+            temp_board.move_side = self.move_info.prev_move_side
+
+            # 应用移动
+            moving_fench = temp_board._board[self.p_from[1]][self.p_from[0]]
+            temp_board._board[self.p_to[1]][self.p_to[0]] = moving_fench
+            temp_board._board[self.p_from[1]][self.p_from[0]] = None
+            temp_board.move_side = move_side
+
+            self.fen_for_engine = temp_board.to_fen()
             self.move_list_for_engine = []
         else:
             # 未吃子移动
@@ -526,7 +514,7 @@ class Move:
                 self.fen_for_engine = self.board.to_fen()
                 self.move_list_for_engine = [self.to_iccs()]
             else:
-                # 历史不为空,往后追加
+                # 历史不为空，向后追加
                 last_move = history[-1]
                 self.fen_for_engine = last_move.fen_for_engine
                 self.move_list_for_engine = last_move.move_list_for_engine[:]
@@ -552,14 +540,14 @@ class Move:
         return pos2iccs(self.p_from, self.p_to)
 
     @staticmethod
-    def text_move_to_std_move(piece_fench, move_player, p_from, move_str):
+    def text_move_to_std_move(piece_fench, move_side, p_from, move_str):
         """将中文走法片段转换为目标坐标。
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
 
         参数:
             piece_fench: 棋子类型字符
-            move_player: 走子方（保留参数以兼容旧 API，实际不使用）
+            move_side: 走子方（保留参数以兼容旧 API，实际不使用）
             p_from: 起点坐标
             move_str: 走法字符串（如'进一'、'平五'等）
 
@@ -574,8 +562,8 @@ class Move:
             return None
 
         # 规范局面下：始终使用红方索引 [1]
-        h_index = _h_level_index[move_player]
-        v_index = _v_change_index[move_player]
+        h_index = _h_level_index[move_side]
+        v_index = _v_change_index[move_side]
 
         # 王，车，炮，兵的移动规则
         if piece_fench in ["k", "r", "c", "p"]:
@@ -607,7 +595,7 @@ class Move:
                 diff = -diff
 
             # 规范局面：始终假设是红方，前进是 y 增加方向
-            if move_player == BLACK:
+            if move_side == BLACK:
                 diff = -diff
             return (p_from[0], p_from[1] + diff)
 
@@ -666,10 +654,10 @@ class Move:
             piece_name = move_str[0]
 
         # 保存原始走子方，用于索引数组选择
-        original_move_player = board.move_player.color
+        original_move_side = board.move_side.color
 
         # 在原始棋盘上获取棋子 fench
-        fench = text_to_fench(piece_name, original_move_player)
+        fench = text_to_fench(piece_name, original_move_side)
         if not fench:
             return None
 
@@ -679,7 +667,7 @@ class Move:
             chinese_digit = move_str[0]
             target_x = None
             try:
-                target_x = _h_level_index[original_move_player].index(chinese_digit)
+                target_x = _h_level_index[original_move_side].index(chinese_digit)
             except ValueError:
                 target_x = None
 
@@ -692,7 +680,7 @@ class Move:
 
             if piece_fench == "p" and len(positions) > 1:
                 # 黑方兵选择 y 最小的（最靠前的），红方兵选择 y 最大的
-                if original_move_player == BLACK:
+                if original_move_side == BLACK:
                     positions.sort(key=lambda p: p[1])
                 else:
                     positions.sort(key=lambda p: p[1], reverse=True)
@@ -702,7 +690,7 @@ class Move:
 
             for pos in positions:
                 move = Move.text_move_to_std_move(
-                    piece_fench, original_move_player, pos, move_str[2:]
+                    piece_fench, original_move_side, pos, move_str[2:]
                 )
                 if move:
                     return [(pos, move)]
@@ -711,7 +699,7 @@ class Move:
 
         if not multi_pieces:
             # 根据原始走子方选择索引数组
-            x = _h_level_index[original_move_player].index(move_str[1])
+            x = _h_level_index[original_move_side].index(move_str[1])
             positions = board.get_fenchs_x(fench, x)
 
             if len(positions) == 0:
@@ -723,7 +711,7 @@ class Move:
             moves = []
             for pos in positions:
                 move = Move.text_move_to_std_move(
-                    piece_fench, original_move_player, pos, move_str[2:]
+                    piece_fench, original_move_side, pos, move_str[2:]
                 )
                 if move:
                     moves.append((pos, move))
@@ -733,14 +721,14 @@ class Move:
         if move_str[0] in ["前", "中", "后"]:
             positions = board.get_fenchs(fench)
             # 根据原始走子方决定前后顺序
-            if original_move_player == BLACK:
+            if original_move_side == BLACK:
                 positions = list(reversed(positions))
 
             move_idx = {"前": -1, "中": 1, "后": 0}
             pos = positions[move_idx[move_str[0]]]
 
             move = Move.text_move_to_std_move(
-                piece_fench, original_move_player, pos, move_str[2:]
+                piece_fench, original_move_side, pos, move_str[2:]
             )
             if move:
                 return [(pos, move)]
