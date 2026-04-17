@@ -278,16 +278,19 @@ class Knight(Piece):
 
     def is_valid_move(self, pos_to):
         """判断马走日字到目标位置是否合法（含蹩马腿检查）。"""
-        if (abs(self.x - pos_to[0]) == 2) and (abs(self.y - pos_to[1]) == 1):
-            m_x = (self.x + pos_to[0]) // 2
-            m_y = self.y
+        dx = pos_to[0] - self.x
+        dy = pos_to[1] - self.y
 
-            return self.board.get_fench((m_x, m_y)) is None
+        if abs(dx) == 2 and abs(dy) == 1:
+            block_x = self.x + (1 if dx > 0 else -1)
+            block_y = self.y
+            return self.board.get_fench((block_x, block_y)) is None
 
-        if (abs(self.x - pos_to[0]) == 1) and (abs(self.y - pos_to[1]) == 2):
-            m_x = self.x
-            m_y = (self.y + pos_to[1]) // 2
-            return self.board.get_fench((m_x, m_y)) is None
+        if abs(dx) == 1 and abs(dy) == 2:
+            block_x = self.x
+            block_y = self.y + (1 if dy > 0 else -1)
+            return self.board.get_fench((block_x, block_y)) is None
+
         return False
 
     def create_moves(self):
