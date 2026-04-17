@@ -170,9 +170,10 @@ def __get_steps(game, lines):
                 continue
 
             # 找到第二个棋子字符的位置来分割红黑走法
+            # 只检查棋子字符，不检查方向字符（进退平）
             piece_positions = []
             for j, char in enumerate(move_text):
-                if char in piece_chars or char in direction_chars:
+                if char in piece_chars:
                     piece_positions.append(j)
 
             moves_to_parse = []
