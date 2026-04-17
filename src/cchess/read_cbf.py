@@ -21,12 +21,12 @@ from xml.etree import ElementTree as et
 from .exception import CChessError
 from .board import ChessBoard
 
-#-----------------------------------------------------#
+# -----------------------------------------------------#
 
 
 def read_from_cbf(file_name):  # pylint: disable=too-many-locals
     """从 CBF 文件读取棋局并转换为 `Game` 对象。"""
-    #避免循环导入
+    # 避免循环导入
     from .game import Game  # pylint: disable=import-outside-toplevel
 
     def decode_move(move_str):
@@ -41,18 +41,18 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
 
     init_fen = None
     head = root.find("Head")
-    for node in list(head):  #.getchildren():
+    for node in list(head):  # .getchildren():
         if node.tag == "FEN":
             init_fen = node.text
-        #print node.tag
+        # print node.tag
 
     if init_fen is None:
         raise CChessError("Missing FEN in CBF file")
 
-    #books = {}
+    # books = {}
     board = ChessBoard(init_fen)
 
-    move_list = list(root.find("MoveList"))  #.getchildren()
+    move_list = list(root.find("MoveList"))  # .getchildren()
 
     game = Game(board)
     last_move = None
@@ -66,9 +66,7 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
             else:
                 game.append_next_move(new_move)
             last_move = new_move
-            board.next_turn()
         else:
-            raise CChessError(
-                f"bad move at {step_no} {move_from}, {move_to}")
+            raise CChessError(f"bad move at {step_no} {move_from}, {move_to}")
         step_no += 1
     return game
