@@ -342,6 +342,31 @@ class ChessBoard:
         self._validate_pos(pos)
         return self._board[pos[1]][pos[0]]
 
+    def occupied(self, pos):
+        """检查指定位置是否有棋子。
+
+        参数:
+            pos: 坐标 (x, y)
+
+        返回:
+            RED: 如果该位置有红方棋子
+            BLACK: 如果该位置有黑方棋子
+            None: 如果该位置为空
+
+        示例:
+            if board.occupied((4, 4)) == RED:
+                print("红方棋子")
+            elif board.occupied((4, 4)) == BLACK:
+                print("黑方棋子")
+            else:
+                print("空位")
+        """
+        self._validate_pos(pos)
+        fench = self._board[pos[1]][pos[0]]
+        if fench is None:
+            return None
+        return RED if fench.isupper() else BLACK
+
     def get_fench_color(self, pos):
         """返回指定位置棋子的颜色（`RED` 或 `BLACK`），若无棋子返回 None。"""
         fench = self.get_fench(pos)
