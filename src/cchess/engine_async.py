@@ -8,11 +8,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import Optional, Dict, Any, List, Tuple
-from pathlib import Path
+from typing import Optional, Dict, Any, List
 
 from .board import ChessBoard
-from .common import RED, BLACK
 
 logger = logging.getLogger(__name__)
 

@@ -141,13 +141,24 @@ def __get_steps(game, lines):
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
 
     for line in lines:
-        if line in ["*", "1-0", "0-1", "1/2-1/2"]:
+        # 检查游戏结束标记（去除空格）
+        stripped = line.strip()
+        if stripped in ["*", "1-0", "0-1", "1/2-1/2", "========="]:
             return steps
 
-        for _, it in enumerate(line.split(" ")):
+        # 跳过空行
+        if not stripped:
+            continue
+
+        # 解析行中的走法（可能包含多个走法，用空格分隔）
+        for _, it in enumerate(stripped.split(" ")):
             if it in ["*", "1-0", "0-1", "1/2-1/2"]:
                 break
+            # 跳过步数编号（如 "1.", "2." 等）
             if it.endswith("."):
+                continue
+            # 跳过空字符串
+            if not it:
                 continue
             if use_iccs:
                 if len(it) == 5:

@@ -656,6 +656,11 @@ class Move:
         # 保存原始走子方，用于索引数组选择
         original_move_side = board.move_side.color
 
+        # 如果走子方未指定，根据棋子颜色推断
+        if original_move_side == 0:  # NO_COLOR
+            # 默认使用红方索引（大多数情况）
+            original_move_side = 1  # RED
+
         # 在原始棋盘上获取棋子 fench
         fench = text_to_fench(piece_name, original_move_side)
         if not fench:
