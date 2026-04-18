@@ -1,5 +1,4 @@
-"""
-异步引擎接口 - 基于 asyncio 的异步调用支持
+"""异步引擎接口 - 基于 asyncio 的异步调用支持
 """
 
 from __future__ import annotations

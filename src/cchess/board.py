@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2024  walker li <walker8088@gmail.com>
+"""Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -63,8 +62,7 @@ _g_fen_ch_set = set(("k", "a", "b", "n", "r", "c", "p"))
 
 # -----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
-    """
-    将棋盘坐标 (x,y) 转换为文本画板中字符位置。
+    """将棋盘坐标 (x,y) 转换为文本画板中字符位置。
 
     参数:
         pos (tuple): 棋盘坐标 (x, y)，x 范围 0-8，y 范围 0-9。
@@ -1008,8 +1006,7 @@ class ChessBoardOneHot(ChessBoard):
         self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def get_one_hot_board(self) -> list:
-        """
-        依据`self.__chess_dict`对棋子进行独热编码
+        """依据`self.__chess_dict`对棋子进行独热编码
         :return: 一个列表，将棋子进行独热编码后的棋盘
         """
         one_hot_board = []
@@ -1024,8 +1021,7 @@ class ChessBoardOneHot(ChessBoard):
 
     @property
     def chess_dict(self):
-        """
-        获取棋子-独热编码的映射
+        """获取棋子-独热编码的映射
         :return: 字典，棋子-独热编码的映射
         """
         return self.__chess_dict.copy()

@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2024  walker li <walker8088@gmail.com>
+"""Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -337,8 +336,7 @@ def get_fen_type_detail(fen):
 
 # -----------------------------------------------------#
 def parse_dhtmlxq(html_str):
-    """
-    解析 DhtmlXQHTML 格式的象棋谱字符串，返回一个字典。
+    """解析 DhtmlXQHTML 格式的象棋谱字符串，返回一个字典。
 
     示例输入:
         [DhtmlXQHTML]

@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2024  walker li <walker8088@gmail.com>
+"""Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,8 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_int(s: str) -> bool:
-    """
-    判断字符串是否表示一个有效的整数。
+    """判断字符串是否表示一个有效的整数。
 
     支持：
     - 正整数（如 "123"）
