@@ -141,9 +141,12 @@ def __get_steps(game, lines):
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
 
     piece_chars = set(
-        "\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06\u8c61\u5352"
-    )  # 马车炮兵士相将士象卒
+        "\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06\u8c61\u5352\u5e05\u4ed5"
+    )  # 马车炮兵士相将士象卒帅仕
     direction_chars = set("\u8fdb\u9000\u5e73")  # 进退平
+    multi_piece_markers = set("\u524d\u4e2d\u540e")  # 前中后
+    
+    pending_black = False  # 跟踪是否需要处理黑方续行
 
     for line in lines:
         stripped = line.strip()
@@ -160,52 +163,79 @@ def __get_steps(game, lines):
 
         # 按步数编号分割
         parts = re.split(r"(\d+)\.", stripped)
-
-        for i in range(1, len(parts), 2):
-            move_text = parts[i + 1].strip() if i + 1 < len(parts) else ""
-
+        
+        # 处理没有移动编号的续行（黑方单独一行）
+        if len(parts) == 1:
+            if pending_black:
+                # 黑方续行
+                move_text = stripped
+                if "{" in move_text:
+                    move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
+                if move_text:
+                    moves_to_parse = [move_text]
+                else:
+                    moves_to_parse = []
+                pending_black = False
+            else:
+                continue
+        else:
+            # 有移动编号的行，parts = ['', '1', ' 移动文本']
+            move_text = parts[2].strip() if len(parts) > 2 else ""
+            
             # 移除注释
             if "{" in move_text:
                 move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
-
+            
             if not move_text:
-                continue
-
-            # 找到第二个棋子字符的位置来分割红黑走法
-            # 只检查棋子字符，不检查方向字符（进退平）
-            piece_positions = []
-            for j, char in enumerate(move_text):
-                if char in piece_chars:
-                    piece_positions.append(j)
-
-            moves_to_parse = []
-            if len(piece_positions) >= 2:
-                # 在第二个棋子字符前分割
-                split_pos = piece_positions[1]
-                red_move = move_text[:split_pos].strip()
-                black_move = move_text[split_pos:].strip()
-                if red_move:
-                    moves_to_parse.append(red_move)
-                if black_move:
-                    moves_to_parse.append(black_move)
+                moves_to_parse = []
             else:
-                # 只有一个走法
-                if move_text:
-                    moves_to_parse.append(move_text)
-
-            for it in moves_to_parse:
-                if not it:
-                    continue
-                if use_iccs:
-                    # Handle ICCS format with hyphen: "a0-a1" -> "a0a1"
-                    new_it = it.replace("-", "")
-                    move = board.move_iccs(new_it.lower())
+                # 找到第二个棋子字符的位置来分割红黑走法
+                # 注意：需要跳过"前/中/后"标记，因为它们属于黑方移动的一部分
+                piece_positions = []
+                for j, char in enumerate(move_text):
+                    if char in piece_chars:
+                        piece_positions.append(j)
+                    elif char in multi_piece_markers:
+                        # "前/中/后"标记，继续查找真正的棋子
+                        continue
+                
+                if len(piece_positions) >= 2:
+                    # 一行两个移动（红方 + 黑方）
+                    split_pos = piece_positions[1]
+                    # 检查第二个棋子字符前是否有"前/中/后"标记
+                    # 如果有，从标记位置开始分割
+                    for j in range(split_pos - 1, -1, -1):
+                        if move_text[j] in multi_piece_markers:
+                            split_pos = j
+                        elif move_text[j] == ' ':
+                            continue
+                        else:
+                            break
+                    red_move = move_text[:split_pos].strip()
+                    black_move = move_text[split_pos:].strip()
+                    moves_to_parse = []
+                    if red_move:
+                        moves_to_parse.append(red_move)
+                    if black_move:
+                        moves_to_parse.append(black_move)
+                        pending_black = False
+                    else:
+                        pending_black = True
                 else:
-                    move = board.move_text(it)
-                if move is None:
-                    # 解析失败，跳过此着法继续解析
-                    continue
+                    # 只有一个移动（红方）
+                    moves_to_parse = [move_text] if move_text else []
+                    pending_black = True
 
+        # 解析移动
+        for it in moves_to_parse:
+            if not it:
+                continue
+            if use_iccs:
+                new_it = it.replace("-", "")
+                move = board.move_iccs(new_it.lower())
+            else:
+                move = board.move_text(it)
+            if move:
                 game.append_next_move(move)
 
     return game

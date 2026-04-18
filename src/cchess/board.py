@@ -135,8 +135,11 @@ class MoveInfo:
     moving_fench: str  # 移动的棋子字符
     captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
     prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志
+    next_attack_matrix_dirty: bool  # 移动后攻击矩阵脏标志
     prev_move_side: ChessPlayer  # 移动前走子方
+    next_move_side: ChessPlayer  # 移动后走子方
     board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
+    board_after: List[List[Optional[str]]]  # 移动后棋盘数组的深拷贝
 
 
 # -----------------------------------------------------#
@@ -499,6 +502,11 @@ class ChessBoard:
         if captured_fench not in ("k", "K"):
             self._move_side = self.move_side.next()
 
+        # 记录移动后状态
+        next_attack_matrix_dirty = self._attack_matrix_dirty
+        next_move_side = self.move_side
+        board_after = [row[:] for row in self._board]  # 深拷贝棋盘数组
+
         # 返回状态记录
         return MoveInfo(
             from_pos=pos_from,
@@ -506,8 +514,11 @@ class ChessBoard:
             moving_fench=moving_fench,
             captured_fench=captured_fench,
             prev_attack_matrix_dirty=prev_attack_matrix_dirty,
+            next_attack_matrix_dirty=next_attack_matrix_dirty,
             prev_move_side=prev_move_side,
+            next_move_side=next_move_side,
             board_before=board_before,
+            board_after=board_after,
         )
 
     def unmake_move(self, move_info: MoveInfo) -> None:
@@ -541,10 +552,15 @@ class ChessBoard:
         move_info = self.make_move(pos_from, pos_to)
         move = Move(move_info)
         if check:
+            # 检查刚走完棋的一方是否对对方将军
+            # 需要临时切换回上一步的走子方
+            original_move_side = self.move_side
+            self._move_side = move_info.prev_move_side
             is_checking = self.is_checking()
             move.is_checking = is_checking
-            # 无论是否将军，都明确设置将死状态
             move.is_checkmate = is_checking and self.is_checkmate()
+            # 恢复走子方
+            self._move_side = original_move_side
 
         return move
 

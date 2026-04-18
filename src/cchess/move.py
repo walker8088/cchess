@@ -362,8 +362,9 @@ class Move:
         self.move_list_for_engine = []
         self.fen_for_engine = None
 
-        # 延迟计算的棋盘快照（仅 board，board_done 已移除）
-        self._board_cache = None
+        # 延迟计算的棋盘快照
+        self._board_cache = None  # 移动前的棋盘
+        self._board_done_cache = None  # 移动后的棋盘
 
         # 设置被吃棋子
         self.captured = move_info.captured_fench
@@ -382,6 +383,20 @@ class Move:
             # 攻击矩阵缓存保持默认（脏标志为 True 时会被重新计算）
             self._board_cache = b
         return self._board_cache
+
+    @property
+    def board_done(self):
+        """移动后的棋盘状态（延迟生成的快照）"""
+        if self._board_done_cache is None:
+            from .board import ChessBoard
+
+            # 创建新棋盘实例，复制移动后状态
+            b = ChessBoard()
+            b._board = [row[:] for row in self.move_info.board_after]
+            b.move_side = self.move_info.next_move_side
+            b._attack_matrix_dirty = self.move_info.next_attack_matrix_dirty
+            self._board_done_cache = b
+        return self._board_done_cache
 
     @property
     def move_side(self):
@@ -944,10 +959,16 @@ class Move:
 
         if move_str[0] in ["前", "中", "后"]:
             positions = board.get_fenchs(fench)
-
-            move_idx = {"前": -1, "中": 1, "后": 0}
+            
+            # 红方：前=y 大（靠近对方），后=y 小（靠近己方）
+            # 黑方：前=y 小（靠近对方），后=y 大（靠近己方）
+            # 所以红黑方的排序方向相反
             if work_side == BLACK:
-                positions.sort(key=lambda p: p[1])
+                positions.sort(key=lambda p: p[1])  # y 升序：前->后
+            else:
+                positions.sort(key=lambda p: p[1], reverse=True)  # y 降序：前->后
+            
+            move_idx = {"前": 0, "中": 1, "后": -1}  # 前=第一个，后=最后一个
             pos = positions[move_idx[move_str[0]]]
 
             move = Move.text_move_to_std_move(piece_fench, work_side, pos, move_str[2:])
