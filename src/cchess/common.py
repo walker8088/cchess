@@ -22,13 +22,45 @@ from collections import OrderedDict
 # 从 constants 导入并重新导出，方便其他模块使用
 from .constants import (
     BLACK,
-    EMPTY_BOARD,  # 导出给 __init__.py 使用
-    EMPTY_FEN,  # 导出给 __init__.py 使用
-    FULL_INIT_BOARD,  # 导出给 __init__.py 使用
-    FULL_INIT_FEN,  # game.py, read_pgn.py, read_txt.py 使用
-    NO_COLOR,  # 导出给 __init__.py 使用
+    EMPTY_BOARD,
+    EMPTY_FEN,
+    FULL_INIT_BOARD,
+    FULL_INIT_FEN,
+    NO_COLOR,
     RED,
 )
+
+# 明确导出列表，避免 Ruff F401 警告
+__all__ = [
+    "BLACK",
+    "EMPTY_BOARD",
+    "EMPTY_FEN",
+    "FULL_INIT_BOARD",
+    "FULL_INIT_FEN",
+    "NO_COLOR",
+    "RED",
+    "opposite_color",
+    "fench_to_txt_name",
+    "fench_to_text",
+    "text_to_fench",
+    "fench_to_species",
+    "pos2iccs",
+    "iccs2pos",
+    "iccs_mirror",
+    "iccs_flip",
+    "iccs_swap",
+    "iccs_list_mirror",
+    "half2full",
+    "full2half",
+    "fen_flip",
+    "fen_mirror",
+    "fen_swap",
+    "get_fen_type",
+    "get_fen_type_detail",
+    "get_fen_pieces",
+    "get_move_color",
+    "parse_dhtmlxq",
+]
 
 
 def opposite_color(color):
