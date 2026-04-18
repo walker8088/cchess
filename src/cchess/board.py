@@ -485,7 +485,10 @@ class ChessBoard:
         return fench
 
     def make_move(self, pos_from, pos_to) -> MoveInfo:
-        """执行移动并返回状态记录，不进行合法性检查"""
+        """执行移动并返回状态记录，不进行合法性检查。
+        
+        注意：此函数不切换走子方，走子方由外部程序控制。
+        """
         # 记录移动前状态
         prev_attack_matrix_dirty = self._attack_matrix_dirty
         prev_move_side = self.move_side
@@ -495,11 +498,8 @@ class ChessBoard:
 
         # 执行移动
         self._move_piece(pos_from, pos_to)
-        # 切换走子方，除非吃掉对方将帅
-        if captured_fench not in ("k", "K"):
-            self._move_side = self.move_side.next()
 
-        # 记录移动后状态
+        # 记录移动后状态（不切换走子方）
         next_attack_matrix_dirty = self._attack_matrix_dirty
         next_move_side = self.move_side
         board_after = [row[:] for row in self._board]  # 深拷贝棋盘数组
@@ -547,6 +547,11 @@ class ChessBoard:
 
         # 执行移动并记录状态
         move_info = self.make_move(pos_from, pos_to)
+        
+        # 切换走子方（除非吃掉将帅）
+        if move_info.captured_fench not in ("k", "K"):
+            self._move_side = self.move_side.next()
+        
         move = Move(move_info)
         if check:
             # 检查刚走完棋的一方是否对对方将军
@@ -725,7 +730,11 @@ class ChessBoard:
         if not self.is_valid_move(pos_from, pos_to):
             raise CChessError("Invalid Move")
         move_info = self.make_move(pos_from, pos_to)
+        # make_move 不切换走子方，需要手动切换以检查移动后是否被将军
+        self._move_side = self.move_side.next()
         checking = self.is_checking()
+        # 恢复走子方
+        self._move_side = move_info.prev_move_side
         self.unmake_move(move_info)
         return checking
 

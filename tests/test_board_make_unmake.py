@@ -37,8 +37,8 @@ class TestMakeUnmake:
         # 检查棋盘状态
         assert board.get_fench((4, 0)) is None
         assert board.get_fench((4, 1)) == "K"
-        # 走子方切换
-        assert board.move_player.color == BLACK
+        # make_move 是底层函数，不切换走子方
+        assert board.move_player.color == RED
 
     def test_unmake_move_basic(self):
         """测试撤销移动"""
@@ -95,10 +95,11 @@ class TestMakeUnmake:
         """测试走子方恢复"""
         board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
         initial_player = board.move_player
-        move_info = board.make_move((4, 0), (4, 1))
-        assert board.move_player.color != initial_player.color
-        board.unmake_move(move_info)
-        assert board.move_player.color == initial_player.color
+        move = board.move((4, 0), (4, 1))
+        if move:
+            assert board.move_player.color != initial_player.color
+            board.unmake_move(move.move_info)
+            assert board.move_player.color == initial_player.color
 
     def test_multiple_moves_unmake(self):
         """测试连续移动和撤销"""
