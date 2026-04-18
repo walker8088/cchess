@@ -132,6 +132,52 @@ def __get_comments(lines):
     raise CChessError("Comments not closed")
 
 
+def _parse_move_text(move_text, piece_chars, multi_piece_markers):
+    """解析移动文本，返回待解析的移动列表。"""
+    if not move_text:
+        return []
+    
+    # 移除注释
+    if "{" in move_text:
+        move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
+    
+    if not move_text:
+        return []
+    
+    # 找到第二个棋子字符的位置来分割红黑走法
+    piece_positions = []
+    for j, char in enumerate(move_text):
+        if char in piece_chars:
+            piece_positions.append(j)
+        elif char in multi_piece_markers:
+            # "前/中/后"标记，继续查找真正的棋子
+            continue
+    
+    if len(piece_positions) >= 2:
+        # 一行两个移动（红方 + 黑方）
+        split_pos = piece_positions[1]
+        # 检查第二个棋子字符前是否有"前/中/后"标记
+        # 如果有，从标记位置开始分割
+        for j in range(split_pos - 1, -1, -1):
+            if move_text[j] in multi_piece_markers:
+                split_pos = j
+            elif move_text[j] == ' ':
+                continue
+            else:
+                break
+        red_move = move_text[:split_pos].strip()
+        black_move = move_text[split_pos:].strip()
+        moves = []
+        if red_move:
+            moves.append(red_move)
+        if black_move:
+            moves.append(black_move)
+        return moves
+    else:
+        # 只有一个移动
+        return [move_text] if move_text else []
+
+
 def __get_steps(game, lines):
     """__get_steps 函数。"""
     board = game.init_board.copy()
@@ -155,8 +201,7 @@ def __get_steps(game, lines):
 
         # 清理行尾的结束标记
         for marker in ["*", "1-0", "0-1", "1/2-1/2", "========="]:
-            if marker in stripped:
-                stripped = stripped.replace(marker, "").strip()
+            stripped = stripped.replace(marker, "").strip()
 
         # 按步数编号分割
         parts = re.split(r"(\d+)\.", stripped)
@@ -164,64 +209,17 @@ def __get_steps(game, lines):
         # 处理没有移动编号的续行（黑方单独一行）
         if len(parts) == 1:
             if pending_black:
-                # 黑方续行
-                move_text = stripped
-                if "{" in move_text:
-                    move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
-                if move_text:
-                    moves_to_parse = [move_text]
-                else:
-                    moves_to_parse = []
+                moves_to_parse = _parse_move_text(stripped, piece_chars, multi_piece_markers)
                 pending_black = False
             else:
                 continue
         else:
-            # 有移动编号的行，parts = ['', '1', ' 移动文本']
+            # 有移动编号的行
             move_text = parts[2].strip() if len(parts) > 2 else ""
-            
-            # 移除注释
-            if "{" in move_text:
-                move_text = re.sub(r"\{[^}]*\}", "", move_text).strip()
-            
-            if not move_text:
-                moves_to_parse = []
-            else:
-                # 找到第二个棋子字符的位置来分割红黑走法
-                # 注意：需要跳过"前/中/后"标记，因为它们属于黑方移动的一部分
-                piece_positions = []
-                for j, char in enumerate(move_text):
-                    if char in piece_chars:
-                        piece_positions.append(j)
-                    elif char in multi_piece_markers:
-                        # "前/中/后"标记，继续查找真正的棋子
-                        continue
-                
-                if len(piece_positions) >= 2:
-                    # 一行两个移动（红方 + 黑方）
-                    split_pos = piece_positions[1]
-                    # 检查第二个棋子字符前是否有"前/中/后"标记
-                    # 如果有，从标记位置开始分割
-                    for j in range(split_pos - 1, -1, -1):
-                        if move_text[j] in multi_piece_markers:
-                            split_pos = j
-                        elif move_text[j] == ' ':
-                            continue
-                        else:
-                            break
-                    red_move = move_text[:split_pos].strip()
-                    black_move = move_text[split_pos:].strip()
-                    moves_to_parse = []
-                    if red_move:
-                        moves_to_parse.append(red_move)
-                    if black_move:
-                        moves_to_parse.append(black_move)
-                        pending_black = False
-                    else:
-                        pending_black = True
-                else:
-                    # 只有一个移动（红方）
-                    moves_to_parse = [move_text] if move_text else []
-                    pending_black = True
+            moves_to_parse = _parse_move_text(move_text, piece_chars, multi_piece_markers)
+            # 如果只有一个棋子字符，说明是红方单独一行
+            piece_count = sum(1 for c in move_text if c in piece_chars)
+            pending_black = piece_count == 1
 
         # 解析移动
         for it in moves_to_parse:
