@@ -208,12 +208,14 @@ class TestMovePrepareForEngine:
 
     def test_prepare_for_engine_with_capture(self):
         board = ChessBoard(FULL_INIT_FEN)
-        # Set up a position where rook can capture
-        board.pop_fench((0, 9))
-        board.put_fench("p", (0, 9))
+        # Set up a position where rook can capture (remove blocking pieces)
+        board.pop_fench((0, 9))  # Remove black rook
+        board.pop_fench((0, 3))  # Remove red pawn blocking the way
+        board.pop_fench((0, 6))  # Remove black pawn blocking the way
+        board.put_fench("p", (0, 9))  # Place black pawn for capture
         move = board.copy().move((0, 0), (0, 9))
-        if move is None:
-            pytest.skip("Move not valid in this setup")
+        assert move is not None, "Move should be valid"
+        assert move.captured == "p", "Should capture the pawn"
         move.prepare_for_engine(RED, [])
         assert move.fen_for_engine is not None
         assert move.move_list_for_engine == []
