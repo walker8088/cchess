@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -25,9 +24,9 @@ from .common import (
     RED,
     fench_to_species,
     fench_to_text,
-    text_to_fench,
-    pos2iccs,
     full2half,
+    pos2iccs,
+    text_to_fench,
 )
 
 if TYPE_CHECKING:

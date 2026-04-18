@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -20,17 +19,16 @@ import re
 from collections import OrderedDict
 
 # pylint: disable=missing-function-docstring,import-outside-toplevel
-
 # -----------------------------------------------------#
 # 从 constants 导入并重新导出，方便其他模块使用
-from .constants import (  # noqa: F401
-    NO_COLOR,  # 导出给 __init__.py 使用
-    RED,
+from .constants import (
     BLACK,
     EMPTY_BOARD,  # 导出给 __init__.py 使用
-    FULL_INIT_BOARD,  # 导出给 __init__.py 使用
     EMPTY_FEN,  # 导出给 __init__.py 使用
+    FULL_INIT_BOARD,  # 导出给 __init__.py 使用
     FULL_INIT_FEN,  # game.py, read_pgn.py, read_txt.py 使用
+    NO_COLOR,  # 导出给 __init__.py 使用
+    RED,
 )
 
 

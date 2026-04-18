@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -18,10 +17,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct
 
-from .common import RED, BLACK, fench_to_species
-from .board import ChessPlayer, ChessBoard
-from .game import Game
+from .board import ChessBoard, ChessPlayer
+from .common import BLACK, RED, fench_to_species
 from .exception import CChessError
+from .game import Game
 
 
 def _append_move_to_game(game, curr_move, parent_move):

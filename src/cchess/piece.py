@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -16,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .common import fench_to_species, opposite_color, RED, BLACK
+from .common import BLACK, RED, fench_to_species, opposite_color
 
 # pylint: disable=too-many-return-statements
 

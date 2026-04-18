@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -20,9 +19,9 @@ import re
 
 import chardet
 
-from .exception import CChessError
-from .common import FULL_INIT_FEN
 from .board import ChessBoard
+from .common import FULL_INIT_FEN
+from .exception import CChessError
 
 # 读取PGN文件的简易版本
 

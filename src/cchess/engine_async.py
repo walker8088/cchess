@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 异步引擎接口 - 基于 asyncio 的异步调用支持
 """
@@ -8,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from .board import ChessBoard
 

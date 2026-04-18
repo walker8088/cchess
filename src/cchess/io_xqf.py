@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -24,10 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 from typing import Tuple
 
+from .board import ChessBoard, ChessPlayer
 from .common import RED, fench_to_species
-from .board import ChessPlayer, ChessBoard
 from .game import Game
-
 
 # -----------------------------------------------------#
 # result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}

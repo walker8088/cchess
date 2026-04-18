@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -18,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from xml.etree import ElementTree as et
 
-from .exception import CChessError
 from .board import ChessBoard
+from .exception import CChessError
 
 # -----------------------------------------------------#
 

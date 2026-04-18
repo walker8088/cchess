@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -18,9 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
 
-from .exception import CChessError
-from .common import fench_to_species, FULL_INIT_FEN
 from .board import ChessBoard, ChessPlayer
+from .common import FULL_INIT_FEN, fench_to_species
+from .exception import CChessError
 
 
 # -----------------------------------------------------#

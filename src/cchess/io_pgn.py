@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -17,9 +16,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import re
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 # from .exception import CChessException
 # from .common import FULL_INIT_FEN

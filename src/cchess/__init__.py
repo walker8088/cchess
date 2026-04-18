@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -16,42 +15,55 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .exception import CChessError, EngineError  # noqa: F401
-from .common import (  # noqa: F401
-    NO_COLOR,
-    RED,
+from .board import ChessBoard, ChessPlayer
+from .common import (
     BLACK,
-    fench_to_species,
-    fench_to_text,
-    iccs2pos,
-    pos2iccs,
-    iccs_mirror,
-    iccs_list_mirror,
-    iccs_flip,
-    iccs_swap,
-    fen_mirror,
-    fen_flip,
-    fen_swap,
-    get_move_color,
-    get_fen_type,
-    get_fen_type_detail,
-    FULL_INIT_BOARD,
-    FULL_INIT_FEN,
     EMPTY_BOARD,
     EMPTY_FEN,
+    FULL_INIT_BOARD,
+    FULL_INIT_FEN,
+    NO_COLOR,
+    RED,
+    fen_flip,
+    fen_mirror,
+    fen_swap,
+    fench_to_species,
+    fench_to_text,
+    get_fen_type,
+    get_fen_type_detail,
+    get_move_color,
+    iccs2pos,
+    iccs_flip,
+    iccs_list_mirror,
+    iccs_mirror,
+    iccs_swap,
+    pos2iccs,
 )
-from .piece import Piece, King, Advisor, Bishop, Knight, Rook, Cannon, Pawn  # noqa: F401
-from .board import ChessBoard, ChessPlayer  # noqa: F401
-
-from .move import Move  # noqa: F401
-from .game import Game  # noqa: F401
-from .engine import EngineStatus, UcciEngine, UciEngine, EngineManager, FenCache  # noqa: F401
-from .engine_async import AsyncEngine, play_move, analyse_position  # noqa: F401
-
-from .io_xqf import read_from_xqf  # noqa: F401
-from .read_pgn import read_from_pgn  # noqa: F401
-from .read_cbf import read_from_cbf  # noqa: F401
-from .read_cbr import read_from_cbr, read_from_cbl  # noqa: F401
+from .engine import (
+    EngineManager,
+    EngineStatus,
+    FenCache,
+    UcciEngine,
+    UciEngine,
+)
+from .engine_async import AsyncEngine, analyse_position, play_move
+from .exception import CChessError, EngineError
+from .game import Game
+from .io_xqf import read_from_xqf
+from .move import Move
+from .piece import (
+    Advisor,
+    Bishop,
+    Cannon,
+    King,
+    Knight,
+    Pawn,
+    Piece,
+    Rook,
+)
+from .read_cbf import read_from_cbf
+from .read_cbr import read_from_cbl, read_from_cbr
+from .read_pgn import read_from_pgn
 
 __all__ = [
     # exception

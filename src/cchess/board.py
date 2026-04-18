@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -16,16 +15,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from dataclasses import dataclass
-from typing import Optional, Tuple, List
 import json
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
-from .exception import CChessError
 from .common import fench_to_species, fench_to_txt_name, iccs2pos
-from .constants import NO_COLOR, RED, BLACK
-from .piece import Piece
+from .constants import BLACK, NO_COLOR, RED
+from .exception import CChessError
 from .move import Move
-from .zhash_data import z_c90, z_pieces, Z_RED_KEY, Z_HASH_TABLE
+from .piece import Piece
+from .zhash_data import Z_HASH_TABLE, Z_RED_KEY, z_c90, z_pieces
 
 # pylint: disable=protected-access,attribute-defined-outside-init,too-many-public-methods
 

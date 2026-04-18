@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -16,19 +15,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os
-import time
 import enum
 import json
 import logging
+import os
 import subprocess
+import time
 from pathlib import Path
+from queue import Empty, Queue
 from threading import Thread
-from queue import Queue, Empty
-
-from .common import get_move_color, fen_mirror, iccs_mirror, iccs_list_mirror, RED
 
 from .board import ChessBoard
+from .common import RED, fen_mirror, get_move_color, iccs_list_mirror, iccs_mirror
 from .exception import EngineError
 
 # -----------------------------------------------------#

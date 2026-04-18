@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
@@ -16,12 +15,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import pathlib
 import datetime as dt
+import pathlib
 from collections import defaultdict
 
-from .common import FULL_INIT_FEN
 from .board import ChessBoard
+from .common import FULL_INIT_FEN
 
 # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
@@ -273,7 +272,9 @@ class Game:  # pylint: disable=too-many-public-methods
     @staticmethod
     def from_ubb_dhtml(txt):
         """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
-        from .read_txt import read_from_ubb_dhtml  # pylint: disable=import-outside-toplevel
+        from .read_txt import (
+            read_from_ubb_dhtml,  # pylint: disable=import-outside-toplevel
+        )
 
         return read_from_ubb_dhtml(txt)
 
@@ -286,9 +287,9 @@ class Game:  # pylint: disable=too-many-public-methods
         """
         # 在函数开始时才导入以避免循环导入
         from .io_xqf import read_from_xqf  # pylint: disable=import-outside-toplevel
-        from .read_pgn import read_from_pgn  # pylint: disable=import-outside-toplevel
         from .read_cbf import read_from_cbf  # pylint: disable=import-outside-toplevel
         from .read_cbr import read_from_cbr  # pylint: disable=import-outside-toplevel
+        from .read_pgn import read_from_pgn  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
@@ -394,8 +395,8 @@ class Game:  # pylint: disable=too-many-public-methods
             file_name (str): 输出文件路径
         """
 
-        from .io_xqf import XQFWriter  # pylint: disable=import-outside-toplevel
         from .io_pgn import PGNWriter  # pylint: disable=import-outside-toplevel
+        from .io_xqf import XQFWriter  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
