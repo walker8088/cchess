@@ -134,8 +134,6 @@ def __get_comments(lines):
 
 def __get_steps(game, lines):
     """__get_steps 函数。"""
-    steps = []
-
     board = game.init_board.copy()
 
     use_iccs = "format" in game.info and game.info["format"].lower() == "iccs"
@@ -143,7 +141,6 @@ def __get_steps(game, lines):
     piece_chars = set(
         "\u9a6c\u8f66\u70ae\u5175\u58eb\u76f8\u5c06\u8c61\u5352\u5e05\u4ed5"
     )  # 马车炮兵士相将士象卒帅仕
-    direction_chars = set("\u8fdb\u9000\u5e73")  # 进退平
     multi_piece_markers = set("\u524d\u4e2d\u540e")  # 前中后
     
     pending_black = False  # 跟踪是否需要处理黑方续行

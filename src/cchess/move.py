@@ -27,7 +27,6 @@ from .common import (
     fench_to_text,
     text_to_fench,
     pos2iccs,
-    half2full,
     full2half,
 )
 
