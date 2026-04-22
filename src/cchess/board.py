@@ -16,10 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple, Union
 
 from .common import fench_to_species, fench_to_txt_name, iccs2pos
-from .constants import BLACK, NO_COLOR, RED
+from .constants import ANY_COLOR, BLACK, RED
 from .exception import CChessError
 from .move import Move
 from .piece import Piece
@@ -83,34 +83,38 @@ class ChessPlayer:
     该类封装了简单的颜色切换逻辑，用于记录当前走子方。
     """
 
-    def __init__(self, color):
-        """"""
+    def __init__(self, color: int) -> None:
+        """初始化 ChessPlayer。
+        
+        参数:
+            color: 颜色值 (RED=1, BLACK=2, ANY_COLOR=0)
+        """
         self.color = color
 
-    def next(self):
+    def next(self) -> "ChessPlayer":
         """切换到下一个玩家并返回新的 `ChessPlayer` 实例。
 
-        如果当前颜色为 `NO_COLOR`（未指定），则保持不变。
+        如果当前颜色为 `ANY_COLOR`（任意颜色），则保持 `ANY_COLOR`。
         返回一个新的 `ChessPlayer`，避免就地修改引用带来的副作用。
         """
-        if self.color == NO_COLOR:
-            return ChessPlayer(NO_COLOR)
+        if self.color == ANY_COLOR:
+            return ChessPlayer(RED)
         return ChessPlayer(3 - self.color)
 
-    def opposite(self):
+    def opposite(self) -> int:
         """返回与当前颜色相反的颜色值（整数）。
 
-        如果未指定颜色（`NO_COLOR`）则返回 `NO_COLOR`。
+        如果颜色为 `ANY_COLOR`（任意颜色）则返回 `ANY_COLOR`。
         """
-        if self.color == NO_COLOR:
-            return NO_COLOR
+        if self.color == ANY_COLOR:
+            return ANY_COLOR
         return 3 - self.color
 
-    def __str__(self):
+    def __str__(self) -> str:
         """__str__ 方法。"""
         return PLAYER[self.color]
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         """比较操作。
 
         支持与另一个 `ChessPlayer` 或整数颜色值比较。
@@ -146,30 +150,36 @@ class ChessBoard:
     该类提供加载/导出 FEN、生成走子、检查将军/将死等功能。
     """
 
-    def __init__(self, fen=""):
+    def __init__(self, fen: str = "") -> None:
         """使用可选的 FEN 字符串初始化棋盘。
 
         参数:
-            fen (str): 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
+            fen: 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
         """
         self.clear()
         if fen:
             self.from_fen(fen)
 
-    def clear(self):
-        """清空棋盘并将走子方设为未指定（`NO_COLOR`）。"""
-        self._board = [[None for x in range(9)] for y in range(10)]
-        self._move_side = ChessPlayer(NO_COLOR)
+    def clear(self) -> None:
+        """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
+        self._board: List[List[Optional[str]]] = [
+            [None for _ in range(9)] for _ in range(10)
+        ]
+        self._move_side = ChessPlayer(ANY_COLOR)
         # 攻击矩阵缓存
-        self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
-        self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
+        self._red_attacks: List[List[bool]] = [
+            [False for _ in range(9)] for _ in range(10)
+        ]
+        self._black_attacks: List[List[bool]] = [
+            [False for _ in range(9)] for _ in range(10)
+        ]
         self._attack_matrix_dirty = True
 
-    def copy(self):
+    def copy(self) -> "ChessBoard":
         """返回棋盘的快照（独立副本）。"""
         return self.snapshot()
 
-    def snapshot(self):
+    def snapshot(self) -> "ChessBoard":
         """返回完全独立的棋盘副本（需要时使用）。"""
         b = self.__class__()
         b._board = [row[:] for row in self._board]
@@ -179,7 +189,7 @@ class ChessBoard:
         b._attack_matrix_dirty = self._attack_matrix_dirty
         return b
 
-    def from_board(self, b):
+    def from_board(self, b: "ChessBoard") -> None:
         """从另一个ChessBoard Copy属性"""
         self._board = b._board
         self._move_side = b.move_side
@@ -194,28 +204,28 @@ class ChessBoard:
             self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
             self._attack_matrix_dirty = True
 
-    def mirror(self):
+    def mirror(self) -> "ChessBoard":
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[y][8 - x] for x in range(9)] for y in range(10)]
         b._attack_matrix_dirty = True
         return b
 
-    def flip(self):
+    def flip(self) -> "ChessBoard":
         """返回新棋盘: 绕横轴翻转（上下翻转）+ 沿竖直中线镜像（左右翻转）。"""
         b = self.copy()
         b._board = [[self._board[9 - y][8 - x] for x in range(9)] for y in range(10)]
         b._attack_matrix_dirty = True
         return b
 
-    def swap(self):
+    def swap(self) -> "ChessBoard":
         """返回新棋盘: 交换棋子大小写（红黑互换）。
 
         大写表示红方、小写表示黑方。该方法将所有棋子字母大小写取反，
         同时切换走子方（调用 `next()`）。
         """
 
-        def swap_fench(fench):
+        def swap_fench(fench: Optional[str]) -> Optional[str]:
             """swap_fench 函数。"""
             if fench is None:
                 return None
@@ -232,19 +242,19 @@ class ChessBoard:
         return b
 
     @staticmethod
-    def fen_mirror(fen):
+    def fen_mirror(fen: str) -> str:
         """返回给定 FEN 字符串的镜像局面 FEN。"""
         b = ChessBoard(fen)
         return b.mirror().to_fen()
 
     @staticmethod
-    def fen_flip(fen):
+    def fen_flip(fen: str) -> str:
         """返回给定 FEN 字符串的翻转局面 FEN。"""
         b = ChessBoard(fen)
         return b.flip().to_fen()
 
     @staticmethod
-    def fen_swap(fen):
+    def fen_swap(fen: str) -> str:
         """返回给定 FEN 字符串的交换局面 FEN。"""
         b = ChessBoard(fen)
         return b.swap().to_fen()
@@ -276,6 +286,7 @@ class ChessBoard:
 
         规范局面中：原点在左下角，x 向右，y 向上
         黑方视角：需要 flip 回去，坐标变换为 (8-x, 9-y)
+        红方视角：直接返回原坐标（因为规范化棋盘已经是红方走子）
 
         参数:
             pos: 规范局面中的坐标 (x, y)
@@ -283,6 +294,10 @@ class ChessBoard:
         返回:
             tuple: 原局面中的坐标
         """
+        # 如果当前棋盘已经是规范局面（红方走子），则原棋盘也是红方走子
+        if self.is_normalized():
+            return pos
+        # 否则原棋盘是黑方走子，需要应用 flip 变换
         return (8 - pos[0], 9 - pos[1])
 
     def set_move_color(self, color):
@@ -442,12 +457,12 @@ class ChessBoard:
         """便捷方法：接受 (from, to) 的元组并验证其是否合法。"""
         return self.is_valid_move(move_t[0], move_t[1])
 
-    def is_valid_iccs_move(self, iccs):
+    def is_valid_iccs_move(self, iccs: str) -> bool:
         """接受 ICCS 格式字符串并判定是否为合法走子。"""
         move_from, move_to = iccs2pos(iccs)
         return self.is_valid_move(move_from, move_to)
 
-    def is_valid_move(self, pos_from, pos_to):
+    def is_valid_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
         """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。"""
 
         if not 0 <= pos_to[0] <= 8:
@@ -461,7 +476,7 @@ class ChessBoard:
 
         _, from_color = fench_to_species(fench_from)
 
-        if self.move_side not in (NO_COLOR, from_color):
+        if self.move_side not in (ANY_COLOR, from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -475,7 +490,7 @@ class ChessBoard:
         piece = self.get_piece(pos_from)
         return piece.is_valid_move(pos_to) if piece else False
 
-    def _move_piece(self, pos_from, pos_to):
+    def _move_piece(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> Optional[str]:
         """在内部执行棋子移动（不做合法性检查），并返回被移动的 fench。"""
         fench = self._board[pos_from[1]][pos_from[0]]
         self._board[pos_to[1]][pos_to[0]] = fench
@@ -484,9 +499,9 @@ class ChessBoard:
 
         return fench
 
-    def make_move(self, pos_from, pos_to) -> MoveInfo:
+    def make_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> MoveInfo:
         """执行移动并返回状态记录，不进行合法性检查。
-        
+
         注意：此函数不切换走子方，走子方由外部程序控制。
         """
         # 记录移动前状态
@@ -539,7 +554,7 @@ class ChessBoard:
         # 恢复走子方
         self._move_side = move_info.prev_move_side
 
-    def move(self, pos_from, pos_to, check=True):
+    def move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True) -> Optional[Move]:
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
         返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
         if not self.is_valid_move(pos_from, pos_to):
@@ -547,11 +562,11 @@ class ChessBoard:
 
         # 执行移动并记录状态
         move_info = self.make_move(pos_from, pos_to)
-        
+
         # 切换走子方（除非吃掉将帅）
         if move_info.captured_fench not in ("k", "K"):
             self._move_side = self.move_side.next()
-        
+
         move = Move(move_info)
         if check:
             # 检查刚走完棋的一方是否对对方将军
@@ -566,12 +581,12 @@ class ChessBoard:
 
         return move
 
-    def move_iccs(self, move_str, check=True):
+    def move_iccs(self, move_str: str, check: bool = True) -> Optional[Move]:
         """根据 ICCS 格式的字符串执行走子，返回 `Move` 或 None。"""
         move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to, check)
 
-    def move_text(self, move_str, check=True):
+    def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
         ret = Move.from_text(self, move_str)
         if not ret:
@@ -584,7 +599,13 @@ class ChessBoard:
 
         return None
 
-    def move_any(self, pos_from, pos_to, check=False, switch_turn=False):
+    def move_any(
+        self,
+        pos_from: Tuple[int, int],
+        pos_to: Tuple[int, int],
+        check: bool = False,
+        switch_turn: bool = False,
+    ) -> Optional[Move]:
         """执行任意走子，不检查颜色限制（用于摆棋/分析）。
 
         参数:
@@ -653,7 +674,7 @@ class ChessBoard:
         self._attack_matrix_dirty = True
         return self
 
-    def remove_piece(self, pos):
+    def remove_piece(self, pos: Tuple[int, int]) -> Optional[str]:
         """移除指定位置的棋子（摆棋专用）。
 
         参数:
@@ -664,7 +685,7 @@ class ChessBoard:
         """
         return self.set_piece(None, pos)
 
-    def setup_board(self, fen=None):
+    def setup_board(self, fen: Optional[str] = None) -> "ChessBoard":
         """快速设置棋盘（摆棋专用）。
 
         参数:
@@ -682,7 +703,7 @@ class ChessBoard:
             self.clear()
         return self
 
-    def create_moves(self):
+    def create_moves(self) -> Iterator[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """生成当前走子方的所有候选走法（每个为 (from, to) 元组）。
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
@@ -697,7 +718,7 @@ class ChessBoard:
                     to_pos = self.denormalize_pos(to_pos)
                 yield (from_pos, to_pos)
 
-    def create_piece_moves(self, pos):
+    def create_piece_moves(self, pos: Tuple[int, int]) -> Iterator[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """生成指定位置棋子的所有候选走法。
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
@@ -724,7 +745,7 @@ class ChessBoard:
                     to_pos = self.denormalize_pos(to_pos)
                 yield (from_pos, to_pos)
 
-    def is_checked_move(self, pos_from, pos_to):
+    def is_checked_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
         """判断执行给定走子后己方是否处于被将军状态。
         若走子非法，抛出 `CChessError('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
@@ -738,7 +759,7 @@ class ChessBoard:
         self.unmake_move(move_info)
         return checking
 
-    def is_checking_move(self, pos_from, pos_to):
+    def is_checking_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
         """判断执行该走子后是否对对方形成将军（不切换走子方）。"""
         move_info = self.make_move(pos_from, pos_to)
         # 临时恢复走子方到移动前，以检查移动是否将军
@@ -750,14 +771,14 @@ class ChessBoard:
         self.unmake_move(move_info)
         return checking
 
-    def _compute_piece_attacks(self, piece):
+    def _compute_piece_attacks(self, piece: Piece) -> List[Tuple[int, int]]:
         """返回棋子可以攻击到的坐标列表（包括吃子位置）。"""
         attacks = []
         for from_pos, to_pos in piece.create_moves():
             attacks.append(to_pos)
         return attacks
 
-    def _recompute_attack_matrix(self):
+    def _recompute_attack_matrix(self) -> None:
         """重新计算红黑双方的攻击矩阵，并将脏标志设置为 False。"""
         # 清空攻击矩阵
         for y in range(10):
@@ -776,7 +797,7 @@ class ChessBoard:
                 matrix[y][x] = True
         self._attack_matrix_dirty = False
 
-    def is_checking(self):
+    def is_checking(self) -> bool:
         """判断当前走子方是否对对方构成将军（对方王被攻击）。"""
         if self._attack_matrix_dirty:
             self._recompute_attack_matrix()
@@ -789,7 +810,7 @@ class ChessBoard:
             matrix = self._black_attacks
         return matrix[king.y][king.x]
 
-    def is_checkmate(self):
+    def is_checkmate(self) -> bool:
         """判断当前局面在对方回合是否为将死（无路可走）。"""
         original_player = self.move_side
         self._move_side = self.move_side.next()
@@ -798,7 +819,7 @@ class ChessBoard:
         finally:
             self._move_side = original_player
 
-    def has_no_legal_moves(self):
+    def has_no_legal_moves(self) -> bool:
         """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
         king = self.get_king(self.move_side)
         if not king:
@@ -810,25 +831,25 @@ class ChessBoard:
                         return False
         return True
 
-    def count_x_line_in(self, y, x_from, x_to):
+    def count_x_line_in(self, y: int, x_from: int, x_to: int) -> int:
         """统计同一行 y 上 x_from 与 x_to 之间（不含端点）被占用的格子数。"""
         return sum(1 for f in self.x_line_in(y, x_from, x_to) if f)
 
-    def count_y_line_in(self, x, y_from, y_to):
+    def count_y_line_in(self, x: int, y_from: int, y_to: int) -> int:
         """统计同一列 x 上 y_from 与 y_to 之间（不含端点）被占用的格子数。"""
         return sum(1 for f in self.y_line_in(x, y_from, y_to) if f)
 
-    def x_line_in(self, y, x_from, x_to):
+    def x_line_in(self, y: int, x_from: int, x_to: int) -> List[Optional[str]]:
         """返回水平方向上两个 x 之间（不含端点）的格子内容列表。"""
         step = 1 if x_to > x_from else -1
         return [self._board[y][x] for x in range(x_from + step, x_to, step)]
 
-    def y_line_in(self, x, y_from, y_to):
+    def y_line_in(self, x: int, y_from: int, y_to: int) -> List[Optional[str]]:
         """返回垂直方向上两个 y 之间（不含端点）的格子内容列表。"""
         step = 1 if y_to > y_from else -1
         return [self._board[y][x] for y in range(y_from + step, y_to, step)]
 
-    def from_fen(self, fen):
+    def from_fen(self, fen: str) -> bool:
         """从简化的 FEN 字符串加载棋盘布局并设置走子方。
 
         返回 True 表示加载成功，False 表示遇到无法识别字符。
@@ -858,7 +879,7 @@ class ChessBoard:
             else:
                 raise CChessError(f"fen:{fen} 不合法的fen字符串:{i},[{ch}]")
 
-        self._move_side = ChessPlayer(NO_COLOR)
+        self._move_side = ChessPlayer(ANY_COLOR)
 
         if fen1 == "b":
             b.move_side = ChessPlayer(BLACK)
@@ -901,11 +922,11 @@ class ChessBoard:
 
         return fen
 
-    def to_full_fen(self):
+    def to_full_fen(self) -> str:
         """返回包含占位信息的完整 FEN（方便外部工具兼容）。"""
         return self.to_fen() + " - - 0 1"
 
-    def zhash(self, fen=None):
+    def zhash(self, fen: Optional[str] = None) -> int:
         """计算当前棋盘的 Zobrist 哈希值。
         可选地传入 `fen` 先加载局面再计算哈希，返回一个带符号的整数哈希值。
         """
@@ -926,7 +947,7 @@ class ChessBoard:
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))
 
-    def detect_move_pieces(self, new_board):
+    def detect_move_pieces(self, new_board: "ChessBoard") -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
         """比较当前棋盘与 `new_board` 并返回变化位置元组 (from_positions, to_positions)。"""
         p_from = []
         p_to = []
@@ -945,7 +966,7 @@ class ChessBoard:
                     p_to.append((x, y))
         return (p_from, p_to)
 
-    def create_move_from_board(self, new_board):
+    def create_move_from_board(self, new_board: "ChessBoard") -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """尝试从两个棋盘状态推断唯一的一步走法，返回 (from, to) 或 None。"""
         p_froms, p_tos = self.detect_move_pieces(new_board)
         if (len(p_froms) == 1) and (len(p_tos) == 1):
