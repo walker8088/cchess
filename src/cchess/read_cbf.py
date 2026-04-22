@@ -47,7 +47,6 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
     if init_fen is None:
         raise CChessError("Missing FEN in CBF file")
 
-    # books = {}
     board = ChessBoard(init_fen)
 
     move_list = list(root.find("MoveList"))  # .getchildren()

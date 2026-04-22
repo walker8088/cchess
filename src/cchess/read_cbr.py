@@ -21,30 +21,10 @@ from .common import BLACK, RED, fench_to_species
 from .exception import CChessError
 from .game import Game
 
-
-def _append_move_to_game(game, curr_move, parent_move):
-    """将走子添加到游戏树中。
-
-    参数:
-        game: Game 对象
-        curr_move: 当前走子
-        parent_move: 父节点走子
-
-    返回:
-        当前走子（如果成功添加），否则返回 parent_move
-    """
-    if parent_move:
-        parent_move.append_next_move(curr_move)
-    else:
-        game.append_first_move(curr_move)
-    return curr_move
-
-
-# pylint: disable=too-many-locals,too-many-branches,fixme
-
-CODING_PAGE_CBR = "utf-16-le"
-
+# pylint: disable=too-many-locals,too-many-branches
 # -----------------------------------------------------#
+CODING_PAGE_CBR = "utf-16-le"
+result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 piece_dict = {
     # 红方
     0x11: "R",  # 车
@@ -64,8 +44,6 @@ piece_dict = {
     0x27: "p",  # 卒
 }
 
-result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
-
 
 # -----------------------------------------------------#
 def _decode_pos(p):
@@ -81,8 +59,26 @@ def cut_bytes_to_str(buff):
         annote = buff[:end_index].decode(CODING_PAGE_CBR, errors="ignore")
     else:
         annote = buff.decode(CODING_PAGE_CBR, errors="ignore")
-    # print(end_index, len(buff), annote)
     return annote
+
+
+# -----------------------------------------------------#
+def _append_move_to_game(game, curr_move, parent_move):
+    """将走子添加到游戏树中。
+
+    参数:
+        game: Game 对象
+        curr_move: 当前走子
+        parent_move: 父节点走子
+
+    返回:
+        当前走子（如果成功添加），否则返回 parent_move
+    """
+    if parent_move:
+        parent_move.append_next_move(curr_move)
+    else:
+        game.append_first_move(curr_move)
+    return curr_move
 
 
 # -----------------------------------------------------#
@@ -232,7 +228,6 @@ def read_from_cbr_buffer(contents):
     game_info["red"] = cut_bytes_to_str(red)
     game_info["black"] = cut_bytes_to_str(black)
     game_info["result"] = result_dict[game_result]
-    # game_info['steps'] = steps
     board = ChessBoard()
     if move_side == 1:
         board.move_player = ChessPlayer(RED)
@@ -274,7 +269,18 @@ def read_from_cbl(file_name, verify=True):  # pylint: disable=unused-argument
     magic, _i1, _book_count, lib_name = struct.unpack("<16s44si512s", contents[:576])
 
     if magic != b"CCBridgeLibrary\x00":
-        return None
+        # 检查是否是文本文件（包含中文字符）
+        try:
+            text_sample = contents[:100].decode("latin1", errors="ignore")
+            if any("\u4e00" <= c <= "\u9fff" for c in text_sample):
+                raise CChessError(
+                    f"文件看起来是文本文件而非 CBL 棋谱库文件，magic: {repr(magic[:8])}..."
+                )
+        except Exception:
+            pass
+        raise CChessError(
+            f"不支持的 CBL 文件格式，期望 magic: 'CCBridgeLibrary\\x00'，实际: {repr(magic)}"
+        )
 
     lib_info = {}
     lib_info["name"] = cut_bytes_to_str(lib_name)
@@ -322,6 +328,15 @@ def read_from_cbl_progressing(file_name):
     magic, _i1, book_count, lib_name = struct.unpack("<16s44si512s", contents[:576])
 
     if magic != b"CCBridgeLibrary\x00":
+        # 检查是否是文本文件（包含中文字符）
+        try:
+            text_sample = contents[:100].decode("latin1", errors="ignore")
+            if any("\u4e00" <= c <= "\u9fff" for c in text_sample):
+                # 如果是文本文件，直接返回（不 yield 任何结果）
+                return
+        except Exception:
+            pass
+        # 如果不是支持的 CBL 格式，直接返回（不 yield 任何结果）
         return
 
     lib_info = {}

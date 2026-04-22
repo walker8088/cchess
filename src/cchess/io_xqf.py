@@ -111,8 +111,6 @@ def __init_decrypt_key(buff_str):
 
     keys = XQFKey()
 
-    # key_buff = bytearray(buff_str)
-
     # Pascal code here from XQFRW.pas
     # KeyMask   : dTByte;                         // 加密掩码
     # ProductId : dTDWord;                        // 产品号(厂商的产品号)
@@ -138,44 +136,24 @@ def __init_decrypt_key(buff_str):
         HEAD_KeyXYt,
     ) = struct.unpack("<BIBBBBBBBB", buff_str)
     # 以下是密码计算公式
-    # bKey       := XQFHead.KeyXY;
-    # KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
-    # bKey       := XQFHead.KeyXYf;
-    # KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
-    # bKey       := XQFHead.KeyXYt;
-    # KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
-    # wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
-    # KeyRMKSize := (wKey mod 32000) + 767;
 
-    # pascal code
-    # bKey       := XQFHead.KeyXY;
-    # KeyXY      := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * bKey;
-    bKey = HEAD_KeyXY
     # 棋子32个位置加密因子
+    bKey = HEAD_KeyXY
     keys.KeyXY = ((((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * bKey) & 0xFF
 
     # 棋谱加密因子(起点)
-    # pascal code
-    # bKey       := XQFHead.KeyXYf;
-    # KeyXYf     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXY;
     bKey = HEAD_KeyXYf
     keys.KeyXYf = (
         (((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXY
     ) & 0xFF
 
     # 棋谱加密因子(终点)
-    # pascal code
-    # bKey       := XQFHead.KeyXYt;
-    # KeyXYt     := (((((bKey*bKey)*3+9)*3+8)*2+1)*3+8) * KeyXYf;
     bKey = HEAD_KeyXYt
     keys.KeyXYt = (
         (((((bKey * bKey) * 3 + 9) * 3 + 8) * 2 + 1) * 3 + 8) * keys.KeyXYf
     ) & 0xFF
 
     # 注解大小加密因子
-    # pascal code
-    # wKey       := (XQFHead.KeysSum) * 256 + XQFHead.KeyXY;
-    # KeyRMKSize := (wKey mod 32000) + 767;
     wKey = HEAD_KeysSum * 256 + HEAD_KeyXY
     keys.KeyRMKSize = ((wKey % 32000) + 767) & 0xFFFF
 

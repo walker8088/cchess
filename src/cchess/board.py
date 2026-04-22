@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple
 
 from .common import fench_to_species, fench_to_txt_name, iccs2pos
 from .constants import ANY_COLOR, BLACK, RED
