@@ -292,20 +292,48 @@ class Knight(Piece):
         return False
 
     def create_moves(self):
-        """生成马所有可能的合法走子。"""
-        positions = [
-            (self.x + 1, self.y + 2),
-            (self.x + 1, self.y - 2),
-            (self.x - 1, self.y + 2),
-            (self.x - 1, self.y - 2),
-            (self.x + 2, self.y + 1),
-            (self.x + 2, self.y - 1),
-            (self.x - 2, self.y + 1),
-            (self.x - 2, self.y - 1),
+        """生成马所有可能的合法走子。
+        
+        使用预计算的偏移量，减少运行时计算。
+        """
+        # 马的 8 个可能移动方向
+        offsets = [
+            (1, 2), (1, -2), (-1, 2), (-1, -2),
+            (2, 1), (2, -1), (-2, 1), (-2, -1),
         ]
+        
         curr_pos = (self.x, self.y)
-        moves = [(curr_pos, to_pos) for to_pos in positions]
-        return filter(self.board.is_valid_move_t, moves)
+        moves = []
+        
+        for dx, dy in offsets:
+            to_x = self.x + dx
+            to_y = self.y + dy
+            
+            # 快速边界检查
+            if not (0 <= to_x <= 8 and 0 <= to_y <= 9):
+                continue
+            
+            to_pos = (to_x, to_y)
+            
+            # 检查蹩马腿
+            if dx == 2 or dx == -2:
+                block_pos = (self.x + (1 if dx > 0 else -1), self.y)
+            else:
+                block_pos = (self.x, self.y + (1 if dy > 0 else -1))
+            
+            if self.board.get_fench(block_pos) is not None:
+                continue
+            
+            # 检查目标位置
+            target_fench = self.board.get_fench(to_pos)
+            if target_fench is not None:
+                _, target_color = fench_to_species(target_fench)
+                if target_color == self.color:
+                    continue
+            
+            moves.append((curr_pos, to_pos))
+        
+        return moves
 
 
 # -----------------------------------------------------#
