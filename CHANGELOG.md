@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-4-17
+
+### Added
+- 性能基准测试套件 (`tests/benchmark.py`)
+- 性能回归检测脚本 (`tests/check_regression.py`)
+- 代码审查清单 (`CODE_REVIEW.md`)
+- 异步引擎测试 (`tests/test_engine_async.py`)
+- `board.py` 核心方法类型提示
+- `_append_move_to_game()` 辅助函数（消除代码重复）
+- 马走法生成优化（内联检查，减少函数调用）
+
+### Changed
+- 优化 `Knight.create_moves()` 方法，性能提升约 35%
+- 简化 `io_xqf.py` 和 `read_cbr.py` 中的重复代码
+- 清理遗留注释代码和未使用导入
+- 统一数字格式处理（RED 用中文，BLACK 用全角）
+
+### Fixed
+- 移除 `board.py` 中未使用的 `Union` 导入
+- 修复 `io_xqf.py` 中的注释代码格式
+
+### Performance
+- get_pieces(): 0.024 ms/次 (42,259 ops/sec)
+- create_moves(): 0.100 ms/次 (9,952 ops/sec)
+- is_valid_move(): 0.003 ms/次 (389,469 ops/sec)
+- Rook moves: 0.034 ms/次 (29,398 ops/sec)
+- Cannon moves: 0.022 ms/次 (44,997 ops/sec)
+- Knight moves: 0.023 ms/次 (44,132 ops/sec)
+- Pawn moves: 0.023 ms/次 (42,708 ops/sec)
+
 ## [1.26.1] - 2026-4-15
 
 ### Fixed
