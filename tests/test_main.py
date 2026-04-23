@@ -18,9 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import sys
-import pytest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 import cchess.__main__ as rt_main
 
@@ -33,15 +34,15 @@ class TestReaderXQF:
         pass
 
     def test_main_entry(self):
-        testargs = ["prog", "-r", ".\\data\\test.cbf"]
+        testargs = ["prog", "-r", ".\\tests\\data\\test.cbf"]
         with patch.object(sys, "argv", testargs):
             rt_main.main()
 
     def test_pgn_to_xqf(self):
-        out_file = Path("data", "test_convert_out.xqf")
+        out_file = Path("tests", "data", "test_convert_out.xqf")
         if out_file.exists():
             os.remove(out_file)
-        testargs = ["prog", "-i", "data\\test.pgn", "-o", str(out_file)]
+        testargs = ["prog", "-i", "tests\\data\\test.pgn", "-o", str(out_file)]
         with patch.object(sys, "argv", testargs):
             rt_main.main()
         assert out_file.exists()
@@ -51,10 +52,10 @@ class TestReaderXQF:
         os.remove(out_file)
 
     def test_xqf_to_pgn(self):
-        out_file = Path("data", "test_convert_out.pgn")
+        out_file = Path("tests", "data", "test_convert_out.pgn")
         if out_file.exists():
             os.remove(out_file)
-        testargs = ["prog", "-i", "data\\test.xqf", "-o", str(out_file)]
+        testargs = ["prog", "-i", "tests\\data\\test.xqf", "-o", str(out_file)]
         with patch.object(sys, "argv", testargs):
             rt_main.main()
         assert out_file.exists()
@@ -64,10 +65,10 @@ class TestReaderXQF:
         os.remove(out_file)
 
     def test_cbf_to_xqf(self):
-        out_file = Path("data", "test_cbf_convert_out.xqf")
+        out_file = Path("tests", "data", "test_cbf_convert_out.xqf")
         if out_file.exists():
             os.remove(out_file)
-        testargs = ["prog", "-i", "data\\test.cbf", "-o", str(out_file)]
+        testargs = ["prog", "-i", "tests\\data\\test.cbf", "-o", str(out_file)]
         with patch.object(sys, "argv", testargs):
             rt_main.main()
         assert out_file.exists()
@@ -84,8 +85,8 @@ class TestReaderXQF:
             assert ctx.value.code == -1
 
     def test_unsupported_input_format(self):
-        out_file = Path("data", "test_out.xqf")
-        testargs = ["prog", "-i", "data\\test.cbl", "-o", str(out_file)]
+        out_file = Path("tests", "data", "test_out.xqf")
+        testargs = ["prog", "-i", "tests\\data\\test.cbl", "-o", str(out_file)]
         with patch.object(sys, "argv", testargs):
             with pytest.raises(SystemExit) as ctx:
                 rt_main.main()

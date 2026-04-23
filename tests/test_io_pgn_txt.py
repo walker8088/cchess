@@ -21,29 +21,30 @@ from pathlib import Path
 
 import pytest
 
-from cchess.io_pgn import PGNMove, MoveNode, PGNGame, PGNParser, PGNWriter
+from cchess.board import ChessBoard
+from cchess.common import FULL_INIT_FEN
+from cchess.game import Game
+from cchess.io_pgn import MoveNode, PGNGame, PGNMove, PGNParser, PGNWriter
 from cchess.read_txt import (
     decode_txt_pos,
     read_from_txt,
-    ubb_to_dict,
+    read_from_ubb_dhtml,
     txt_to_board,
     txt_to_moves,
-    read_from_ubb_dhtml,
+    ubb_to_dict,
 )
-from cchess.common import FULL_INIT_FEN
-from cchess.board import ChessBoard
-from cchess.game import Game
 
 
 class TestMove:
     def test_move_creation(self):
         m = PGNMove("兵七进一")
-        assert m.san == "兵七进一"
+        assert m.notation == "兵七进一"
         assert m.annote is None
 
     def test_move_with_annote(self):
-        m = PGNMove("炮二平五", "开局")
-        assert m.san == "炮二平五"
+        m = PGNMove("炮二平五")
+        m.annote = "开局"
+        assert m.notation == "炮二平五"
         assert m.annote == "开局"
 
 
@@ -53,7 +54,7 @@ class TestMoveNode:
         node = MoveNode(PGNMove("兵七进一"))
         root.add_variation(node)
         assert len(root.move.variations) == 1
-        assert root.move.variations[0].move.san == "兵七进一"
+        assert root.move.variations[0].move.notation == "兵七进一"
 
 
 class TestPGNGame:
@@ -65,7 +66,7 @@ class TestPGNGame:
     def test_add_move(self):
         game = PGNGame()
         node = game.add_move("兵七进一")
-        assert node.move.san == "兵七进一"
+        assert node.move.notation == "兵七进一"
         assert game.moves is not None
 
     def test_add_multiple_moves(self):
@@ -73,12 +74,13 @@ class TestPGNGame:
         game.add_move("兵七进一")
         game.add_move("马８进７")
         assert game.moves.next_node is not None
-        assert game.moves.next_node.move.san == "马８进７"
+        assert game.moves.next_node.move.notation == "马８进７"
 
     def test_add_move_with_annote(self):
         game = PGNGame()
-        node = game.add_move("兵七进一", "好棋")
-        assert node.move.annote == "好棋"
+        node = game.add_move("炮二平五", "开局")
+        assert node.move.notation == "炮二平五"
+        assert node.move.annote == "开局"
 
 
 class TestPGNParser:
@@ -151,9 +153,9 @@ class TestPGNParser:
         tokens = self.parser.tokenize(text)
         moves, _result = self.parser.parse_moves(tokens)
         assert moves is not None
-        assert moves.move.san == "兵七进一"
+        assert moves.move.notation == "兵七进一"
         assert moves.next_node is not None
-        assert moves.next_node.move.san == "马８进７"
+        assert moves.next_node.move.notation == "马８进７"
 
     def test_parse_moves_empty(self):
         moves, _result = self.parser.parse_moves([])
@@ -190,13 +192,13 @@ class TestPGNParser:
         game = self.parser.parse(pgn_text)
         assert game.headers["Event"] == "Test"
         assert game.moves is not None
-        assert game.moves.move.san == "兵七进一"
+        assert game.moves.move.notation == "兵七进一"
 
     def parse_tokens(self, text):
         return self.parser.tokenize(text)
 
     def test_read_file(self):
-        tmp = Path("data", "test_parser.pgn")
+        tmp = Path("tests", "data", "test_parser.pgn")
         tmp.parent.mkdir(parents=True, exist_ok=True)
         with open(tmp, "w", encoding="utf-8") as f:
             f.write('[Event "Test"]\n\n1. 兵七进一 马８进７ 1-0\n')
@@ -254,7 +256,7 @@ class TestPGNWriter:
         assert '[Game "Chinese Chess"]' in text
 
     def test_save(self):
-        out_file = Path("data", "test_writer_out.pgn")
+        out_file = Path("tests", "data", "test_writer_out.pgn")
         out_file.parent.mkdir(parents=True, exist_ok=True)
         if out_file.exists():
             os.remove(out_file)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2024  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,18 +14,17 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
-from cchess import ChessPlayer, NO_COLOR, RED, BLACK
+from cchess import ANY_COLOR, BLACK, RED, ChessPlayer
 
 
-#-----------------------------------------------------#
-class TestPiece():
-
+# -----------------------------------------------------#
+class TestPiece:
     def test_base(self):
-        side = ChessPlayer(NO_COLOR)
-        assert side.next() == NO_COLOR
-        assert side.opposite() == NO_COLOR
+        side = ChessPlayer(ANY_COLOR)
+        assert side.next() == RED
+        assert side.opposite() == ANY_COLOR
 
         side = ChessPlayer(RED)
         assert side.opposite() == BLACK

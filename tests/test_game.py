@@ -49,12 +49,12 @@ class TestReaderXQF:
     """
 
     def test_base(self):
-        read_from_xqf(Path("data", "game_test.xqf"))
+        read_from_xqf(Path("tests", "data", "game_test.xqf"))
         # assert moves == ''
 
     def test_k1(self):
-        fen, moves, result = load_move_txt(Path("data", "test1_move.txt"))
-        game = read_from_xqf(Path("data", "test1.xqf"))
+        fen, moves, result = load_move_txt(Path("tests", "data", "test1_move.txt"))
+        game = read_from_xqf(Path("tests", "data", "test1.xqf"))
         assert game.init_board.to_fen() == fen
         assert game.info["result"] == result
 

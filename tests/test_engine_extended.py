@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 from pathlib import Path
-from cchess import FenCache, FULL_INIT_FEN, ChessBoard
+
+from cchess import FULL_INIT_FEN, ChessBoard, FenCache
 from cchess.engine import action_mirror, is_int, parse_engine_info_to_dict
 
 
@@ -86,7 +87,7 @@ class TestEngineExtended:
 
     def test_fen_cache_load_save(self):
         cache = FenCache()
-        cache_file = Path("data", "test_cache.json")
+        cache_file = Path("tests", "data", "test_cache.json")
 
         # 保存一些数据
         board = ChessBoard(FULL_INIT_FEN)

@@ -17,18 +17,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import pytest
+
 from cchess import (
-    CChessError,
-    ChessBoard,
-    iccs2pos,
-    pos2iccs,
-    iccs_mirror,
-    iccs_flip,
-    iccs_swap,
-    get_move_color,
+    BLACK,
     FULL_INIT_FEN,
     RED,
-    BLACK,
+    CChessError,
+    ChessBoard,
+    get_move_color,
+    iccs2pos,
+    iccs_flip,
+    iccs_mirror,
+    iccs_swap,
+    pos2iccs,
 )
 
 
@@ -458,7 +459,7 @@ class TestBoard:
         assert move.move_side == RED
         assert move.to_iccs() == "a0a1"
         assert str(move) == "a0a1"
-        assert move.is_valid_move() is True
+        assert move.board.is_valid_move(move.p_from, move.p_to) is True
 
         assert iccs2pos("a0a1") == ((0, 0), (0, 1))
         assert pos2iccs((0, 0), (0, 1)) == "a0a1"

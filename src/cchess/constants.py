@@ -15,7 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 # 颜色常量
-NO_COLOR, RED, BLACK = (0, 1, 2)
+ANY_COLOR, RED, BLACK = (0, 1, 2)
 
 # 棋盘常量
 EMPTY_BOARD = "9/9/9/9/9/9/9/9/9/9"

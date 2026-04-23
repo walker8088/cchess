@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from pathlib import Path
 
-from cchess import Game, ChessBoard
+from cchess import ChessBoard, Game
 
 # result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
 result_dict = {"红胜": "1-0", "黑胜": "0-1", "和棋": "1/2-1/2"}
@@ -42,13 +42,13 @@ class TestReaderXQF:
         pass
 
     def test_base(self):
-        game = Game.read_from(Path("data", "game_test.xqf"))
+        game = Game.read_from(Path("tests", "data", "game_test.xqf"))
         moves = game.dump_iccs_moves()
         assert len(moves) == 1
         assert game.verify_moves() is True
 
     def test_branchs_5(self):
-        game = Game.read_from(Path("data", "test_5_variations.xqf"))
+        game = Game.read_from(Path("tests", "data", "test_5_variations.xqf"))
         assert game.verify_moves() is True
         assert game.info["branchs"] == 5
 
@@ -85,7 +85,7 @@ class TestReaderXQF:
         # txt = ','.join([f'{m.to_text()}_{m.branch_index}.{m.len_siblings()}' for m in game.move_line_to_list()])
 
     def test_rw_xqf_variations(self):
-        game = Game.read_from(Path("data", "game_varations.xqf"))
+        game = Game.read_from(Path("tests", "data", "game_varations.xqf"))
         assert game.verify_moves() is True
         assert game.info["branchs"] == 6
 
@@ -121,7 +121,7 @@ class TestReaderXQF:
             txt = ",".join([x.to_text() for x in m_line["moves"]])
             assert txt == move_text2[index]
 
-        tmp_file = Path("data", "temp_game_s2.xqf")
+        tmp_file = Path("tests", "data", "temp_game_s2.xqf")
         game.save_to(tmp_file)
 
         game2 = Game.read_from(tmp_file)
@@ -136,14 +136,14 @@ class TestReaderXQF:
         fen = "7R1/4ak3/3aP4/2C2C3/9/4P4/4r4/7n1/1pp1p4/3K5 w"
         board = ChessBoard(fen)
         game = Game(board)
-        tmp3_file = Path("data", "temp_game_s3.xqf")
+        tmp3_file = Path("tests", "data", "temp_game_s3.xqf")
         game.save_to(tmp3_file)
         game3 = Game.read_from(tmp3_file)
         assert game3.init_board.to_fen() == fen
         os.remove(tmp3_file)
 
     def test_big_file(self):
-        game = Game.read_from(Path("data", "WildHouse.xqf"))
+        game = Game.read_from(Path("tests", "data", "WildHouse.xqf"))
         assert game.info["branchs"] == 139
 
         game.dump_iccs_moves()
@@ -154,8 +154,8 @@ class TestReaderXQF:
         #    print(','.join(m_line))
 
     def test_k1(self):
-        fen, moves, result = load_move_txt(Path("data", "test1_move.txt"))
-        game = Game.read_from(Path("data", "test1.xqf"))
+        fen, moves, result = load_move_txt(Path("tests", "data", "test1_move.txt"))
+        game = Game.read_from(Path("tests", "data", "test1.xqf"))
         assert game.init_board.to_fen() == fen
         assert game.info["result"] == result
         # assert game.info['branchs'] == 1

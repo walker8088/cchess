@@ -21,23 +21,23 @@ from collections import OrderedDict
 # -----------------------------------------------------#
 # 从 constants 导入并重新导出，方便其他模块使用
 from .constants import (
+    ANY_COLOR,
     BLACK,
     EMPTY_BOARD,
     EMPTY_FEN,
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
-    NO_COLOR,
     RED,
 )
 
 # 明确导出列表，避免 Ruff F401 警告
 __all__ = [
+    "ANY_COLOR",
     "BLACK",
     "EMPTY_BOARD",
     "EMPTY_FEN",
     "FULL_INIT_BOARD",
     "FULL_INIT_FEN",
-    "NO_COLOR",
     "RED",
     "opposite_color",
     "fench_to_txt_name",

@@ -111,7 +111,7 @@ class TestReaderCbf:
             "车七进三",
         ]
 
-        game = Game.read_from(Path("data", "test2.cbf"))
+        game = Game.read_from(Path("tests", "data", "test2.cbf"))
         moves = game.dump_text_moves()
         assert len(moves) == 1
         move = moves[0]

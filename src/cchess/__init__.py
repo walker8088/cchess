@@ -16,12 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .board import ChessBoard, ChessPlayer
 from .common import (
+    ANY_COLOR,
     BLACK,
     EMPTY_BOARD,
     EMPTY_FEN,
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
-    NO_COLOR,
     RED,
     fen_flip,
     fen_mirror,
@@ -48,6 +48,7 @@ from .engine import (
 from .engine_async import AsyncEngine, analyse_position, play_move
 from .exception import CChessError, EngineError
 from .game import Game
+from .io_pgn import read_from_pgn
 from .io_xqf import read_from_xqf
 from .move import Move
 from .piece import (
@@ -62,14 +63,13 @@ from .piece import (
 )
 from .read_cbf import read_from_cbf
 from .read_cbr import read_from_cbl, read_from_cbr
-from .read_pgn import read_from_pgn
 
 __all__ = [
     # exception
     "CChessError",
     "EngineError",
     # common
-    "NO_COLOR",
+    "ANY_COLOR",
     "RED",
     "BLACK",
     "fench_to_species",

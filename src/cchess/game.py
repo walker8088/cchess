@@ -285,10 +285,10 @@ class Game:  # pylint: disable=too-many-public-methods
         模块以避免循环依赖。
         """
         # 在函数开始时才导入以避免循环导入
+        from . import read_from_pgn  # pylint: disable=import-outside-toplevel
         from .io_xqf import read_from_xqf  # pylint: disable=import-outside-toplevel
         from .read_cbf import read_from_cbf  # pylint: disable=import-outside-toplevel
         from .read_cbr import read_from_cbr  # pylint: disable=import-outside-toplevel
-        from .read_pgn import read_from_pgn  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":

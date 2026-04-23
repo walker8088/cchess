@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .common import (
+    ANY_COLOR,
     BLACK,
     RED,
     fench_to_species,
@@ -178,12 +179,159 @@ def _get_v_index(step_digit, move_side):
 
     参数:
         step_digit: 数字字符（中文、半角或全角）
-        move_side: 走子方
+        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
 
     返回:
-        int: 步数差值，找不到返回 None
+        int: v_index 位置 (0-9)，找不到返回 None
     """
     return _get_index(step_digit, move_side, use_v_index=True)
+
+
+def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
+    """将数字字符转换为规范局面下的格式。
+
+    当原始局面是黑方走子时，走法字符串中的数字是全角格式（如"２"）。
+    在规范局面上，我们需要将其转换为红方格式（中文数字"二"）。
+
+    参数:
+        digit_char: 原始数字字符
+        original_side: 原始走子方 (RED/BLACK)
+        normalized_side: 规范局面走子方 (默认为RED)
+
+    返回:
+        str: 转换后的数字字符
+    """
+    if original_side == normalized_side:
+        return digit_char
+
+    # 如果原始是黑方，规范局面是红方，需要将全角数字转换为中文数字
+    if original_side == BLACK and normalized_side == RED:
+        # 全角数字到中文数字的映射
+        fullwidth_to_chinese = {
+            "０": "零",
+            "１": "一",
+            "２": "二",
+            "３": "三",
+            "４": "四",
+            "５": "五",
+            "６": "六",
+            "７": "七",
+            "８": "八",
+            "９": "九",
+            "0": "零",
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六",
+            "7": "七",
+            "8": "八",
+            "9": "九",
+        }
+        return fullwidth_to_chinese.get(digit_char, digit_char)
+
+    # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
+    if original_side == RED and normalized_side == BLACK:
+        # 中文数字到全角数字的映射
+        chinese_to_fullwidth = {
+            "零": "０",
+            "一": "１",
+            "二": "２",
+            "三": "３",
+            "四": "４",
+            "五": "５",
+            "六": "６",
+            "七": "７",
+            "八": "８",
+            "九": "九",
+            "前": "前",
+            "中": "中",
+            "后": "后",
+        }
+        return chinese_to_fullwidth.get(digit_char, digit_char)
+
+    return digit_char
+
+
+def _normalize_move_str(move_str, original_side, normalized_side=RED):
+    """将走法字符串中的数字字符转换为规范局面下的格式。
+
+    例如："炮２平５"（黑方格式）转换为"炮二平五"（红方格式）
+
+    参数:
+        move_str: 原始走法字符串
+        original_side: 原始走子方 (RED/BLACK)
+        normalized_side: 规范局面走子方 (默认为RED)
+
+    返回:
+        str: 转换后的走法字符串
+    """
+    if original_side == normalized_side:
+        return move_str
+
+    # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
+    if original_side == BLACK and normalized_side == RED:
+        # 全角数字到中文数字的映射
+        fullwidth_to_chinese = {
+            "０": "零",
+            "１": "一",
+            "２": "二",
+            "３": "三",
+            "４": "四",
+            "５": "五",
+            "６": "六",
+            "７": "七",
+            "８": "八",
+            "９": "九",
+            "0": "零",
+            "1": "一",
+            "2": "二",
+            "3": "三",
+            "4": "四",
+            "5": "五",
+            "6": "六",
+            "7": "七",
+            "8": "八",
+            "9": "九",
+        }
+
+        result = []
+        for char in move_str:
+            if char in fullwidth_to_chinese:
+                result.append(fullwidth_to_chinese[char])
+            else:
+                result.append(char)
+        return "".join(result)
+
+    # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
+    if original_side == RED and normalized_side == BLACK:
+        # 中文数字到全角数字的映射
+        chinese_to_fullwidth = {
+            "零": "０",
+            "一": "１",
+            "二": "２",
+            "三": "３",
+            "四": "４",
+            "五": "５",
+            "六": "６",
+            "七": "７",
+            "八": "８",
+            "九": "九",
+            "前": "前",
+            "中": "中",
+            "后": "后",
+        }
+
+        result = []
+        for char in move_str:
+            if char in chinese_to_fullwidth:
+                result.append(chinese_to_fullwidth[char])
+            else:
+                result.append(char)
+        return "".join(result)
+
+    return move_str
 
 
 def _get_target_x(digit_char, move_side):
@@ -490,14 +638,6 @@ class Move:
 
         if self.next_move:
             self.next_move.swap()
-
-    def is_valid_move(self):
-        """判断该走子在原始棋盘上是否合法。
-
-        通过底层棋盘的 `is_valid_move` 方法验证由 `p_from` 到 `p_to`
-        的移动是否合法，返回布尔值。
-        """
-        return self.board.is_valid_move(self.p_from, self.p_to)
 
     def is_king_killed(self):
         """如果此走子吃掉了将/帅，返回 True。
@@ -872,104 +1012,134 @@ class Move:
         """解析中文走法字符串，返回标准化的走子 ((p_from, p_to))。
 
         根据数字类型检测走子方：中文数字=RED，阿拉伯数字=BLACK。
-        直接在原始棋盘上查找棋子，不使用规范局面转换。
+        直接在原始棋盘上查找棋子。
         """
         move_str = move_str.replace(" ", "")
+        return _MoveTextParser(board, move_str).parse()
 
-        move_indices = ["前", "中", "后", "一", "二", "三", "四", "五"]
 
-        multi_pieces = False
-        multi_lines = False
+class _MoveTextParser:
+    """中文走法文本解析器，使用策略模式降低复杂度"""
 
-        if move_str[0] in move_indices:
-            multi_pieces = True
-            man_index = move_indices.index(move_str[0])
-            if man_index > 2:
-                multi_lines = True
-            piece_name = move_str[1]
+    def __init__(self, board, move_str):
+        self.board = board
+        self.move_str = move_str
+        self.work_side = None
+        self.fench = None
+        self.piece_fench = None
+        self.piece_name = None
+
+    def parse(self):
+        """执行解析"""
+        if not self._parse_basic_info():
+            return None
+
+        # 根据首字符选择解析策略
+        first_char = self.move_str[0]
+        if first_char in ["一", "二", "三", "四", "五"]:
+            return self._parse_multi_lines()
+        elif first_char in ["前", "中", "后"]:
+            return self._parse_multi_pieces()
         else:
-            piece_name = move_str[0]
+            return self._parse_simple()
 
-        work_side = _detect_move_side_from_notation(move_str)
-        if work_side is None:
-            work_side = board.move_side.color
-        if work_side == 0:
-            work_side = RED
+    def _parse_basic_info(self):
+        """解析基本信息：棋子名称、颜色、FEN字符"""
+        # 确定棋子名称
+        if self.move_str[0] in ["前", "中", "后", "一", "二", "三", "四", "五"]:
+            self.piece_name = self.move_str[1]
+        else:
+            self.piece_name = self.move_str[0]
 
-        fench = text_to_fench(piece_name, work_side)
-        if not fench:
+        # 确定走子方
+        self.work_side = _detect_move_side_from_notation(self.move_str)
+        if self.work_side is None:
+            self.work_side = self.board.move_side.color
+        if self.work_side == ANY_COLOR:
+            self.work_side = RED
+
+        # 转换为FEN字符
+        self.fench = text_to_fench(self.piece_name, self.work_side)
+        if not self.fench:
+            return False
+
+        self.piece_fench = self.fench.lower()
+        return True
+
+    def _parse_simple(self):
+        """解析简单走法（如"炮二平五"）"""
+        digit_char = self.move_str[1]
+        x = _get_digit_index(digit_char, self.work_side)
+        if x is None:
             return None
 
-        piece_fench = fench.lower()
-
-        if multi_lines:
-            digit_char = move_str[0]
-            target_x = _get_digit_index(digit_char, work_side)
-
-            positions = []
-            if target_x is not None:
-                positions = board.get_fenchs_x(fench, target_x)
-
-            if not positions:
-                positions = board.get_fenchs(fench)
-
-            if piece_fench == "p" and len(positions) > 1:
-                if work_side == RED:
-                    positions.sort(key=lambda p: p[1], reverse=True)
-                else:
-                    positions.sort(key=lambda p: p[1])
-
-            if len(positions) == 0:
-                return None
-
-            for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, work_side, pos, move_str[2:]
-                )
-                if move:
-                    return [(pos, move)]
-
+        positions = self.board.get_fenchs_x(self.fench, x)
+        if len(positions) == 0:
             return None
 
-        if not multi_pieces:
-            digit_char = move_str[1]
-            x = _get_digit_index(digit_char, work_side)
-            if x is None:
-                return None
-            positions = board.get_fenchs_x(fench, x)
+        # 除了士/象，同一列不能有多个相同棋子
+        if (len(positions) > 1) and (self.piece_fench not in ["a", "b"]):
+            return None
 
-            if len(positions) == 0:
-                return None
+        moves = []
+        for pos in positions:
+            move = Move.text_move_to_std_move(
+                self.piece_fench, self.work_side, pos, self.move_str[2:]
+            )
+            if move:
+                moves.append((pos, move))
 
-            if (len(positions) > 1) and (piece_fench not in ["a", "b"]):
-                return None
+        return moves
 
-            moves = []
-            for pos in positions:
-                move = Move.text_move_to_std_move(
-                    piece_fench, work_side, pos, move_str[2:]
-                )
-                if move:
-                    moves.append((pos, move))
+    def _parse_multi_pieces(self):
+        """解析多棋子情况（如"前炮平五"、"中炮平五"、"后炮平五"）"""
+        positions = self.board.get_fenchs(self.fench)
+        if not positions:
+            return None
 
-            return moves
+        # 红方：前=y 大（靠近对方），后=y 小（靠近己方）
+        # 黑方：前=y 小（靠近对方），后=y 大（靠近己方）
+        if self.work_side == BLACK:
+            positions.sort(key=lambda p: p[1])  # y 升序：前->后
+        else:
+            positions.sort(key=lambda p: p[1], reverse=True)  # y 降序：前->后
 
-        if move_str[0] in ["前", "中", "后"]:
-            positions = board.get_fenchs(fench)
-            
-            # 红方：前=y 大（靠近对方），后=y 小（靠近己方）
-            # 黑方：前=y 小（靠近对方），后=y 大（靠近己方）
-            # 所以红黑方的排序方向相反
-            if work_side == BLACK:
-                positions.sort(key=lambda p: p[1])  # y 升序：前->后
+        move_idx = {"前": 0, "中": 1, "后": -1}  # 前=第一个，后=最后一个
+        pos = positions[move_idx[self.move_str[0]]]
+
+        move = Move.text_move_to_std_move(
+            self.piece_fench, self.work_side, pos, self.move_str[2:]
+        )
+        if move:
+            return [(pos, move)]
+        return None
+
+    def _parse_multi_lines(self):
+        """解析多线情况（如"一炮平五"、"二炮平五"等）"""
+        digit_char = self.move_str[0]
+        target_x = _get_digit_index(digit_char, self.work_side)
+
+        positions = []
+        if target_x is not None:
+            positions = self.board.get_fenchs_x(self.fench, target_x)
+
+        if not positions:
+            positions = self.board.get_fenchs(self.fench)
+
+        if self.piece_fench == "p" and len(positions) > 1:
+            if self.work_side == RED:
+                positions.sort(key=lambda p: p[1], reverse=True)
             else:
-                positions.sort(key=lambda p: p[1], reverse=True)  # y 降序：前->后
-            
-            move_idx = {"前": 0, "中": 1, "后": -1}  # 前=第一个，后=最后一个
-            pos = positions[move_idx[move_str[0]]]
+                positions.sort(key=lambda p: p[1])
 
-            move = Move.text_move_to_std_move(piece_fench, work_side, pos, move_str[2:])
+        if len(positions) == 0:
+            return None
+
+        for pos in positions:
+            move = Move.text_move_to_std_move(
+                self.piece_fench, self.work_side, pos, self.move_str[2:]
+            )
             if move:
                 return [(pos, move)]
-            return None
+
         return None

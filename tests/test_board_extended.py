@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ChessBoard, FULL_INIT_FEN, RED, BLACK, NO_COLOR
+from cchess import ANY_COLOR, BLACK, FULL_INIT_FEN, RED, ChessBoard
 
 
 class TestBoardExtended:
@@ -28,8 +28,8 @@ class TestBoardExtended:
         board.set_move_color(BLACK)
         assert board.move_player == BLACK
 
-        board.set_move_color(NO_COLOR)
-        assert board.move_player == NO_COLOR
+        board.set_move_color(ANY_COLOR)
+        assert board.move_player == ANY_COLOR
 
     def test_put_fench_pop_fench(self):
         board = ChessBoard()
