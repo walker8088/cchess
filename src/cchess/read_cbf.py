@@ -22,10 +22,16 @@ from .exception import CChessError
 # -----------------------------------------------------#
 
 
-def read_from_cbf(file_name):  # pylint: disable=too-many-locals
-    """从 CBF 文件读取棋局并转换为 `Game` 对象。"""
-    # 避免循环导入
-    from .game import Game  # pylint: disable=import-outside-toplevel
+def read_from_cbf(file_name, game=None):  # pylint: disable=too-many-locals
+    """从 CBF 文件读取棋局并转换为 `Game` 对象。
+
+    Args:
+        file_name: 文件路径
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
+    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
 
     def decode_move(move_str):
         """decode_move 函数。"""
@@ -51,7 +57,14 @@ def read_from_cbf(file_name):  # pylint: disable=too-many-locals
 
     move_list = list(root.find("MoveList"))  # .getchildren()
 
-    game = Game(board)
+    # 如果提供了game实例，使用它；否则创建新的
+    if game is None:
+        game = Game(board)
+    else:
+        # 使用提供的game实例
+        game.init_board = board
+        game.first_move = None
+        game.last_move = None
     last_move = None
     step_no = 1
     for node in move_list[1:]:

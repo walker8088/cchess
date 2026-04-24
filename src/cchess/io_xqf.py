@@ -24,7 +24,6 @@ from typing import Tuple
 
 from .board import ChessBoard, ChessPlayer
 from .common import RED, fench_to_species
-from .game import Game
 
 # -----------------------------------------------------#
 # result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
@@ -319,7 +318,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, read_annotation=True):  # pylint: disable=unused-argument  # pylint: disable=unused-argument
+def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: disable=unused-argument  # pylint: disable=unused-argument
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
@@ -328,6 +327,7 @@ def read_from_xqf(full_file_name, read_annotation=True):  # pylint: disable=unus
     参数:
         full_file_name (str): XQF 文件路径
         read_annotation (bool): 是否读取注释
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
 
     返回:
         Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
@@ -460,7 +460,18 @@ def read_from_xqf(full_file_name, read_annotation=True):  # pylint: disable=unus
 
     game_annotation = __read_init_info(step_base_buff, version, keys)
 
-    game = Game(board, game_annotation)
+    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
+
+        game = Game(board, game_annotation)
+    else:
+        # 使用提供的game实例
+        game.init_board = board
+        game.annote = game_annotation
+        game.first_move = None
+        game.last_move = None
+
     game.info.update(game_info)
 
     __read_steps(step_base_buff, version, keys, game, None, board)

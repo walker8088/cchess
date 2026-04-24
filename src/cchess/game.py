@@ -275,41 +275,51 @@ class Game:  # pylint: disable=too-many-public-methods
             read_from_ubb_dhtml,  # pylint: disable=import-outside-toplevel
         )
 
-        return read_from_ubb_dhtml(txt)
+        # 先创建空的Game实例
+        game = Game()
+        return read_from_ubb_dhtml(txt, game)
 
     @staticmethod
     def read_from(file_name):
         """从文件中读取棋谱并返回 Game 对象，自动根据文件后缀选择解析器。
 
-        支持的后缀包括 .xqf, .pgn, .cbf, .cbr；函数内部延迟导入对应解析
-        模块以避免循环依赖。
+        支持的后缀包括 .xqf, .pgn, .cbf, .cbr。
         """
-        # 在函数开始时才导入以避免循环导入
-        from . import read_from_pgn  # pylint: disable=import-outside-toplevel
-        from .io_xqf import read_from_xqf  # pylint: disable=import-outside-toplevel
-        from .read_cbf import read_from_cbf  # pylint: disable=import-outside-toplevel
-        from .read_cbr import read_from_cbr  # pylint: disable=import-outside-toplevel
+        # 先创建空的Game实例
+        game = Game()
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
-            return read_from_xqf(file_name)
+            from .io_xqf import read_from_xqf
+
+            return read_from_xqf(file_name, game)
         if ext == ".pgn":
-            return read_from_pgn(file_name)
+            from .io_pgn import read_from_pgn
+
+            return read_from_pgn(file_name, game)
         if ext == ".cbf":
-            return read_from_cbf(file_name)
+            from .read_cbf import read_from_cbf
+
+            return read_from_cbf(file_name, game)
         if ext == ".cbr":
-            return read_from_cbr(file_name)
+            from .read_cbr import read_from_cbr
+
+            return read_from_cbr(file_name, game)
         raise ValueError(f"Unknown file format:{file_name}")
 
     @staticmethod
     def read_from_lib(file_name):
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
-        # 在函数开始时才导入以避免循环导入
-        from .read_cbr import read_from_cbl  # pylint: disable=import-outside-toplevel
+        # 先创建空的Game实例
+        game = Game()
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".cbl":
-            return read_from_cbl(file_name)
+            from .read_cbr import (
+                read_from_cbl,  # pylint: disable=import-outside-toplevel
+            )
+
+            return read_from_cbl(file_name, game)
         raise ValueError(f"Unknown lib file format:{file_name}")
 
     def save_to_pgn(self, file_name):

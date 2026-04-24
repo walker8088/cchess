@@ -19,7 +19,6 @@ import struct
 from .board import ChessBoard, ChessPlayer
 from .common import BLACK, RED, fench_to_species
 from .exception import CChessError
-from .game import Game
 
 # pylint: disable=too-many-locals,too-many-branches
 # -----------------------------------------------------#
@@ -193,8 +192,13 @@ def __read_steps(buff_decoder, game, parent_move, board):
 
 
 # -----------------------------------------------------#
-def read_from_cbr_buffer(contents):
-    """从 CBR 文件的字节内容解析并返回 `Game` 对象。"""
+def read_from_cbr_buffer(contents, game=None):
+    """从 CBR 文件的字节内容解析并返回 `Game` 对象。
+
+    Args:
+        contents: 文件内容字节
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
     (
         magic,
         _is1,
@@ -242,7 +246,17 @@ def read_from_cbr_buffer(contents):
 
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
     game_annote = __read_init_info(buff_decoder)
-    game = Game(board, game_annote)
+    # 如果提供了game实例，使用它；否则创建新的
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
+
+        game = Game(board, game_annote)
+    else:
+        # 使用提供的game实例
+        game.init_board = board
+        game.annote = game_annote
+        game.first_move = None
+        game.last_move = None
     game.info = game_info
 
     if not buff_decoder.is_end():
@@ -252,17 +266,28 @@ def read_from_cbr_buffer(contents):
 
 
 # -----------------------------------------------------#
-def read_from_cbr(file_name):
-    """从 `.cbr` 文件读取并解析为 `Game` 对象。"""
+def read_from_cbr(file_name, game=None):
+    """从 `.cbr` 文件读取并解析为 `Game` 对象。
+
+    Args:
+        file_name: 文件路径
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    return read_from_cbr_buffer(contents)
+    return read_from_cbr_buffer(contents, game)
 
 
 # -----------------------------------------------------#
-def read_from_cbl(file_name, verify=True):  # pylint: disable=unused-argument
-    """从 `.cbl` 棋谱库文件读取并返回包含多个 `Game` 的字典。"""
+def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-argument
+    """从 `.cbl` 棋谱库文件读取并返回包含多个 `Game` 的字典。
+
+    Args:
+        file_name: 文件路径
+        verify: 验证标志
+        game: 模板Game实例，用于创建新游戏（向后兼容）
+    """
     with open(file_name, "rb") as f:
         contents = f.read()
 

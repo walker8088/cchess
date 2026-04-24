@@ -437,14 +437,30 @@ class PGNWriter:
 
 
 # -----------------------------------------------------#
-def read_from_pgn(file_name):
-    """从 PGN 文件读取并解析为 `Game` 对象。"""
-    # 避免循环导入
-    from .game import Game  # pylint: disable=import-outside-toplevel
-    from .move import Move  # pylint: disable=import-outside-toplevel
+def read_from_pgn(file_name, game=None):
+    """从 PGN 文件读取并解析为 `Game` 对象。
 
-    board = ChessBoard(FULL_INIT_FEN)
-    game = Game(board)
+    Args:
+        file_name: 文件路径
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
+    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
+        from .move import Move  # pylint: disable=import-outside-toplevel
+
+        move_class = Move
+        board = ChessBoard(FULL_INIT_FEN)
+        game = Game(board)
+    else:
+        # 使用提供的game实例
+        from .move import Move  # pylint: disable=import-outside-toplevel
+
+        move_class = Move
+        board = ChessBoard(FULL_INIT_FEN)
+        game.init_board = board
+        game.first_move = None
+        game.last_move = None
 
     with open(file_name, "rb") as f:
         raw = f.read()
@@ -520,7 +536,7 @@ def read_from_pgn(file_name):
                     move_info = board.make_move(from_pos, to_pos)
 
                     # 创建Move对象
-                    move = Move(move_info)
+                    move = move_class(move_info)
 
                     # 添加走法到游戏
                     if parent_move is None:

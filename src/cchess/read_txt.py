@@ -28,10 +28,17 @@ def decode_txt_pos(pos):
 
 
 # -----------------------------------------------------#
-def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
-    """从文本棋谱字符串读取并返回 `Game` 对象。"""
-    # 避免循环导入
-    from .game import Game  # pylint: disable=import-outside-toplevel
+def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-many-locals
+    """从文本棋谱字符串读取并返回 `Game` 对象。
+
+    Args:
+        moves_txt: 走法文本
+        pos_txt: 位置文本
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
+    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
 
     # 车马相士帅士相马车炮炮兵兵兵兵兵
     # 车马象士将士象马车炮炮卒卒卒卒卒
@@ -56,7 +63,15 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
 
     last_move = None
     if not moves_txt:
-        return Game(board)
+        # 如果提供了game实例，使用它；否则创建新的
+        if game is None:
+            return Game(board)
+        else:
+            # 使用提供的game实例
+            game.init_board = board
+            game.first_move = None
+            game.last_move = None
+            return game
 
     step_no = 0
     while step_no * 4 < len(moves_txt):
@@ -69,7 +84,14 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
             if not last_move:
                 _, man_side = fench_to_species(board.get_fench(move_from))
                 board.move_player = ChessPlayer(man_side)
-                game = Game(board)
+                # 如果提供了game实例，使用它；否则创建新的
+                if game is None:
+                    game = Game(board)
+                else:
+                    # 使用提供的game实例
+                    game.init_board = board
+                    game.first_move = None
+                    game.last_move = None
                 last_move = game
 
             new_move = board.move(move_from, move_to)
@@ -79,7 +101,14 @@ def read_from_txt(moves_txt, pos_txt=None):  # pylint: disable=too-many-locals
             raise CChessError(f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
     if step_no == 0:
-        game = Game(board)
+        # 如果提供了game实例，使用它；否则创建新的
+        if game is None:
+            game = Game(board)
+        else:
+            # 使用提供的game实例
+            game.init_board = board
+            game.first_move = None
+            game.last_move = None
 
     return game
 
@@ -160,16 +189,30 @@ def txt_to_moves(board, moves_txt):
 
 
 # -----------------------------------------------------#
-def read_from_ubb_dhtml(ubb_text):
-    """从 UBB DHTML 文本读取并返回 `Game` 对象。"""
-    # 避免循环导入
-    from .game import Game  # pylint: disable=import-outside-toplevel
+def read_from_ubb_dhtml(ubb_text, game=None):
+    """从 UBB DHTML 文本读取并返回 `Game` 对象。
+
+    Args:
+        ubb_text: UBB文本
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
+    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
+    if game is None:
+        from .game import Game  # pylint: disable=import-outside-toplevel
 
     info = ubb_to_dict(ubb_text)
     board = txt_to_board(info["binit"])
     moves = txt_to_moves(board, info["movelist"])
 
-    game = Game(board)
+    # 如果提供了game实例，使用它；否则创建新的
+    if game is None:
+        game = Game(board)
+    else:
+        # 使用提供的game实例
+        game.init_board = board
+        game.first_move = None
+        game.last_move = None
+
     game.info = info
     for move in moves:
         game.append_next_move(move)
