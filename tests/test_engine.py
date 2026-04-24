@@ -110,7 +110,7 @@ class TestUcci:
 
         fen, moves, result = load_move_txt(Path("tests", "data", "ucci_test1_move.txt"))
         game = Game.read_from(Path("tests", "data", "ucci_test1.xqf"))
-        game.init_board.move_player = ChessPlayer(cchess.RED)
+        game.init_board.set_move_side(cchess.RED)
 
         assert game.init_board.to_fen() == fen
         assert game.info["result"] == result
@@ -136,7 +136,7 @@ class TestUcci:
                     break
                 elif action == "dead":
                     # print(output)
-                    if board.move_player == cchess.RED:
+                    if board.move_side().color == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -196,7 +196,7 @@ class TestUci:
                     break
                 elif action == "dead":
                     # print(output)
-                    if board.move_player == cchess.RED:
+                    if board.move_side().color == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -251,7 +251,7 @@ class TestUci:
                     move = board.move_iccs(iccs)
                     print(move.to_text())
                     assert move.to_iccs() == moves.pop(0)
-                    last_player = board.move_player
+                    last_player = board.move_side()
                     board.next_turn()
                     break
                 elif action == "info_move":
@@ -261,7 +261,7 @@ class TestUci:
                 elif action == "dead":
                     # print(output)
 
-                    if board.move_player == cchess.RED:
+                    if board.move_side().color == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -306,7 +306,7 @@ class TestUci:
 
 """
 
-'''
+"""
 class TestEngineManager:
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
@@ -360,4 +360,4 @@ class TestEngineManager:
                     # print(result)
         # self.cache.save()
         # self.mgr.get_game_file_score(Path('data', '030-黄松轩先胜冯敬如.XQF'))
-'''
+"""

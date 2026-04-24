@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 from typing import Tuple
 
-from .board import ChessBoard, ChessPlayer
+from .board import ChessBoard
 from .common import RED, fench_to_species
 
 # -----------------------------------------------------#
@@ -302,7 +302,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     fench = board.get_fench(move_from)
     if fench:
         _, man_side = fench_to_species(fench)
-        board.move_player = ChessPlayer(man_side)
+        board.set_move_side(man_side)
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
@@ -477,11 +477,11 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
     __read_steps(step_base_buff, version, keys, game, None, board)
 
     if game.first_move:
-        game.init_board.move_player = game.first_move.board.move_player
+        game.init_board.set_move_side(game.first_move.board_before().move_side())
     else:
-        game.init_board.move_player = ChessPlayer(RED)
+        game.init_board.set_move_side(RED)
 
-    game.info["move_player"] = str(game.init_board.move_player)
+    game.info["move_side"] = str(game.init_board.move_side())
 
     return game
 

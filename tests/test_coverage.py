@@ -1524,16 +1524,16 @@ class TestBoard:
             tmp_path = f.name
         try:
             board.load_one_hot_dict(tmp_path)
-            assert board.chess_dict is not None
+            assert board.chess_dict() is not None
         finally:
             os.unlink(tmp_path)
 
     def test_chess_board_one_hot_chess_dict(self):
-        """Test ChessBoardOneHot.chess_dict property."""
+        """Test ChessBoardOneHot.chess_dict method."""
         board = ChessBoardOneHot(FULL_INIT_FEN)
         d = {"R": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
         board._ChessBoardOneHot__chess_dict = d
-        result = board.chess_dict
+        result = board.chess_dict()
         assert result == d
 
 

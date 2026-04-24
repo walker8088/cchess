@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
 
-from .board import ChessBoard, ChessPlayer
+from .board import ChessBoard
 from .common import FULL_INIT_FEN, fench_to_species
 from .exception import CChessError
 
@@ -83,7 +83,7 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-ma
         if board.is_valid_move(move_from, move_to):
             if not last_move:
                 _, man_side = fench_to_species(board.get_fench(move_from))
-                board.move_player = ChessPlayer(man_side)
+                board.set_move_side(man_side)
                 # 如果提供了game实例，使用它；否则创建新的
                 if game is None:
                     game = Game(board)
@@ -177,7 +177,7 @@ def txt_to_moves(board, moves_txt):
         if board.is_valid_move(move_from, move_to):
             if len(moves) == 0:
                 _, man_side = fench_to_species(board.get_fench(move_from))
-                board.move_player = ChessPlayer(man_side)
+                board.set_move_side(man_side)
 
             new_move = board.move(move_from, move_to)
             moves.append(new_move)

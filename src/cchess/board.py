@@ -85,7 +85,7 @@ class ChessPlayer:
 
     def __init__(self, color: int) -> None:
         """初始化 ChessPlayer。
-        
+
         参数:
             color: 颜色值 (RED=1, BLACK=2, ANY_COLOR=0)
         """
@@ -183,7 +183,7 @@ class ChessBoard:
         """返回完全独立的棋盘副本（需要时使用）。"""
         b = self.__class__()
         b._board = [row[:] for row in self._board]
-        b.move_side = self.move_side
+        b.set_move_side(self.move_side())
         b._red_attacks = [row[:] for row in self._red_attacks]
         b._black_attacks = [row[:] for row in self._black_attacks]
         b._attack_matrix_dirty = self._attack_matrix_dirty
@@ -192,7 +192,7 @@ class ChessBoard:
     def from_board(self, b: "ChessBoard") -> None:
         """从另一个ChessBoard Copy属性"""
         self._board = b._board
-        self._move_side = b.move_side
+        self._move_side = b.move_side()
         # 复制攻击矩阵缓存（如果存在）
         if hasattr(b, "_red_attacks"):
             self._red_attacks = b._red_attacks
@@ -236,7 +236,7 @@ class ChessBoard:
             [swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)
         ]
 
-        b.move_side = b.move_side.next()
+        b.set_move_side(b.move_side().next())
         b._attack_matrix_dirty = True
 
         return b
@@ -273,13 +273,13 @@ class ChessBoard:
         返回:
             ChessBoard: 规范局面棋盘
         """
-        if self.move_side.color == BLACK:
+        if self.move_side().color == BLACK:
             return self.swap().flip()
         return self.copy()
 
     def is_normalized(self):
         """判断当前是否为规范局面（红方走子）。"""
-        return self.move_side.color == RED
+        return self.move_side().color == RED
 
     def denormalize_pos(self, pos):
         """将规范局面坐标转换回原局面。
@@ -308,23 +308,13 @@ class ChessBoard:
         """返回当前走子方的颜色整数值。"""
         return self._move_side.color
 
-    @property
-    def move_player(self):
-        """兼容旧代码：move_player 是 move_side 的别名"""
-        return self._move_side
+    # move_player 已被废弃，请使用 move_side() 和 set_move_side() 方法
 
-    @move_player.setter
-    def move_player(self, value):
-        """兼容旧代码：支持整数或 ChessPlayer 赋值"""
-        self._move_side = ChessPlayer(value) if isinstance(value, int) else value
-
-    @property
     def move_side(self):
-        """当前走子方（ChessPlayer 对象）"""
+        """获取当前走子方（ChessPlayer 对象）"""
         return self._move_side
 
-    @move_side.setter
-    def move_side(self, value):
+    def set_move_side(self, value):
         """设置走子方，支持整数或 ChessPlayer"""
         self._move_side = ChessPlayer(value) if isinstance(value, int) else value
 
@@ -476,7 +466,7 @@ class ChessBoard:
 
         _, from_color = fench_to_species(fench_from)
 
-        if self.move_side not in (ANY_COLOR, from_color):
+        if self.move_side() not in (ANY_COLOR, from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -490,7 +480,9 @@ class ChessBoard:
         piece = self.get_piece(pos_from)
         return piece.is_valid_move(pos_to) if piece else False
 
-    def _move_piece(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> Optional[str]:
+    def _move_piece(
+        self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
+    ) -> Optional[str]:
         """在内部执行棋子移动（不做合法性检查），并返回被移动的 fench。"""
         fench = self._board[pos_from[1]][pos_from[0]]
         self._board[pos_to[1]][pos_to[0]] = fench
@@ -506,7 +498,7 @@ class ChessBoard:
         """
         # 记录移动前状态
         prev_attack_matrix_dirty = self._attack_matrix_dirty
-        prev_move_side = self.move_side
+        prev_move_side = self.move_side()
         moving_fench = self._board[pos_from[1]][pos_from[0]]
         captured_fench = self._board[pos_to[1]][pos_to[0]]
         board_before = [row[:] for row in self._board]  # 深拷贝棋盘数组
@@ -516,7 +508,7 @@ class ChessBoard:
 
         # 记录移动后状态（不切换走子方）
         next_attack_matrix_dirty = self._attack_matrix_dirty
-        next_move_side = self.move_side
+        next_move_side = self.move_side()
         board_after = [row[:] for row in self._board]  # 深拷贝棋盘数组
 
         # 返回状态记录
@@ -554,7 +546,9 @@ class ChessBoard:
         # 恢复走子方
         self._move_side = move_info.prev_move_side
 
-    def move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True) -> Optional[Move]:
+    def move(
+        self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True
+    ) -> Optional[Move]:
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
         返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
         if not self.is_valid_move(pos_from, pos_to):
@@ -565,13 +559,13 @@ class ChessBoard:
 
         # 切换走子方（除非吃掉将帅）
         if move_info.captured_fench not in ("k", "K"):
-            self._move_side = self.move_side.next()
+            self._move_side = self.move_side().next()
 
         move = Move(move_info)
         if check:
             # 检查刚走完棋的一方是否对对方将军
             # 需要临时切换回上一步的走子方
-            original_move_side = self.move_side
+            original_move_side = self.move_side()
             self._move_side = move_info.prev_move_side
             is_checking = self.is_checking()
             move.is_checking = is_checking
@@ -620,7 +614,7 @@ class ChessBoard:
         注意:
             - 可以移动任意方的棋子
             - 可以吃己方棋子
-            - 不检查 move_player 颜色
+            - 不检查 move_side 颜色
         """
         # 最基本的检查：起点必须有棋子，目标位置在棋盘内
         if not (0 <= pos_to[0] <= 8 and 0 <= pos_to[1] <= 9):
@@ -652,8 +646,8 @@ class ChessBoard:
 
     def next_turn(self):
         """切换到下一个走子方并返回新的 `ChessPlayer` 实例（工具方法）。"""
-        self._move_side = self.move_side.next()
-        return self.move_side
+        self._move_side = self.move_side().next()
+        return self.move_side()
 
     def set_piece(self, fench, pos):
         """在指定位置放置棋子（摆棋专用，不检查合法性）。
@@ -718,7 +712,9 @@ class ChessBoard:
                     to_pos = self.denormalize_pos(to_pos)
                 yield (from_pos, to_pos)
 
-    def create_piece_moves(self, pos: Tuple[int, int]) -> Iterator[Tuple[Tuple[int, int], Tuple[int, int]]]:
+    def create_piece_moves(
+        self, pos: Tuple[int, int]
+    ) -> Iterator[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """生成指定位置棋子的所有候选走法。
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
@@ -728,7 +724,7 @@ class ChessBoard:
             return
 
         _, piece_color = fench_to_species(piece.fench)
-        if piece_color != self.move_side.color:
+        if piece_color != self.move_side().color:
             return
 
         is_flipped = not self.is_normalized()
@@ -745,25 +741,29 @@ class ChessBoard:
                     to_pos = self.denormalize_pos(to_pos)
                 yield (from_pos, to_pos)
 
-    def is_checked_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
+    def is_checked_move(
+        self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
+    ) -> bool:
         """判断执行给定走子后己方是否处于被将军状态。
         若走子非法，抛出 `CChessError('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
             raise CChessError("Invalid Move")
         move_info = self.make_move(pos_from, pos_to)
         # make_move 不切换走子方，需要手动切换以检查移动后是否被将军
-        self._move_side = self.move_side.next()
+        self._move_side = self.move_side().next()
         checking = self.is_checking()
         # 恢复走子方
         self._move_side = move_info.prev_move_side
         self.unmake_move(move_info)
         return checking
 
-    def is_checking_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
+    def is_checking_move(
+        self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
+    ) -> bool:
         """判断执行该走子后是否对对方形成将军（不切换走子方）。"""
         move_info = self.make_move(pos_from, pos_to)
         # 临时恢复走子方到移动前，以检查移动是否将军
-        original_player = self.move_side
+        original_player = self.move_side()
         self._move_side = move_info.prev_move_side
         checking = self.is_checking()
         # 恢复回切换后的走子方，以便 unmake_move 正确工作
@@ -801,10 +801,10 @@ class ChessBoard:
         """判断当前走子方是否对对方构成将军（对方王被攻击）。"""
         if self._attack_matrix_dirty:
             self._recompute_attack_matrix()
-        king = self.get_king(self.move_side.opposite())
+        king = self.get_king(self.move_side().opposite())
         if not king:
             return False
-        if self.move_side.color == RED:
+        if self.move_side().color == RED:
             matrix = self._red_attacks
         else:
             matrix = self._black_attacks
@@ -812,8 +812,8 @@ class ChessBoard:
 
     def is_checkmate(self) -> bool:
         """判断当前局面在对方回合是否为将死（无路可走）。"""
-        original_player = self.move_side
-        self._move_side = self.move_side.next()
+        original_player = self.move_side()
+        self._move_side = self.move_side().next()
         try:
             return self.has_no_legal_moves()
         finally:
@@ -821,10 +821,10 @@ class ChessBoard:
 
     def has_no_legal_moves(self) -> bool:
         """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
-        king = self.get_king(self.move_side)
+        king = self.get_king(self.move_side())
         if not king:
             return True
-        for piece in self.get_pieces(self.move_side):
+        for piece in self.get_pieces(self.move_side()):
             for move_it in piece.create_moves():
                 if self.is_valid_move_t(move_it):
                     if not self.is_checked_move(move_it[0], move_it[1]):
@@ -882,9 +882,9 @@ class ChessBoard:
         self._move_side = ChessPlayer(ANY_COLOR)
 
         if fen1 == "b":
-            b.move_side = ChessPlayer(BLACK)
+            b.set_move_side(ChessPlayer(BLACK))
         elif fen1 in ["w", "r"]:
-            b.move_side = ChessPlayer(RED)
+            b.set_move_side(ChessPlayer(RED))
         else:
             raise CChessError(f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}")
 
@@ -915,7 +915,7 @@ class ChessBoard:
             if y > 0:
                 fen += "/"
 
-        if self.move_side == BLACK:
+        if self.move_side() == BLACK:
             fen += " b"
         else:
             fen += " w"
@@ -947,7 +947,9 @@ class ChessBoard:
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))
 
-    def detect_move_pieces(self, new_board: "ChessBoard") -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+    def detect_move_pieces(
+        self, new_board: "ChessBoard"
+    ) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
         """比较当前棋盘与 `new_board` 并返回变化位置元组 (from_positions, to_positions)。"""
         p_from = []
         p_to = []
@@ -966,7 +968,9 @@ class ChessBoard:
                     p_to.append((x, y))
         return (p_from, p_to)
 
-    def create_move_from_board(self, new_board: "ChessBoard") -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+    def create_move_from_board(
+        self, new_board: "ChessBoard"
+    ) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """尝试从两个棋盘状态推断唯一的一步走法，返回 (from, to) 或 None。"""
         p_froms, p_tos = self.detect_move_pieces(new_board)
         if (len(p_froms) == 1) and (len(p_tos) == 1):
@@ -1049,7 +1053,6 @@ class ChessBoardOneHot(ChessBoard):
             one_hot_board.append(temp)
         return one_hot_board
 
-    @property
     def chess_dict(self):
         """获取棋子-独热编码的映射
         :return: 字典，棋子-独热编码的映射

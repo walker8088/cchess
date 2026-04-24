@@ -231,7 +231,7 @@ class TestPGNWriter:
 
     def test_write_moves_with_move(self):
         board = self.game.init_board
-        board.move_side = 1
+        board.set_move_side(1)
         move = board.move((1, 2), (1, 4))
         self.game.first_move = move
         self.game.first_move.step_index = 1
@@ -241,7 +241,7 @@ class TestPGNWriter:
 
     def test_write_moves_with_annote(self):
         board = self.game.init_board
-        board.move_side = 1
+        board.set_move_side(1)
         move = board.move((1, 2), (1, 4))
         self.game.first_move = move
         self.game.first_move.step_index = 1

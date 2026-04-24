@@ -23,13 +23,13 @@ class TestBoardExtended:
     def test_set_move_color(self):
         board = ChessBoard(FULL_INIT_FEN)
         board.set_move_color(RED)
-        assert board.move_player == RED
+        assert board.move_side().color == RED
 
         board.set_move_color(BLACK)
-        assert board.move_player == BLACK
+        assert board.move_side().color == BLACK
 
         board.set_move_color(ANY_COLOR)
-        assert board.move_player == ANY_COLOR
+        assert board.move_side().color == ANY_COLOR
 
     def test_put_fench_pop_fench(self):
         board = ChessBoard()

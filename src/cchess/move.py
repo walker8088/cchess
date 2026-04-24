@@ -497,6 +497,7 @@ class Move:
         self.p_to = move_info.to_pos
         self.is_checking = is_checking
         self.is_checkmate = is_checkmate
+        self.move_side = move_info.prev_move_side
         self.step_index = 0
         self.score = None
         self.annote = ""
@@ -514,8 +515,7 @@ class Move:
         # 设置被吃棋子
         self.captured = move_info.captured_fench
 
-    @property
-    def board(self):
+    def board_before(self):
         """移动前的棋盘状态（延迟生成的快照）"""
         if self._board_cache is None:
             from .board import ChessBoard
@@ -523,14 +523,13 @@ class Move:
             # 创建新棋盘实例，复制移动前状态
             b = ChessBoard()
             b._board = [row[:] for row in self.move_info.board_before]
-            b.move_side = self.move_info.prev_move_side
+            b.set_move_side(self.move_info.prev_move_side)
             b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
             # 攻击矩阵缓存保持默认（脏标志为 True 时会被重新计算）
             self._board_cache = b
         return self._board_cache
 
-    @property
-    def board_done(self):
+    def board_after(self):
         """移动后的棋盘状态（延迟生成的快照）"""
         if self._board_done_cache is None:
             from .board import ChessBoard
@@ -538,15 +537,12 @@ class Move:
             # 创建新棋盘实例，复制移动后状态
             b = ChessBoard()
             b._board = [row[:] for row in self.move_info.board_after]
-            b.move_side = self.move_info.next_move_side
+            b.set_move_side(self.move_info.next_move_side)
             b._attack_matrix_dirty = self.move_info.next_attack_matrix_dirty
             self._board_done_cache = b
         return self._board_done_cache
 
-    @property
-    def move_side(self):
-        """返回执行此走子的玩家（当前棋盘的 `move_side`）。"""
-        return self.board.move_side
+    # move_side 是数据属性，在构造函数中已赋值
 
     def __str__(self):
         """返回此走子的 ICCS 格式字符串表示。"""
@@ -791,7 +787,7 @@ class Move:
         例如吃子、将军或将死等注记。
         """
 
-        fench = self.board.get_fench(self.p_from)
+        fench = self.board_before().get_fench(self.p_from)
         _, man_side = fench_to_species(fench)
 
         diff = self.p_to[1] - self.p_from[1]
@@ -849,7 +845,7 @@ class Move:
         用于区分的限定词如 '前'、'中'、'后' 或文件编号。
         """
 
-        fench = self.board.get_fench(pos)
+        fench = self.board_before().get_fench(pos)
         _, man_side = fench_to_species(fench)
         piece_name = fench_to_text(fench)
 
@@ -867,7 +863,7 @@ class Move:
         count = 0
         pos_index = -1
         for y in range(10):
-            if self.board._board[y][pos[0]] == fench:  # pylint: disable=protected-access
+            if self.board_before()._board[y][pos[0]] == fench:  # pylint: disable=protected-access
                 if pos[1] == y:
                     pos_index = count
                 count += 1
@@ -926,13 +922,13 @@ class Move:
 
             temp_board = ChessBoard()
             temp_board._board = [row[:] for row in self.move_info.board_before]
-            temp_board.move_side = self.move_info.prev_move_side
+            temp_board.set_move_side(self.move_info.prev_move_side)
 
             # 应用移动
             moving_fench = temp_board._board[self.p_from[1]][self.p_from[0]]
             temp_board._board[self.p_to[1]][self.p_to[0]] = moving_fench
             temp_board._board[self.p_from[1]][self.p_from[0]] = None
-            temp_board.move_side = move_side
+            temp_board.set_move_side(move_side)
 
             self.fen_for_engine = temp_board.to_fen()
             self.move_list_for_engine = []
@@ -940,7 +936,7 @@ class Move:
             # 未吃子移动
             if not history:
                 # 历史为空
-                self.fen_for_engine = self.board.to_fen()
+                self.fen_for_engine = self.board_before().to_fen()
                 self.move_list_for_engine = [self.to_iccs()]
             else:
                 # 历史不为空，向后追加
@@ -1054,7 +1050,7 @@ class _MoveTextParser:
         # 确定走子方
         self.work_side = _detect_move_side_from_notation(self.move_str)
         if self.work_side is None:
-            self.work_side = self.board.move_side.color
+            self.work_side = self.board.move_side().color
         if self.work_side == ANY_COLOR:
             self.work_side = RED
 

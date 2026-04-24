@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct
 
-from .board import ChessBoard, ChessPlayer
+from .board import ChessBoard
 from .common import BLACK, RED, fench_to_species
 from .exception import CChessError
 
@@ -175,7 +175,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
     if not fench:
         return
     _, man_side = fench_to_species(fench)
-    board.move_player = ChessPlayer(man_side)
+    board.set_move_side(man_side)
 
     if board.is_valid_move(move_from, move_to):
         curr_move = board.move(move_from, move_to)
@@ -234,9 +234,9 @@ def read_from_cbr_buffer(contents, game=None):
     game_info["result"] = result_dict[game_result]
     board = ChessBoard()
     if move_side == 1:
-        board.move_player = ChessPlayer(RED)
+        board.set_move_side(RED)
     else:
-        board.move_player = ChessPlayer(BLACK)
+        board.set_move_side(BLACK)
 
     for x in range(9):
         for y in range(10):

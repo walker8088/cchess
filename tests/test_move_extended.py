@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ChessBoard, FULL_INIT_FEN, RED
+from cchess import FULL_INIT_FEN, RED, ChessBoard
 
 
 class TestMoveExtended:
@@ -48,23 +48,23 @@ class TestMoveExtended:
             text = move.to_text(detailed=True)
             assert "将死" in text
 
-    """ 
+    """
     def test_move_mirror_flip_swap(self):
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.copy().move((0, 0), (0, 1))
-        
+
         # mirror
         board2 = board.copy().mirror()
         move2 = move1.mirror()
         assert move2.p_from[0] == 8 - move1.p_from[0]
         assert move2.p_to[0] == 8 - move1.p_to[0]
-        
+
         # flip
         board3 = board.copy().flip()
         move3 = move1.flip()
         assert move3.p_from[1] == 9 - move1.p_from[1]
         assert move3.p_to[1] == 9 - move1.p_to[1]
-        
+
         # swap
         board4 = board.copy().swap()
         move4 = move1.swap()
@@ -72,41 +72,41 @@ class TestMoveExtended:
         assert move4.p_from[1] == 9 - move1.p_from[1]
         assert move4.p_to[0] == 8 - move1.p_to[0]
         assert move4.p_to[1] == 9 - move1.p_to[1]
-    
+
     def test_move_branch_operations(self):
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.copy().move((0, 0), (0, 1))
         move2 = board.copy().move((8, 0), (8, 1))
-        
+
         # 添加分支
         move1.append_next_move(move2)
         assert len(move1.branchs) == 0
         assert move1.next_move == move2
-        
+
         # 添加变招
         move3 = board.copy().move((2, 0), (2, 1))
         move1.branchs.append(move3)
         assert len(move1.branchs) == 1
-        
+
         # get_branch
         branch = move1.get_branch(0)
         assert branch == move3
-        
+
         # select_branch
         move1.select_branch(0)
         assert move1.next_move == move3
-        
+
         # get_all_branchs
         all_branchs = move1.get_all_branchs()
         assert len(all_branchs) >= 1
-    
-    
+
+
     def test_to_engine_fen(self):
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
         engine_fen = move.to_engine_fen()
         assert ' ' in engine_fen  # FEN格式应该包含空格分隔符
-        assert engine_fen.split()[0] == move.board_done.to_fen().split()[0]
+        assert engine_fen.split()[0] == move.board_after().to_fen().split()[0]
     """
 
     def test_prepare_for_engine(self):
@@ -115,4 +115,4 @@ class TestMoveExtended:
         history = []
         move.prepare_for_engine(RED, history)
         # 检查是否设置了必要的属性
-        assert hasattr(move, "board_done")
+        assert hasattr(move, "board_after")

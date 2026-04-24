@@ -459,7 +459,7 @@ class TestBoard:
         assert move.move_side == RED
         assert move.to_iccs() == "a0a1"
         assert str(move) == "a0a1"
-        assert move.board.is_valid_move(move.p_from, move.p_to) is True
+        assert move.board_before().is_valid_move(move.p_from, move.p_to) is True
 
         assert iccs2pos("a0a1") == ((0, 0), (0, 1))
         assert pos2iccs((0, 0), (0, 1)) == "a0a1"

@@ -72,7 +72,7 @@ class Game:  # pylint: disable=too-many-public-methods
         chess_move.parent = self
         if not self.first_move:
             self.first_move = chess_move
-            self.init_board = chess_move.board.copy()
+            self.init_board = chess_move.board_before().copy()
             self.last_move = self.first_move
         else:
             self.first_move.add_variation(chess_move)
@@ -90,7 +90,7 @@ class Game:  # pylint: disable=too-many-public-methods
         if not self.first_move:
             chess_move.parent = self
             self.first_move = chess_move
-            self.init_board = chess_move.board.copy()
+            self.init_board = chess_move.board_before().copy()
             self.last_move = self.first_move
         else:
             self.last_move.append_next_move(chess_move)
@@ -184,7 +184,7 @@ class Game:  # pylint: disable=too-many-public-methods
     def dump_fen_iccs_moves(self):
         """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
         return [
-            [[move.board.to_fen(), str(move)] for move in move_line["moves"]]
+            [[move.board_before().to_fen(), str(move)] for move in move_line["moves"]]
             for move_line in self.dump_moves()
         ]
 
