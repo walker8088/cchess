@@ -28,6 +28,9 @@ from .board import ChessBoard
 from .common import RED, fen_mirror, get_move_color, iccs_list_mirror, iccs_mirror
 from .exception import EngineError
 
+# 引擎评分常量
+_CHECKMATE_SCORE = 30000  # 将杀基础评分
+
 # -----------------------------------------------------#
 logger = logging.getLogger(__name__)
 
@@ -301,9 +304,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
         # 提前检查进程是否已退出，避免写入时管道损坏
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineError(
-                f"程序异常退出，退出码：{self.process.returncode}"
-            )
+            raise EngineError(f"程序异常退出，退出码：{self.process.returncode}")
 
         try:
             cmd_bytes = f"{cmd_str}\r\n"
@@ -311,16 +312,12 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             self.pin.flush()
         except (BrokenPipeError, OSError, ValueError) as e:
             logger.error("Send cmd [%s] ERROR: %s", cmd_str, e)
-            raise EngineError(
-                f"程序异常退出，退出码：{self.process.returncode}"
-            ) from e
+            raise EngineError(f"程序异常退出，退出码：{self.process.returncode}") from e
 
         # 写入后再次检查进程状态
         if self.process.poll() is not None:
             self.engine_status = EngineStatus.ERROR
-            raise EngineError(
-                f"程序异常退出，退出码：{self.process.returncode}"
-            )
+            raise EngineError(f"程序异常退出，退出码：{self.process.returncode}")
 
         return True
 
@@ -710,7 +707,7 @@ class EngineManager:
                 pass
             elif action_id in ["dead"]:
                 print(action["raw_msg"])
-                action["score"] = 30000
+                action["score"] = _CHECKMATE_SCORE
                 action["mate"] = 0
                 return action
 
@@ -733,7 +730,7 @@ class EngineManager:
                 if ("score" not in action) and ("mate" in action):
                     mate_v = action["mate"]
                     mate_flag = 1 if mate_v > 0 else -1
-                    action["score"] = (30000 - abs(mate_v)) * mate_flag
+                    action["score"] = (_CHECKMATE_SCORE - abs(mate_v)) * mate_flag
 
                 self.cache.save_action(fen, action)
 

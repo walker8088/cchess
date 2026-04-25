@@ -40,26 +40,8 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-ma
     if game is None:
         from .game import Game  # pylint: disable=import-outside-toplevel
 
-    # 车马相士帅士相马车炮炮兵兵兵兵兵
-    # 车马象士将士象马车炮炮卒卒卒卒卒
-    chessman_kinds = "RNBAKABNRCCPPPPP"
-
-    if not pos_txt:
-        board = ChessBoard(FULL_INIT_FEN)
-    else:
-        if len(pos_txt) != 64:
-            raise CChessError("bad pos_txt")
-
-        board = ChessBoard()
-        for side in range(2):
-            for man_index in range(16):
-                pos_index = (side * 16 + man_index) * 2
-                man_pos = pos_txt[pos_index : pos_index + 2]
-                if man_pos == "99":
-                    continue
-                pos = decode_txt_pos(man_pos)
-                fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
-                board.put_fench(fen_ch, pos)
+    # 复用 txt_to_board 构造棋盘
+    board = txt_to_board(pos_txt)
 
     last_move = None
     if not moves_txt:
@@ -82,8 +64,8 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-ma
 
         if board.is_valid_move(move_from, move_to):
             if not last_move:
-                _, man_side = fench_to_species(board.get_fench(move_from))
-                board.set_move_side(man_side)
+                _, piece_color = fench_to_species(board.get_fench(move_from))
+                board.set_move_side(piece_color)
                 # 如果提供了game实例，使用它；否则创建新的
                 if game is None:
                     game = Game(board)
@@ -176,8 +158,8 @@ def txt_to_moves(board, moves_txt):
 
         if board.is_valid_move(move_from, move_to):
             if len(moves) == 0:
-                _, man_side = fench_to_species(board.get_fench(move_from))
-                board.set_move_side(man_side)
+                _, piece_color = fench_to_species(board.get_fench(move_from))
+                board.set_move_side(piece_color)
 
             new_move = board.move(move_from, move_to)
             moves.append(new_move)

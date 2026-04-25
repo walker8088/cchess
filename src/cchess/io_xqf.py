@@ -29,6 +29,15 @@ from .common import RED, fench_to_species
 # result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
 result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
+# XQF 协议常量
+_XQF_MOVE_FROM_OFFSET = 0x18  # 起始位置偏移量
+_XQF_MOVE_TO_OFFSET = 0x20  # 目标位置偏移量
+_XQF_STEP_FLAG_MASK = 0xE0  # 走子标志掩码
+_XQF_STEP_HAS_ANNO = 0x20  # 有注释标志
+_XQF_STEP_HAS_NEXT = 0x80  # 有下一步标志
+_XQF_STEP_HAS_VAR = 0x40  # 有变招标志
+_XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
+
 
 def _decode_pos(man_pos):
     """将单个压缩的棋子位置整数解码为 (x, y) 坐标。
@@ -227,8 +236,8 @@ def __read_init_info(buff_decoder, version, keys):
         annote_len = buff_decoder.read_int()
     else:
         # 高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
-        step_info[2] &= 0xE0
-        if step_info[2] & 0x20:  # 有注释
+        step_info[2] &= _XQF_STEP_FLAG_MASK
+        if step_info[2] & _XQF_STEP_HAS_ANNO:  # 有注释
             annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
     return buff_decoder.read_str(annote_len) if (annote_len > 0) else None
@@ -278,22 +287,22 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
             has_var_step = True  # 有变着
         annote_len = buff_decoder.read_int()
         # 走子起点，落点
-        step_info[0] = (step_info[0] - 0x18) & 0xFF
-        step_info[1] = (step_info[1] - 0x20) & 0xFF
+        step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET) & 0xFF
+        step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET) & 0xFF
 
     else:
         # 高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
-        step_info[2] &= 0xE0
-        if step_info[2] & 0x80:  # 有后续
+        step_info[2] &= _XQF_STEP_FLAG_MASK
+        if step_info[2] & _XQF_STEP_HAS_NEXT:  # 有后续
             has_next_step = True
-        if step_info[2] & 0x40:  # 有变招
+        if step_info[2] & _XQF_STEP_HAS_VAR:  # 有变招
             has_var_step = True
-        if step_info[2] & 0x20:  # 有注释
+        if step_info[2] & _XQF_STEP_HAS_ANNO:  # 有注释
             annote_len = buff_decoder.read_int() - keys.KeyRMKSize
 
         # 走子起点，落点
-        step_info[0] = (step_info[0] - 0x18 - keys.KeyXYf) & 0xFF
-        step_info[1] = (step_info[1] - 0x20 - keys.KeyXYt) & 0xFF
+        step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET - keys.KeyXYf) & 0xFF
+        step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET - keys.KeyXYt) & 0xFF
 
     move_from, move_to = _decode_pos2(step_info)
     annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
@@ -301,8 +310,8 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     good_move = parent_move
     fench = board.get_fench(move_from)
     if fench:
-        _, man_side = fench_to_species(fench)
-        board.set_move_side(man_side)
+        _, piece_color = fench_to_species(fench)
+        board.set_move_side(piece_color)
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
@@ -318,24 +327,28 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: disable=unused-argument  # pylint: disable=unused-argument
-    """从 `.xqf` 文件读取并解析为 `Game` 对象。
+def _read_xqf_file(full_file_name):
+    """读取 XQF 文件
 
-    该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
-    读取游戏注释并递归解析走子数据块，最终返回填充完毕的 `Game`。
+    Args:
+        full_file_name: 文件路径
 
-    参数:
-        full_file_name (str): XQF 文件路径
-        read_annotation (bool): 是否读取注释
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
-
-    返回:
-        Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
+    Returns:
+        bytes: 文件内容
     """
-
     with open(full_file_name, "rb") as f:
-        contents = f.read()
+        return f.read()
 
+
+def _parse_xqf_header(contents):
+    """解析 XQF 文件头
+
+    Args:
+        contents: 文件内容字节
+
+    Returns:
+        dict: 解析后的头信息，包含 version, keys, chess_mans, step_base_buff 等
+    """
     (
         magic,
         version,
@@ -373,14 +386,13 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
         _ucUn7,
     ) = struct.unpack(
         "<2sB13s32s3sB12sB15sB63s64sB63sB15sB15sB15sB15sB63sB15sB15s32sB15sB15s528s",
-        contents[:0x400],
+        contents[:_XQF_HEADER_SIZE],
     )
 
     if magic != b"XQ":
         return None
 
     game_info = {}
-
     game_info["source"] = "XQF"
     game_info["version"] = version
     game_info["type"] = ucType + 1
@@ -388,7 +400,7 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
     if ucRes <= 4:  # It's really some file has value 4
         game_info["result"] = result_dict[ucRes]
     else:
-        print("Bad Result  ", ucRes, full_file_name)
+        print("Bad Result  ", ucRes)
         game_info["result"] = "*"
 
     if ucRedPlayerNameLen > 0:
@@ -419,15 +431,36 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
         except (UnicodeDecodeError, ValueError):
             pass
 
+    # 解析密钥和棋盘数据
     if version <= 0x0A:
         keys = None
         chess_mans = __init_chess_board(ucBoard, version)
-        step_base_buff = XQFBuffDecoder(contents[0x400:])
+        step_base_buff = XQFBuffDecoder(contents[_XQF_HEADER_SIZE:])
     else:
         keys = __init_decrypt_key(crypt_keys)
         chess_mans = __init_chess_board(ucBoard, version, keys)
-        step_base_buff = XQFBuffDecoder(__decode_buff(keys, contents[0x400:]))
+        step_base_buff = XQFBuffDecoder(
+            __decode_buff(keys, contents[_XQF_HEADER_SIZE:])
+        )
 
+    return {
+        "version": version,
+        "keys": keys,
+        "chess_mans": chess_mans,
+        "step_base_buff": step_base_buff,
+        "game_info": game_info,
+    }
+
+
+def _build_xqf_board(chess_mans):
+    """根据棋子布局构造棋盘
+
+    Args:
+        chess_mans: 棋子位置数据
+
+    Returns:
+        ChessBoard: 构造好的棋盘
+    """
     board = ChessBoard()
 
     chessman_kinds = (
@@ -458,7 +491,34 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
             fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
             board.put_fench(fen_ch, pos)
 
-    game_annotation = __read_init_info(step_base_buff, version, keys)
+    return board
+
+
+# -----------------------------------------------------#
+def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: disable=unused-argument
+    """从 `.xqf` 文件读取并解析为 `Game` 对象。
+
+    该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
+    读取游戏注释并递归解析走子数据块，最终返回填充完毕的 `Game`。
+
+    参数:
+        full_file_name (str): XQF 文件路径
+        read_annotation (bool): 是否读取注释
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+
+    返回:
+        Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
+    """
+    contents = _read_xqf_file(full_file_name)
+    header = _parse_xqf_header(contents)
+
+    if header is None:
+        return None
+
+    board = _build_xqf_board(header["chess_mans"])
+    game_annotation = __read_init_info(
+        header["step_base_buff"], header["version"], header["keys"]
+    )
 
     # 如果提供了game实例，使用它；否则创建新的（向后兼容）
     if game is None:
@@ -472,9 +532,16 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
         game.first_move = None
         game.last_move = None
 
-    game.info.update(game_info)
+    game.info.update(header["game_info"])
 
-    __read_steps(step_base_buff, version, keys, game, None, board)
+    __read_steps(
+        header["step_base_buff"],
+        header["version"],
+        header["keys"],
+        game,
+        None,
+        board,
+    )
 
     if game.first_move:
         game.init_board.set_move_side(game.first_move.board_before().move_side())
@@ -693,7 +760,7 @@ class XQFWriter:
                 for _index, move in enumerate(line["moves"]):
                     has_variation = move.variation_next is not None
                     w_line.append(
-                        XQMove(move.p_from, move.p_to, move.annote, has_variation)
+                        XQMove(move.pos_from, move.pos_to, move.annote, has_variation)
                     )
                 move_lines.append(w_line)
 

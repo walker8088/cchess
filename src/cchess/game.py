@@ -322,6 +322,57 @@ class Game:  # pylint: disable=too-many-public-methods
             return read_from_cbl(file_name, game)
         raise ValueError(f"Unknown lib file format:{file_name}")
 
+    def _format_move_text(self, move):
+        """格式化单个走法的文本（包含注释）"""
+        if move.annote:
+            return f"{move.to_text()} {{ {move.annote} }}"
+        return move.to_text()
+
+    def _collect_move_pairs(self):
+        """收集走法对列表
+
+        Returns:
+            list: 走法对列表 [(move_num, red_text, black_text), ...]
+        """
+        moves = self.dump_moves()
+        if len(moves) == 0:
+            return []
+
+        move_line = moves[0]["moves"]
+        move_pairs = []
+
+        for i in range(0, len(move_line), 2):
+            red_move = move_line[i]
+            black_move = move_line[i + 1] if i + 1 < len(move_line) else None
+            move_num = i // 2 + 1
+
+            red_text = self._format_move_text(red_move)
+            black_text = self._format_move_text(black_move) if black_move else None
+
+            move_pairs.append((move_num, red_text, black_text))
+
+        return move_pairs
+
+    def _write_pgn_header(self, f, init_fen):
+        """写入 PGN 文件头"""
+        f.write('[Game "Chinese Chess"]\n')
+        f.write(f'[Date "{dt.date.today()}"]\n')
+        f.write('[Red ""]\n')
+        f.write('[Black ""]\n')
+        if init_fen != FULL_INIT_FEN:
+            f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
+
+        if self.annote:
+            f.write(f"{{ {self.annote} }}\n")
+
+    def _write_move_pairs(self, f, move_pairs):
+        """写入走法对"""
+        for move_num, red_text, black_text in move_pairs:
+            if black_text:
+                f.write(f" {move_num}. {red_text} {black_text}\n")
+            else:
+                f.write(f" {move_num}. {red_text}\n")
+
     def save_to_pgn(self, file_name):
         """将棋局按简化 PGN 文本格式保存到文件。"""
 
@@ -330,70 +381,10 @@ class Game:  # pylint: disable=too-many-public-methods
 
         init_fen = self.init_board.to_fen()
         with open(file_name, "w", encoding="utf-8") as f:
-            f.write('[Game "Chinese Chess"]\n')
-            f.write(f'[Date "{dt.date.today()}"]\n')
-            f.write('[Red ""]\n')
-            f.write('[Black ""]\n')
-            if init_fen != FULL_INIT_FEN:
-                f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
+            self._write_pgn_header(f, init_fen)
 
-            if self.annote:
-                f.write(f"{{ {self.annote} }}\n")
-
-            moves = self.dump_moves()
-            if len(moves) > 0:
-                move_line = moves[0]["moves"]
-                move_pairs = []
-                for i in range(0, len(move_line), 2):
-                    red_move = move_line[i]
-                    black_move = move_line[i + 1] if i + 1 < len(move_line) else None
-                    move_num = i // 2 + 1
-                    if black_move:
-                        if red_move.annote and black_move.annote:
-                            move_pairs.append(
-                                (
-                                    move_num,
-                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
-                                    f"{black_move.to_text()} {{ {black_move.annote} }}",
-                                )
-                            )
-                        elif red_move.annote:
-                            move_pairs.append(
-                                (
-                                    move_num,
-                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
-                                    black_move.to_text(),
-                                )
-                            )
-                        elif black_move.annote:
-                            move_pairs.append(
-                                (
-                                    move_num,
-                                    red_move.to_text(),
-                                    f"{black_move.to_text()} {{ {black_move.annote} }}",
-                                )
-                            )
-                        else:
-                            move_pairs.append(
-                                (move_num, red_move.to_text(), black_move.to_text())
-                            )
-                    else:
-                        if red_move.annote:
-                            move_pairs.append(
-                                (
-                                    move_num,
-                                    f"{red_move.to_text()} {{ {red_move.annote} }}",
-                                    None,
-                                )
-                            )
-                        else:
-                            move_pairs.append((move_num, red_move.to_text(), None))
-
-                for move_num, red_text, black_text in move_pairs:
-                    if black_text:
-                        f.write(f" {move_num}. {red_text} {black_text}\n")
-                    else:
-                        f.write(f" {move_num}. {red_text}\n")
+            move_pairs = self._collect_move_pairs()
+            self._write_move_pairs(f, move_pairs)
 
             f.write("   *\n")
             f.write("  =========\n")

@@ -96,13 +96,13 @@ _v_dict = {
 
 
 # -----------------------------------------------------#
-def pos2iccs(p_from, p_to):
+def pos2iccs(pos_from, pos_to):
     """pos2iccs 函数。"""
     return (
-        chr(ord("a") + p_from[0])
-        + str(p_from[1])
-        + chr(ord("a") + p_to[0])
-        + str(p_to[1])
+        chr(ord("a") + pos_from[0])
+        + str(pos_from[1])
+        + chr(ord("a") + pos_to[0])
+        + str(pos_to[1])
     )
 
 

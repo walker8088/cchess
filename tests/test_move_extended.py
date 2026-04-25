@@ -56,22 +56,22 @@ class TestMoveExtended:
         # mirror
         board2 = board.copy().mirror()
         move2 = move1.mirror()
-        assert move2.p_from[0] == 8 - move1.p_from[0]
-        assert move2.p_to[0] == 8 - move1.p_to[0]
+        assert move2.pos_from[0] == 8 - move1.pos_from[0]
+        assert move2.pos_to[0] == 8 - move1.pos_to[0]
 
         # flip
         board3 = board.copy().flip()
         move3 = move1.flip()
-        assert move3.p_from[1] == 9 - move1.p_from[1]
-        assert move3.p_to[1] == 9 - move1.p_to[1]
+        assert move3.pos_from[1] == 9 - move1.pos_from[1]
+        assert move3.pos_to[1] == 9 - move1.pos_to[1]
 
         # swap
         board4 = board.copy().swap()
         move4 = move1.swap()
-        assert move4.p_from[0] == 8 - move1.p_from[0]
-        assert move4.p_from[1] == 9 - move1.p_from[1]
-        assert move4.p_to[0] == 8 - move1.p_to[0]
-        assert move4.p_to[1] == 9 - move1.p_to[1]
+        assert move4.pos_from[0] == 8 - move1.pos_from[0]
+        assert move4.pos_from[1] == 9 - move1.pos_from[1]
+        assert move4.pos_to[0] == 8 - move1.pos_to[0]
+        assert move4.pos_to[1] == 9 - move1.pos_to[1]
 
     def test_move_branch_operations(self):
         board = ChessBoard(FULL_INIT_FEN)

@@ -35,10 +35,10 @@ def read_from_cbf(file_name, game=None):  # pylint: disable=too-many-locals
 
     def decode_move(move_str):
         """decode_move 函数。"""
-        p_from = (int(move_str[0]), 9 - int(move_str[1]))
-        p_to = (int(move_str[3]), 9 - int(move_str[4]))
+        pos_from = (int(move_str[0]), 9 - int(move_str[1]))
+        pos_to = (int(move_str[3]), 9 - int(move_str[4]))
 
-        return (p_from, p_to)
+        return (pos_from, pos_to)
 
     tree = et.parse(file_name)
     root = tree.getroot()

@@ -24,12 +24,9 @@ import chardet
 from .board import ChessBoard
 from .common import FULL_INIT_FEN
 
-# 避免循环导入，在函数内部导入
 
 # -----------------------------------------------------#
 # 内部数据结构
-
-
 class PGNMove:
     """PGN 棋步"""
 
@@ -128,62 +125,73 @@ class PGNParser:
         i = 0
         while i < len(tokens):
             token = tokens[i]
+            token_type = token["type"]
 
-            if token["type"] == "move_number":
+            if token_type == "move_number":
                 # 跳过棋步编号
                 pass
 
-            elif token["type"] == "move":
-                new_node = MoveNode(PGNMove(token["value"]))
+            elif token_type == "move":
+                current_node, current_line = self._handle_move_token(
+                    token, current_node, current_line, root
+                )
 
-                if current_node == root:
-                    current_node.next_node = new_node
-                    current_node = new_node
-                else:
-                    current_node.next_node = new_node
-                    current_node = new_node
-
-                current_line.append(new_node)
-
-            elif token["type"] == "annote":
+            elif token_type == "annote":
                 if current_node != root:
                     current_node.move.annote = token["value"]
 
-            elif token["type"] == "variation_start":
-                # 保存当前主线
-                stack.append(current_line.copy())
-                # 开始新变招
-                variation_root = MoveNode(PGNMove("variation_root"))
-                current_line = [variation_root]
-                current_node = variation_root
+            elif token_type == "variation_start":
+                current_node, current_line = self._handle_variation_start(
+                    stack, current_line
+                )
 
-            elif token["type"] == "variation_end":
-                # 结束当前变招，回到主线
-                variation_nodes = current_line[1:]  # 跳过根节点
-                if variation_nodes:
-                    # 找到变招应该附加的节点
-                    prev_main_line = stack[-1]
-                    parent_node = prev_main_line[-1]
+            elif token_type == "variation_end":
+                current_node, current_line = self._handle_variation_end(
+                    stack, current_line
+                )
 
-                    # 创建变招链表
-                    variation_head = variation_nodes[0]
-                    current_var = variation_head
-                    for node in variation_nodes[1:]:
-                        current_var.next_node = node
-                        current_var = node
-
-                    parent_node.move.variations.append(variation_head)
-
-                current_line = stack.pop()
-                current_node = current_line[-1]
-
-            elif token["type"] == "result":
+            elif token_type == "result":
                 result = token["value"]
                 break
 
             i += 1
 
         return root.next_node, result
+
+    def _handle_move_token(self, token, current_node, current_line, root):
+        """处理 move token"""
+        new_node = MoveNode(PGNMove(token["value"]))
+        current_node.next_node = new_node
+        current_node = new_node
+        current_line.append(new_node)
+        return current_node, current_line
+
+    def _handle_variation_start(self, stack, current_line):
+        """处理变招开始"""
+        stack.append(current_line.copy())
+        variation_root = MoveNode(PGNMove("variation_root"))
+        current_line = [variation_root]
+        return variation_root, current_line
+
+    def _handle_variation_end(self, stack, current_line):
+        """处理变招结束"""
+        variation_nodes = current_line[1:]  # 跳过根节点
+        if variation_nodes:
+            prev_main_line = stack[-1]
+            parent_node = prev_main_line[-1]
+
+            # 创建变招链表
+            variation_head = variation_nodes[0]
+            current_var = variation_head
+            for node in variation_nodes[1:]:
+                current_var.next_node = node
+                current_var = node
+
+            parent_node.move.variations.append(variation_head)
+
+        current_line = stack.pop()
+        current_node = current_line[-1]
+        return current_node, current_line
 
     # pylint: enable=too-many-locals,too-many-branches
 
@@ -267,10 +275,12 @@ class PGNTokenizer:
                 self._process_variation_end()
             elif char.isdigit():
                 self._process_move_number()
-            elif char.isalpha() or char in "+#=":
-                self._process_move()
-            elif char in ["1", "0", "½"] and self._is_result_start():
+            elif char in ["1", "0", "½", "*"] and self._is_result_start():
+                # 结果标记检查必须在 move 检查之前
                 self._process_result()
+            elif char.isalpha() or char in "+#=" or not char.isascii():
+                # 处理 ASCII 字符和非 ASCII 字符（如中文）
+                self._process_move()
             else:
                 self.index += 1
 
@@ -316,10 +326,13 @@ class PGNTokenizer:
     def _process_move(self) -> None:
         """处理棋步"""
         start = self.index
-        while self.index < self.length and (
-            self.text[self.index].isalnum() or self.text[self.index] in "+#=."
-        ):
-            self.index += 1
+        while self.index < self.length:
+            char = self.text[self.index]
+            # 处理 ASCII 字符和非 ASCII 字符（如中文）
+            if char.isalnum() or char in "+#=." or not char.isascii():
+                self.index += 1
+            else:
+                break
 
         move = self.text[start : self.index]
         self.tokens.append({"type": "move", "value": move})
@@ -335,10 +348,10 @@ class PGNTokenizer:
 
     def _is_result_start(self) -> bool:
         """检查是否是结果开始"""
-        # 检查接下来的3个字符中是否包含-或/
+        # 检查接下来的3个字符中是否包含-或/或*
         lookahead = min(3, self.length - self.index)
         return any(
-            c in self.text[self.index : self.index + lookahead] for c in ["-", "/"]
+            c in self.text[self.index : self.index + lookahead] for c in ["-", "/", "*"]
         )
 
 
@@ -437,41 +450,25 @@ class PGNWriter:
 
 
 # -----------------------------------------------------#
-def read_from_pgn(file_name, game=None):
-    """从 PGN 文件读取并解析为 `Game` 对象。
+def _read_pgn_file(file_name):
+    """读取 PGN 文件并检测编码
 
     Args:
         file_name: 文件路径
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+
+    Returns:
+        str: 文件文本内容
     """
-    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
-    if game is None:
-        from .game import Game  # pylint: disable=import-outside-toplevel
-        from .move import Move  # pylint: disable=import-outside-toplevel
-
-        move_class = Move
-        board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
-    else:
-        # 使用提供的game实例
-        from .move import Move  # pylint: disable=import-outside-toplevel
-
-        move_class = Move
-        board = ChessBoard(FULL_INIT_FEN)
-        game.init_board = board
-        game.first_move = None
-        game.last_move = None
-
     with open(file_name, "rb") as f:
         raw = f.read()
 
     # 优先尝试 utf-8，失败后尝试 GBK（PGN 文件常见编码），
     # 最后才依赖 chardet 的检测结果
     try:
-        text = raw.decode("utf-8")
+        return raw.decode("utf-8")
     except UnicodeDecodeError:
         try:
-            text = raw.decode("gbk")
+            return raw.decode("gbk")
         except UnicodeDecodeError:
             import chardet
 
@@ -479,99 +476,167 @@ def read_from_pgn(file_name, game=None):
             encoding = detected.get("encoding", "gbk")
             if encoding and encoding.lower().startswith("utf"):
                 encoding = "gbk"
-            text = raw.decode(encoding, errors="replace")
+            return raw.decode(encoding, errors="replace")
+
+
+def _parse_pgn_headers(pgn_game, game):
+    """解析 PGN 头信息并设置游戏信息
+
+    Args:
+        pgn_game: 解析后的 PGN 游戏对象
+        game: Game 对象
+
+    Returns:
+        ChessBoard: 初始棋盘（可能被 FEN 头信息覆盖）
+    """
+    board = game.init_board
+
+    for key, value in pgn_game.headers.items():
+        key_lower = key.lower()
+        if key_lower == "fen":
+            # 处理FEN头信息，设置初始棋盘
+            board = ChessBoard(value)
+            game.init_board = board
+        else:
+            game.info[key_lower] = value
+
+    return board
+
+
+def _try_parse_and_apply_move(board, move_str, game, move_class, parent_move):
+    """尝试解析并应用一步走法
+
+    Args:
+        board: 棋盘对象
+        move_str: 走法字符串
+        game: Game 对象
+        move_class: Move 类
+        parent_move: 父走法
+
+    Returns:
+        tuple: (move, success)
+    """
+    # 解析中文走法，返回的是 [((from_x, from_y), (to_x, to_y))] 列表
+    move_results = move_class.from_text(board, move_str)
+    if move_results is None or len(move_results) == 0:
+        return None, False
+
+    # 取第一个可能的走法（通常只有一个）
+    move_data = move_results[0]
+    if len(move_data) != 2:
+        return None, False
+
+    # move_data 是 ((from_x, from_y), (to_x, to_y))
+    from_pos, to_pos = move_data
+
+    # 应用走法到棋盘获取 MoveInfo
+    move_info = board.make_move(from_pos, to_pos)
+
+    # 创建Move对象
+    move = move_class(move_info)
+
+    # 添加走法到游戏
+    if parent_move is None:
+        # 第一个走法
+        game.append_next_move(move)
+        parent_move = game.first_move
+    else:
+        # 后续走法
+        if game.last_move:
+            game.last_move.append_next_move(move)
+            game.last_move = move
+            parent_move = game.last_move
+        else:
+            # 如果 last_move 不存在，重新设置
+            game.append_next_move(move)
+            parent_move = game.first_move
+
+    return move, True
+
+
+def _process_pgn_moves(node, board, game, move_class, parent_move=None):
+    """递归处理 PGN 棋步节点
+
+    Args:
+        node: 当前节点
+        board: 棋盘状态
+        game: Game 对象
+        move_class: Move 类
+        parent_move: 父走法
+    """
+    while node:
+        move_str = node.move.notation
+
+        # 跳过结果标记和非法走法字符串
+        if move_str in ["1-0", "0-1", "1/2-1/2", "*"]:
+            game.info["result"] = move_str
+            node = node.next_node
+            continue
+
+        try:
+            move, success = _try_parse_and_apply_move(
+                board, move_str, game, move_class, parent_move
+            )
+            if not success:
+                node = node.next_node
+                continue
+
+            # 更新 parent_move 用于下一次循环
+            parent_move = game.last_move
+
+            # 处理变招
+            for variation in node.move.variations:
+                # 保存当前棋盘状态（应用走法前的状态）
+                saved_board = board.snapshot()
+
+                # 递归处理变招
+                _process_pgn_moves(
+                    variation, saved_board, game, move_class, parent_move
+                )
+
+        except Exception:
+            # 走法解析或应用出错，继续处理下一个走法
+            node = node.next_node
+            continue
+
+        node = node.next_node
+
+
+def read_from_pgn(file_name, game=None):
+    """从 PGN 文件读取并解析为 `Game` 对象。
+
+    Args:
+        file_name: 文件路径
+        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+    """
+    # 使用提供的game实例
+    from .game import Game  # pylint: disable=import-outside-toplevel
+    from .move import Move  # pylint: disable=import-outside-toplevel
+
+    move_class = Move
+    board = ChessBoard(FULL_INIT_FEN)
+    if game is None:
+        game = Game(board)
+    else:
+        game.init_board = board
+        game.first_move = None
+        game.last_move = None
+
+    # 读取文件
+    text = _read_pgn_file(file_name)
 
     parser = PGNParser()
     try:
         pgn_game = parser.parse(text)
 
-        # 复制头信息并处理特殊头信息
-        for key, value in pgn_game.headers.items():
-            key_lower = key.lower()
-            if key_lower == "fen":
-                # 处理FEN头信息，设置初始棋盘
-                game.init_board = ChessBoard(value)
-            else:
-                game.info[key_lower] = value
+        # 解析头信息
+        current_board = _parse_pgn_headers(pgn_game, game)
 
-        # 解析棋步并应用到棋盘
-        current_node = pgn_game.moves
-        current_board = game.init_board.normalized()
-
-        # 递归处理棋步
-        def process_moves(node, board, parent_move=None):
-            while node:
-                move_str = node.move.notation
-
-                # 跳过结果标记和非法走法字符串
-                if move_str in ["1-0", "0-1", "1/2-1/2", "*"]:
-                    game.info["result"] = move_str
-                    node = node.next_node
-                    continue
-
-                # 跳过结果标记和明显非走法文本
-                if move_str in ["1-0", "0-1", "1/2-1/2", "*"]:
-                    game.info["result"] = move_str
-                    node = node.next_node
-                    continue
-
-                try:
-                    # 解析中文走法，返回的是 [((from_x, from_y), (to_x, to_y))] 列表
-                    move_results = Move.from_text(board, move_str)
-                    if move_results is None or len(move_results) == 0:
-                        # 无法解析的走法（可能是结果标记或非走法文本）
-                        node = node.next_node
-                        continue
-
-                    # 取第一个可能的走法（通常只有一个）
-                    move_data = move_results[0]
-                    if len(move_data) != 2:
-                        node = node.next_node
-                        continue
-
-                    # move_data 是 ((from_x, from_y), (to_x, to_y))
-                    from_pos, to_pos = move_data
-
-                    # 应用走法到棋盘获取 MoveInfo
-                    move_info = board.make_move(from_pos, to_pos)
-
-                    # 创建Move对象
-                    move = move_class(move_info)
-
-                    # 添加走法到游戏
-                    if parent_move is None:
-                        # 第一个走法
-                        game.append_next_move(move)
-                        parent_move = game.first_move
-                    else:
-                        # 后续走法
-                        # 使用 last_move 来添加后续走法
-                        if game.last_move:
-                            game.last_move.append_next_move(move)
-                            game.last_move = move
-                            parent_move = game.last_move
-                        else:
-                            # 如果 last_move 不存在，重新设置
-                            game.append_next_move(move)
-                            parent_move = game.first_move
-
-                    # 处理变招
-                    for variation in node.move.variations:
-                        # 保存当前棋盘状态（应用走法前的状态）
-                        saved_board = board.snapshot()
-
-                        # 递归处理变招
-                        process_moves(variation, saved_board, parent_move)
-
-                except Exception:
-                    # 走法解析或应用出错，继续处理下一个走法
-                    node = node.next_node
-                    continue
-
-                node = node.next_node
+        # 规范化棋盘
+        normalized_board = current_board.normalized()
 
         # 开始处理棋步
-        process_moves(current_node, current_board)
+        _process_pgn_moves(pgn_game.moves, normalized_board, game, move_class)
 
     except Exception as e:
         print(f"解析PGN文件时出错: {e}")

@@ -58,11 +58,11 @@ class TestMoveMirrorFlipSwap:
     def test_mirror(self):
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
-        assert move.p_from == (0, 0)
-        assert move.p_to == (0, 1)
+        assert move.pos_from == (0, 0)
+        assert move.pos_to == (0, 1)
         move.mirror()
-        assert move.p_from == (8, 0)
-        assert move.p_to == (8, 1)
+        assert move.pos_from == (8, 0)
+        assert move.pos_to == (8, 1)
 
     def test_mirror_with_next_move(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -71,17 +71,17 @@ class TestMoveMirrorFlipSwap:
         move2 = board.copy().move((0, 9), (0, 8))
         move1.append_next_move(move2)
         move1.mirror()
-        assert move1.p_from == (8, 0)
-        assert move1.p_to == (8, 1)
-        assert move1.next_move.p_from == (8, 9)
-        assert move1.next_move.p_to == (8, 8)
+        assert move1.pos_from == (8, 0)
+        assert move1.pos_to == (8, 1)
+        assert move1.next_move.pos_from == (8, 9)
+        assert move1.next_move.pos_to == (8, 8)
 
     def test_flip(self):
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
         move.flip()
-        assert move.p_from == (0, 9)
-        assert move.p_to == (0, 8)
+        assert move.pos_from == (0, 9)
+        assert move.pos_to == (0, 8)
 
     def test_flip_with_next_move(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -90,20 +90,20 @@ class TestMoveMirrorFlipSwap:
         move2 = board.copy().move((0, 9), (0, 8))
         move1.append_next_move(move2)
         move1.flip()
-        assert move1.p_from == (0, 9)
-        assert move1.p_to == (0, 8)
-        assert move1.next_move.p_from == (0, 0)
-        assert move1.next_move.p_to == (0, 1)
+        assert move1.pos_from == (0, 9)
+        assert move1.pos_to == (0, 8)
+        assert move1.next_move.pos_from == (0, 0)
+        assert move1.next_move.pos_to == (0, 1)
 
     def test_swap(self):
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
-        original_from = move.p_from
-        original_to = move.p_to
+        original_from = move.pos_from
+        original_to = move.pos_to
         move.swap()
         # swap does not change coordinates, only swaps board pieces
-        assert move.p_from == original_from
-        assert move.p_to == original_to
+        assert move.pos_from == original_from
+        assert move.pos_to == original_to
 
     def test_swap_with_next_move(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -1078,8 +1078,8 @@ class TestGame:
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         # Manually corrupt the move to make it invalid
-        game.first_move.p_from = (7, 7)
-        game.first_move.p_to = (8, 8)
+        game.first_move.pos_from = (7, 7)
+        game.first_move.pos_to = (8, 8)
         with pytest.raises(ValueError):
             game.verify_moves()
 
@@ -1406,9 +1406,9 @@ class TestBoard:
         board = ChessBoard(FULL_INIT_FEN)
         new_board = board.copy()
         new_board._move_piece((0, 0), (0, 1))
-        p_from, p_to = board.detect_move_pieces(new_board)
-        assert (0, 0) in p_from
-        assert (0, 1) in p_to
+        pos_from, pos_to = board.detect_move_pieces(new_board)
+        assert (0, 0) in pos_from
+        assert (0, 1) in pos_to
 
     def test_board_create_move_from_board_ambiguous(self):
         """Test ChessBoard.create_move_from_board with ambiguous changes (line 592)."""

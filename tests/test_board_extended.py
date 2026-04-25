@@ -91,7 +91,7 @@ class TestBoardExtended:
         if move_result:
             board2.next_turn()
 
-        # 从两个棋盘创建move - 返回元组 (p_from, p_to) 或 None
+        # 从两个棋盘创建move - 返回元组 (pos_from, pos_to) 或 None
         result = board1.create_move_from_board(board2)
         assert result is not None
         assert isinstance(result, tuple)

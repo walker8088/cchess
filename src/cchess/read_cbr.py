@@ -44,6 +44,127 @@ piece_dict = {
 }
 
 
+# CBL 文件格式常量
+_CBL_HEADER_SIZE = 576  # CBL 文件头大小
+_CBL_RECORD_SIZE = 4096  # CBL 记录大小
+_CBL_MAGIC = b"CCBridgeLibrary\x00"  # CBL 文件魔术字
+
+# CBL 数据偏移量表（根据棋谱数量）
+_CBL_INDEX_OFFSETS = (
+    (128, 101952),  # <= 128 局
+    (256, 137280),  # <= 256 局
+    (384, 151080),  # <= 384 局
+    (512, 207936),  # <= 512 局
+)
+_DEFAULT_CBL_OFFSET = 349248  # 默认偏移量
+
+
+def _get_cbl_data_offset(book_count):
+    """根据棋谱数量获取数据区起始偏移量
+
+    Args:
+        book_count: 棋谱数量
+
+    Returns:
+        int: 数据区起始偏移量
+    """
+    for max_count, offset in _CBL_INDEX_OFFSETS:
+        if book_count <= max_count:
+            return offset
+    return _DEFAULT_CBL_OFFSET
+
+
+def _parse_cbl_header(contents):
+    """解析 CBL 文件头
+
+    Args:
+        contents: 文件内容字节
+
+    Returns:
+        tuple: (lib_name, book_count, valid)
+    """
+    magic, _i1, book_count, lib_name = struct.unpack(
+        "<16s44si512s", contents[:_CBL_HEADER_SIZE]
+    )
+
+    if magic != _CBL_MAGIC:
+        # 检查是否是文本文件（包含中文字符）
+        try:
+            text_sample = contents[:100].decode("latin1", errors="ignore")
+            if any("\u4e00" <= c <= "\u9fff" for c in text_sample):
+                raise CChessError(
+                    f"文件看起来是文本文件而非 CBL 棋谱库文件，magic: {repr(magic[:8])}..."
+                )
+        except Exception:
+            pass
+        raise CChessError(
+            f"不支持的 CBL 文件格式，期望 magic: 'CCBridgeLibrary\\x00'，实际: {repr(magic)}"
+        )
+
+    return cut_bytes_to_str(lib_name), book_count, True
+
+
+def _find_and_validate_cbl_records(contents, buff_start):
+    """查找并验证 CBL 记录缓冲区
+
+    Args:
+        contents: 文件内容
+        buff_start: 数据区起始位置
+
+    Returns:
+        tuple: (game_buffer, game_buffer_len, game_buffer_index)
+    """
+    game_buffer = contents[buff_start:]
+    game_buffer_len = len(game_buffer)
+    game_buffer_index = game_buffer.find(b"CCBridge Record")
+
+    if game_buffer_index < 0:
+        return game_buffer, game_buffer_len, game_buffer_index
+
+    if ((game_buffer_len - game_buffer_index) % _CBL_RECORD_SIZE) != 0:
+        raise CChessError(
+            f"文件格式错误：缓冲区不是{_CBL_RECORD_SIZE}的整数倍： {len(contents)}, {game_buffer_index + buff_start}"
+        )
+
+    return game_buffer, game_buffer_len, game_buffer_index
+
+
+def _parse_cbl_games(contents, buff_start, game_buffer_index, game_buffer_len):
+    """解析 CBL 文件中的游戏列表
+
+    Args:
+        contents: 文件内容
+        buff_start: 数据区起始位置
+        game_buffer_index: 游戏缓冲区索引
+        game_buffer_len: 游戏缓冲区长度
+
+    Yields:
+        tuple: (game, game_index) 或 None
+    """
+    game_buffer = contents[buff_start:]
+    game_index = 0
+    count = 0
+
+    while game_buffer_index < game_buffer_len:
+        book_buffer = game_buffer[game_buffer_index:]
+        try:
+            game = read_from_cbr_buffer(book_buffer)
+            if game is not None:
+                game.info["index"] = game_index
+                yield game, game_index
+                game_index += 1
+        except Exception as e:
+            raise CChessError(
+                f"{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}"
+            ) from e
+
+        count += 1
+        game_buffer_index += _CBL_RECORD_SIZE
+
+
+# -----------------------------------------------------#
+
+
 # -----------------------------------------------------#
 def _decode_pos(p):
     """_decode_pos 函数。"""
@@ -174,8 +295,8 @@ def __read_steps(buff_decoder, game, parent_move, board):
     fench = board.get_fench(move_from)
     if not fench:
         return
-    _, man_side = fench_to_species(fench)
-    board.set_move_side(man_side)
+    _, piece_color = fench_to_species(fench)
+    board.set_move_side(piece_color)
 
     if board.is_valid_move(move_from, move_to):
         curr_move = board.move(move_from, move_to)
@@ -291,41 +412,55 @@ def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    magic, _i1, _book_count, lib_name = struct.unpack("<16s44si512s", contents[:576])
-
-    if magic != b"CCBridgeLibrary\x00":
-        # 检查是否是文本文件（包含中文字符）
-        try:
-            text_sample = contents[:100].decode("latin1", errors="ignore")
-            if any("\u4e00" <= c <= "\u9fff" for c in text_sample):
-                raise CChessError(
-                    f"文件看起来是文本文件而非 CBL 棋谱库文件，magic: {repr(magic[:8])}..."
-                )
-        except Exception:
-            pass
-        raise CChessError(
-            f"不支持的 CBL 文件格式，期望 magic: 'CCBridgeLibrary\\x00'，实际: {repr(magic)}"
-        )
+    lib_name, _book_count, _valid = _parse_cbl_header(contents)
 
     lib_info = {}
-    lib_info["name"] = cut_bytes_to_str(lib_name)
+    lib_info["name"] = lib_name
     lib_info["games"] = []
 
-    buff_start = 101952
+    buff_start = _get_cbl_data_offset(_book_count)
+    game_buffer, game_buffer_len, game_buffer_index = _find_and_validate_cbl_records(
+        contents, buff_start
+    )
 
-    game_buffer = contents[buff_start:]
-    game_buffer_len = len(game_buffer)
-    game_buffer_index = game_buffer.find(b"CCBridge Record")
     if game_buffer_index < 0:
         return lib_info
 
-    if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-        raise CChessError(
-            f"文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}"
-        )
+    for game, game_index in _parse_cbl_games(
+        contents, buff_start, game_buffer_index, game_buffer_len
+    ):
+        game.info["index"] = game_index
+        lib_info["games"].append(game)
 
-    count = 0
+    return lib_info
+
+
+def read_from_cbl_progressing(file_name):
+    """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。"""
+    with open(file_name, "rb") as f:
+        contents = f.read()
+
+    try:
+        lib_name, book_count, _valid = _parse_cbl_header(contents)
+    except CChessError:
+        # 如果不是支持的 CBL 格式，直接返回（不 yield 任何结果）
+        return
+
+    lib_info = {}
+    lib_info["name"] = lib_name
+    lib_info["games"] = []
+
+    buff_start = _get_cbl_data_offset(book_count)
+    game_buffer, game_buffer_len, game_buffer_index = _find_and_validate_cbl_records(
+        contents, buff_start
+    )
+
+    if game_buffer_index < 0:
+        yield lib_info
+        return
+
     game_index = 0
+    count = 0
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
@@ -336,79 +471,9 @@ def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-
                 game_index += 1
         except Exception as e:
             raise CChessError(
-                f"{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}"
+                f"{game_buffer_index}/{count}, {len(contents)}, {len(book_buffer)}, {e}"
             ) from e
-
         count += 1
-        game_buffer_index += 4096
+        game_buffer_index += _CBL_RECORD_SIZE
 
-    return lib_info
-
-
-def read_from_cbl_progressing(file_name):
-    """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。"""
-    with open(file_name, "rb") as f:
-        contents = f.read()
-
-    magic, _i1, book_count, lib_name = struct.unpack("<16s44si512s", contents[:576])
-
-    if magic != b"CCBridgeLibrary\x00":
-        # 检查是否是文本文件（包含中文字符）
-        try:
-            text_sample = contents[:100].decode("latin1", errors="ignore")
-            if any("\u4e00" <= c <= "\u9fff" for c in text_sample):
-                # 如果是文本文件，直接返回（不 yield 任何结果）
-                return
-        except Exception:
-            pass
-        # 如果不是支持的 CBL 格式，直接返回（不 yield 任何结果）
-        return
-
-    lib_info = {}
-    lib_info["name"] = cut_bytes_to_str(lib_name)
-    lib_info["games"] = []
-
-    buff_start = 101952
-
-    if book_count <= 128:
-        index = 101952
-    elif book_count <= 256:
-        index = 137280
-    elif book_count <= 384:
-        index = 151080
-    elif book_count <= 512:
-        index = 207936
-    else:
-        index = 349248
-
-    game_buffer = contents[buff_start:]
-    game_buffer_len = len(game_buffer)
-    game_buffer_index = game_buffer.find(b"CCBridge Record")
-    if game_buffer_index < 0:
         yield lib_info
-    else:
-        if ((game_buffer_len - game_buffer_index) % 4096) != 0:
-            raise CChessError(
-                f"文件格式错误：缓冲区不是4096的整数倍： {len(contents)}, {game_buffer_index + buff_start}"
-            )
-
-        count = 0
-        game_index = 0
-        while index < game_buffer_len:
-            book_buffer = game_buffer[index:]
-            try:
-                game = read_from_cbr_buffer(book_buffer)
-                if game is not None:
-                    game.info["index"] = game_index
-                    lib_info["games"].append(game)
-                    game_index += 1
-                # else:
-                #    print(count, "no game")
-            except Exception as e:
-                raise CChessError(
-                    f"{index}/{count}, {len(contents)}, {len(book_buffer)}, {e}"
-                ) from e
-            count += 1
-            index += 4096
-
-            yield lib_info
