@@ -103,6 +103,8 @@ else:
 
 #### 2.1.2 read_from_cbl 系列重复
 
+**状态**：✅ 已修复
+
 **影响文件**：`read_cbr.py` 第 191-278 行
 
 **问题描述**：
@@ -163,6 +165,8 @@ def read_from_cbl_progressing(file_name):
 
 #### 2.1.3 txt_to_board 与 read_from_txt 重复
 
+**状态**：✅ 已修复
+
 **影响文件**：`read_txt.py` 第 25-85 行 和 第 111-135 行
 
 **问题描述**：
@@ -206,6 +210,8 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):
 ---
 
 #### 2.1.4 数字映射字典重复
+
+**状态**：✅ 已修复
 
 **影响文件**：`move.py`
 
@@ -378,6 +384,8 @@ class Move(MoveTreeNode, MoveSerializer, MoveEngineAdapter):
 
 #### 2.3.1 read_from_xqf（120 行）
 
+**状态**：✅ 已修复
+
 **影响文件**：`io_xqf.py` 第 221-340 行
 
 **问题描述**：
@@ -442,6 +450,8 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):
 ---
 
 #### 2.3.2 read_from_pgn（100 行）
+
+**状态**：✅ 已修复
 
 **影响文件**：`io_pgn.py` 第 318-418 行
 
@@ -551,6 +561,8 @@ def read_from_pgn(file_name, game=None):
 
 #### 2.3.3 Game.save_to_pgn（80 行）
 
+**状态**：✅ 已修复
+
 **影响文件**：`game.py` 第 278-360 行
 
 **问题描述**：
@@ -619,6 +631,8 @@ def save_to_pgn(self, file_name):
 
 #### 3.1.1 XQF 协议常量
 
+**状态**：✅ 已修复
+
 **影响文件**：`io_xqf.py`
 
 **问题描述**：
@@ -663,6 +677,8 @@ if step_info[2] & _XQF_STEP_HAS_VAR:
 ---
 
 #### 3.1.2 CBR/CBL 文件结构常量
+
+**状态**：✅ 已修复
 
 **影响文件**：`read_cbr.py`
 
@@ -722,6 +738,8 @@ game_buffer_index += _CBR_RECORD_SIZE
 
 #### 3.1.3 引擎评分常量
 
+**状态**：✅ 已修复
+
 **影响文件**：`engine.py` 第 410-420 行
 
 **问题描述**：
@@ -746,6 +764,8 @@ action["score"] = (_CHECKMATE_SCORE - abs(mate_v)) * mate_flag
 ---
 
 #### 3.1.4 棋盘边界常量
+
+**状态**：✅ 已修复
 
 **影响文件**：`piece.py` 等多处
 
@@ -802,6 +822,8 @@ pos[1] < BLACK_PALACE_MIN_Y
 ### 3.2 条件表达式过复杂（2 处）
 
 #### 3.2.1 read_from_pgn 中的 process_moves
+
+**状态**：✅ 已修复
 
 **影响文件**：`io_pgn.py` 第 355-410 行
 
@@ -884,6 +906,8 @@ def process_moves(node, board, game, parent_move=None):
 
 #### 3.3.1 io_xqf.py 的 __read_steps 函数
 
+**状态**：✅ 已修复
+
 **影响文件**：`io_xqf.py` 第 188-220 行
 
 **问题描述**：
@@ -931,6 +955,8 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 ### 3.4 过长参数列表（4 处）
 
 #### 3.4.1 AsyncEngine.play 和 analyse
+
+**状态**：✅ 已修复（play 函数已简化）
 
 **影响文件**：`engine_async.py` 第 104-180 行
 
@@ -1042,6 +1068,8 @@ async def _play_with_options(self, board: ChessBoard, options: SearchOptions) ->
 
 #### 4.2.1 io_xqf.py struct.unpack 格式字符串
 
+**状态**：✅ 已修复（使用常量替代）
+
 **影响文件**：`io_xqf.py` 第 240-255 行
 
 **问题描述**：
@@ -1115,6 +1143,8 @@ header_data = _XQF_HEADER_STRUCT.unpack(contents[:_XQF_HEADER_STRUCT.size])
 
 #### 4.3.1 fench 命名
 
+**状态**：⏸️ 暂不修复（大规模重构，需向后兼容）
+
 **影响范围**：`board.py`, `piece.py`, `move.py`, `common.py`
 
 **问题描述**：
@@ -1150,13 +1180,15 @@ put_fench = put_piece  # 向后兼容
 
 #### 4.3.2 其他命名问题
 
+**状态**：✅ 已修复（p_from/p_to → pos_from/pos_to，man_side → piece_color）
+
 | 当前命名 | 建议命名 | 影响文件 | 说明 | 风险 |
 |---------|---------|---------|------|------|
-| `p_from`, `p_to` | `pos_from`, `pos_to` | `move.py` | 缩写不清晰 | 中 |
-| `man_side` | `piece_color` | `move.py` | 语义不明确 | 低 |
-| `pin`, `pout`, `perr` | `stdin`, `stdout`, `stderr` | `engine.py` | 不符合惯例 | 低 |
-| `_g_fen_num_set` | `FEN_DIGIT_SET` | `board.py` | 命名不规范 | 低 |
-| `_g_fen_ch_set` | `FEN_PIECE_SET` | `board.py` | 命名不规范 | 低 |
+| `p_from`, `p_to` | `pos_from`, `pos_to` | `move.py` | 缩写不清晰 | ✅ 已修复 |
+| `man_side` | `piece_color` | `move.py` | 语义不明确 | ✅ 已修复 |
+| `pin`, `pout`, `perr` | `stdin`, `stdout`, `stderr` | `engine.py` | 不符合惯例 | ⏸️ 暂不修复 |
+| `_g_fen_num_set` | `FEN_DIGIT_SET` | `board.py` | 命名不规范 | ⏸️ 暂不修复 |
+| `_g_fen_ch_set` | `FEN_PIECE_SET` | `board.py` | 命名不规范 | ⏸️ 暂不修复 |
 
 ---
 
