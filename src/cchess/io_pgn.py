@@ -529,11 +529,12 @@ def _try_parse_and_apply_move(board, move_str, game, move_class, parent_move):
     # move_data 是 ((from_x, from_y), (to_x, to_y))
     from_pos, to_pos = move_data
 
-    # 应用走法到棋盘获取 MoveInfo
-    move_info = board.make_move(from_pos, to_pos)
+    # 使用board.move执行走法，这会自动切换走子方并进行合法性检查
+    move = board.move(from_pos, to_pos)
+    if move is None:
+        return None, False
 
-    # 创建Move对象
-    move = move_class(move_info)
+    # move已经是Move对象，不需要再创建
 
     # 添加走法到游戏
     if parent_move is None:
@@ -632,11 +633,9 @@ def read_from_pgn(file_name, game=None):
         # 解析头信息
         current_board = _parse_pgn_headers(pgn_game, game)
 
-        # 规范化棋盘
-        normalized_board = current_board.normalized()
-
-        # 开始处理棋步
-        _process_pgn_moves(pgn_game.moves, normalized_board, game, move_class)
+        # 直接使用当前棋盘，不进行规范化
+        # Move.from_text 内部已经使用规范局面处理
+        _process_pgn_moves(pgn_game.moves, current_board, game, move_class)
 
     except Exception as e:
         print(f"解析PGN文件时出错: {e}")
