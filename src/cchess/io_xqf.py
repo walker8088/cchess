@@ -262,6 +262,53 @@ def _append_move_to_game(game, curr_move, parent_move):
 
 
 # -----------------------------------------------------#
+def _parse_step_info_low_version(step_info, buff_decoder):
+    """解析低版本走子信息
+
+    Args:
+        step_info: 走子信息字节数组
+        buff_decoder: 缓冲区解码器
+
+    Returns:
+        tuple: (has_next_step, has_var_step, annote_len)
+    """
+    has_next_step = bool(step_info[2] & 0xF0)
+    has_var_step = bool(step_info[2] & 0x0F)
+    annote_len = buff_decoder.read_int()
+
+    # 走子起点，落点
+    step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET) & 0xFF
+    step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET) & 0xFF
+
+    return has_next_step, has_var_step, annote_len
+
+
+def _parse_step_info_high_version(step_info, buff_decoder, keys):
+    """解析高版本走子信息
+
+    Args:
+        step_info: 走子信息字节数组
+        buff_decoder: 缓冲区解码器
+        keys: 解密密钥
+
+    Returns:
+        tuple: (has_next_step, has_var_step, annote_len)
+    """
+    step_info[2] &= _XQF_STEP_FLAG_MASK
+    has_next_step = bool(step_info[2] & _XQF_STEP_HAS_NEXT)
+    has_var_step = bool(step_info[2] & _XQF_STEP_HAS_VAR)
+    annote_len = 0
+
+    if step_info[2] & _XQF_STEP_HAS_ANNO:
+        annote_len = buff_decoder.read_int() - keys.KeyRMKSize
+
+    # 走子起点，落点
+    step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET - keys.KeyXYf) & 0xFF
+    step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET - keys.KeyXYt) & 0xFF
+
+    return has_next_step, has_var_step, annote_len
+
+
 def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
 
@@ -274,35 +321,17 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     if len(step_info) == 0:
         return
 
-    annote_len = 0
-    has_next_step = False
-    has_var_step = False
     board_bak = board.copy()
 
+    # 根据版本解析走子信息
     if version <= 0x0A:
-        # 低版本在走子数据后紧跟着注释长度，长度为0则没有注释
-        if step_info[2] & 0xF0:
-            has_next_step = True
-        if step_info[2] & 0x0F:
-            has_var_step = True  # 有变着
-        annote_len = buff_decoder.read_int()
-        # 走子起点，落点
-        step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET) & 0xFF
-        step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET) & 0xFF
-
+        has_next_step, has_var_step, annote_len = _parse_step_info_low_version(
+            step_info, buff_decoder
+        )
     else:
-        # 高版本通过flag来标记有没有注释，有则紧跟着注释长度和注释字段
-        step_info[2] &= _XQF_STEP_FLAG_MASK
-        if step_info[2] & _XQF_STEP_HAS_NEXT:  # 有后续
-            has_next_step = True
-        if step_info[2] & _XQF_STEP_HAS_VAR:  # 有变招
-            has_var_step = True
-        if step_info[2] & _XQF_STEP_HAS_ANNO:  # 有注释
-            annote_len = buff_decoder.read_int() - keys.KeyRMKSize
-
-        # 走子起点，落点
-        step_info[0] = (step_info[0] - _XQF_MOVE_FROM_OFFSET - keys.KeyXYf) & 0xFF
-        step_info[1] = (step_info[1] - _XQF_MOVE_TO_OFFSET - keys.KeyXYt) & 0xFF
+        has_next_step, has_var_step, annote_len = _parse_step_info_high_version(
+            step_info, buff_decoder, keys
+        )
 
     move_from, move_to = _decode_pos2(step_info)
     annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
@@ -321,7 +350,6 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
         __read_steps(buff_decoder, version, keys, game, good_move, board)
 
     if has_var_step:
-        # print("new_line", parent_move.step_index, parent_move.to_text())
         __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
         game.info["branchs"] += 1
 
@@ -392,6 +420,72 @@ def _parse_xqf_header(contents):
     if magic != b"XQ":
         return None
 
+    game_info = _build_xqf_game_info(
+        version,
+        ucType,
+        ucRes,
+        ucRedPlayerNameLen,
+        szRedPlayerName,
+        ucBlackPlayerNameLen,
+        szBlackPlayerName,
+        ucTitleLen,
+        szTitle,
+        ucMatchNameLen,
+        szMatchName,
+    )
+
+    # 解析密钥和棋盘数据
+    if version <= 0x0A:
+        keys = None
+        chess_mans = __init_chess_board(ucBoard, version)
+        step_base_buff = XQFBuffDecoder(contents[_XQF_HEADER_SIZE:])
+    else:
+        keys = __init_decrypt_key(crypt_keys)
+        chess_mans = __init_chess_board(ucBoard, version, keys)
+        step_base_buff = XQFBuffDecoder(
+            __decode_buff(keys, contents[_XQF_HEADER_SIZE:])
+        )
+
+    return {
+        "version": version,
+        "keys": keys,
+        "chess_mans": chess_mans,
+        "step_base_buff": step_base_buff,
+        "game_info": game_info,
+    }
+
+
+def _build_xqf_game_info(
+    version,
+    ucType,
+    ucRes,
+    ucRedPlayerNameLen,
+    szRedPlayerName,
+    ucBlackPlayerNameLen,
+    szBlackPlayerName,
+    ucTitleLen,
+    szTitle,
+    ucMatchNameLen,
+    szMatchName,
+):
+    """构建 XQF 游戏信息字典
+
+    Args:
+        version: XQF 版本
+        ucType: 游戏类型
+        ucRes: 游戏结果
+        ucRedPlayerNameLen: 红方玩家名长度
+        szRedPlayerName: 红方玩家名
+        ucBlackPlayerNameLen: 黑方玩家名长度
+        szBlackPlayerName: 黑方玩家名
+        ucTitleLen: 标题长度
+        szTitle: 标题
+        ucMatchNameLen: 比赛名长度
+        szMatchName: 比赛名
+
+    Returns:
+        dict: 游戏信息字典
+    """
     game_info = {}
     game_info["source"] = "XQF"
     game_info["version"] = version
@@ -431,25 +525,7 @@ def _parse_xqf_header(contents):
         except (UnicodeDecodeError, ValueError):
             pass
 
-    # 解析密钥和棋盘数据
-    if version <= 0x0A:
-        keys = None
-        chess_mans = __init_chess_board(ucBoard, version)
-        step_base_buff = XQFBuffDecoder(contents[_XQF_HEADER_SIZE:])
-    else:
-        keys = __init_decrypt_key(crypt_keys)
-        chess_mans = __init_chess_board(ucBoard, version, keys)
-        step_base_buff = XQFBuffDecoder(
-            __decode_buff(keys, contents[_XQF_HEADER_SIZE:])
-        )
-
-    return {
-        "version": version,
-        "keys": keys,
-        "chess_mans": chess_mans,
-        "step_base_buff": step_base_buff,
-        "game_info": game_info,
-    }
+    return game_info
 
 
 def _build_xqf_board(chess_mans):

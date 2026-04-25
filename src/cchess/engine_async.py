@@ -1,5 +1,4 @@
-"""异步引擎接口 - 基于 asyncio 的异步调用支持
-"""
+"""异步引擎接口 - 基于 asyncio 的异步调用支持"""
 
 from __future__ import annotations
 
@@ -155,7 +154,20 @@ class AsyncEngine:
         # 发送局面
         await self._send_line(f"position fen {board.to_fen()}")
 
-        # 构建 go 命令
+        # 构建并发送 go 命令
+        go_cmd = self._build_go_command(depth, time_limit, ponder)
+        await self._send_line(go_cmd)
+
+        # 等待结果
+        return await self._wait_for_result()
+
+    def _build_go_command(
+        self,
+        depth: Optional[int] = None,
+        time_limit: Optional[float] = None,
+        ponder: bool = False,
+    ) -> str:
+        """构建 go 命令字符串"""
         go_cmd = "go"
         if depth is not None:
             go_cmd += f" depth {depth}"
@@ -163,10 +175,10 @@ class AsyncEngine:
             go_cmd += f" movetime {int(time_limit * 1000)}"
         if ponder:
             go_cmd += " ponder"
+        return go_cmd
 
-        await self._send_line(go_cmd)
-
-        # 等待结果
+    async def _wait_for_result(self) -> Dict[str, Any]:
+        """等待引擎返回结果"""
         result = {"move": None, "score": None, "pv": []}
         while True:
             line = await self._read_line()
@@ -183,7 +195,6 @@ class AsyncEngine:
                     result["score"] = info["score"]
                 if "pv" in info:
                     result["pv"] = info["pv"]
-
         return result
 
     async def analyse(

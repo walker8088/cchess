@@ -746,57 +746,57 @@ class Move:
         若 `detailed` 为 True，则在返回字符串后附加括号内的详细信息，
         例如吃子、将军或将死等注记。
         """
-
         fench = self.board_before().get_fench(self.pos_from)
         _, piece_color = fench_to_species(fench)
-
         diff = self.pos_to[1] - self.pos_from[1]
 
         # 黑方是红方的反向操作
         if piece_color == BLACK:
             diff = -diff
 
-        if diff == 0:
-            diff_str = "平"
-        elif diff > 0:
-            diff_str = "进"
-        else:
-            diff_str = "退"
-
-        # 王车炮兵规则
-        if fench.lower() in ("k", "r", "c", "p"):
-            if diff == 0:
-                dest_str = _h_level_index[piece_color][self.pos_to[0]]
-            elif diff > 0:
-                dest_str = _v_change_index[piece_color][diff]
-            else:
-                dest_str = _v_change_index[piece_color][-diff]
-        else:  # 士相马的规则
-            dest_str = _h_level_index[piece_color][self.pos_to[0]]
-
+        diff_str = self._get_direction_str(diff)
+        dest_str = self._get_dest_str(fench, piece_color, diff)
         name_str = self.__get_text_name(self.pos_from)
 
         text = name_str + diff_str + dest_str
         if not detailed:
             return text
 
-        details = []
-        if self.captured:
-            details.append(
-                f"吃{fench_to_text(self.captured)}",
-            )
-        if self.is_checkmate:
-            details.append(
-                "将死",
-            )
-        elif self.is_checking:
-            details.append(
-                "将军",
-            )
-
+        details = self._get_detailed_info()
         if len(details) == 0:
             return text
         return f"{text}({','.join(details)})"
+
+    def _get_direction_str(self, diff):
+        """获取走法方向字符串（平/进/退）"""
+        if diff == 0:
+            return "平"
+        return "进" if diff > 0 else "退"
+
+    def _get_dest_str(self, fench, piece_color, diff):
+        """获取目标位置字符串"""
+        if fench.lower() in ("k", "r", "c", "p"):
+            # 王车炮兵规则
+            if diff == 0:
+                return _h_level_index[piece_color][self.pos_to[0]]
+            elif diff > 0:
+                return _v_change_index[piece_color][diff]
+            else:
+                return _v_change_index[piece_color][-diff]
+        else:
+            # 士相马的规则
+            return _h_level_index[piece_color][self.pos_to[0]]
+
+    def _get_detailed_info(self):
+        """获取详细信息列表（吃子、将军、将死）"""
+        details = []
+        if self.captured:
+            details.append(f"吃{fench_to_text(self.captured)}")
+        if self.is_checkmate:
+            details.append("将死")
+        elif self.is_checking:
+            details.append("将军")
+        return details
 
     def __get_text_name(self, pos):
         """根据位置计算并返回带有位置限定词的棋子名称。
