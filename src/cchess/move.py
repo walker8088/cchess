@@ -99,7 +99,7 @@ _ZH_TO_HALF = {
 _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
 
 
-def _detect_move_side_from_notation(move_str):
+def _detect_move_side_from_text(move_str):
     """根据着法字符串中的数字类型检测走子方。
 
     - 含中文数字（一二三...）→ RED

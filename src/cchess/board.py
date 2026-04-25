@@ -567,12 +567,12 @@ class ChessBoard:
 
         对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
         """
-        from .move import _detect_move_side_from_notation, _normalize_move_str
+        from .move import _detect_move_side_from_text, _normalize_move_str
 
-        move_str = move_str.replace(' ', '')
+        move_str = move_str.replace(" ", "")
 
         # 从文本检测走子方格式
-        text_side = _detect_move_side_from_notation(move_str)
+        text_side = _detect_move_side_from_text(move_str)
         if text_side is None:
             # 无法从文本判断，使用棋盘当前走子方
             text_side = self.move_side().color
