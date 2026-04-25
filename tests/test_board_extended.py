@@ -22,13 +22,13 @@ from cchess import ANY_COLOR, BLACK, FULL_INIT_FEN, RED, ChessBoard
 class TestBoardExtended:
     def test_set_move_color(self):
         board = ChessBoard(FULL_INIT_FEN)
-        board.set_move_color(RED)
+        board.set_move_side(RED)
         assert board.move_side().color == RED
 
-        board.set_move_color(BLACK)
+        board.set_move_side(BLACK)
         assert board.move_side().color == BLACK
 
-        board.set_move_color(ANY_COLOR)
+        board.set_move_side(ANY_COLOR)
         assert board.move_side().color == ANY_COLOR
 
     def test_put_fench_pop_fench(self):
