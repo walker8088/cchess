@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 
 from .board import ChessBoard
-from .common import BLACK, RED, fench_to_species
+from .common import BLACK, RED, append_move_to_game, fench_to_species
 from .exception import CChessError
 
 # pylint: disable=too-many-locals,too-many-branches
@@ -186,25 +186,6 @@ def cut_bytes_to_str(buff):
 
 
 # -----------------------------------------------------#
-def _append_move_to_game(game, curr_move, parent_move):
-    """将走子添加到游戏树中。
-
-    参数:
-        game: Game 对象
-        curr_move: 当前走子
-        parent_move: 父节点走子
-
-    返回:
-        当前走子（如果成功添加），否则返回 parent_move
-    """
-    if parent_move:
-        parent_move.append_next_move(curr_move)
-    else:
-        game.append_first_move(curr_move)
-    return curr_move
-
-
-# -----------------------------------------------------#
 class CbrBuffDecoder:
     """对 CBR 文件缓冲区提供顺序读取辅助。"""
 
@@ -304,7 +285,7 @@ def __read_steps(buff_decoder, game, parent_move, board):
     if board.is_valid_move(move_from, move_to):
         curr_move = board.move(move_from, move_to)
         curr_move.annote = annote
-        good_move = _append_move_to_game(game, curr_move, parent_move)
+        good_move = append_move_to_game(game, curr_move, parent_move)
     else:
         return
 

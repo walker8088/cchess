@@ -134,7 +134,7 @@ class PGNParser:
 
             elif token_type == "move":
                 current_node, current_line = self._handle_move_token(
-                    token, current_node, current_line, root
+                    token, current_node, current_line
                 )
 
             elif token_type == "annote":
@@ -159,7 +159,7 @@ class PGNParser:
 
         return root.next_node, result
 
-    def _handle_move_token(self, token, current_node, current_line, root):
+    def _handle_move_token(self, token, current_node, current_line):
         """处理 move token"""
         new_node = MoveNode(PGNMove(token["value"]))
         current_node.next_node = new_node
@@ -471,8 +471,6 @@ def _read_pgn_file(file_name):
         try:
             return raw.decode("gbk")
         except UnicodeDecodeError:
-            import chardet
-
             detected = chardet.detect(raw)
             encoding = detected.get("encoding", "gbk")
             if encoding and encoding.lower().startswith("utf"):

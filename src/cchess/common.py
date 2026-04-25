@@ -39,6 +39,7 @@ __all__ = [
     "FULL_INIT_BOARD",
     "FULL_INIT_FEN",
     "RED",
+    "append_move_to_game",
     "opposite_color",
     "fench_to_txt_name",
     "fench_to_text",
@@ -364,6 +365,24 @@ def get_fen_type_detail(fen):
         title_black = "将"
 
     return (title_red, title_black)
+
+
+def append_move_to_game(game, curr_move, parent_move):
+    """将走子添加到游戏树中。
+
+    Args:
+        game: Game 对象
+        curr_move: 当前走子
+        parent_move: 父节点走子
+
+    Returns:
+        当前走子（如果成功添加），否则返回 parent_move
+    """
+    if parent_move:
+        parent_move.append_next_move(curr_move)
+    else:
+        game.append_first_move(curr_move)
+    return curr_move
 
 
 # -----------------------------------------------------#
