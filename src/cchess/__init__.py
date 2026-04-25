@@ -14,10 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .attack_matrix_manager import AttackMatrixManager
 from .board import ChessBoard, ChessPlayer
-from .board_state import BoardState, MoveInfo
-from .board_transform import BoardTransform
 from .common import (
     ANY_COLOR,
     BLACK,
@@ -54,7 +51,6 @@ from .game import Game
 from .io_pgn import read_from_pgn
 from .io_xqf import read_from_xqf
 from .move import Move
-from .move_generator import MoveGenerator
 from .piece import (
     Advisor,
     Bishop,
@@ -67,7 +63,6 @@ from .piece import (
 )
 from .read_cbf import read_from_cbf
 from .read_cbr import read_from_cbl, read_from_cbr
-from .rule_checker import RuleChecker
 
 __all__ = [
     # exception
@@ -104,15 +99,9 @@ __all__ = [
     "Rook",
     "Cannon",
     "Pawn",
-    # board state and components
+    # board
     "ChessBoard",
     "ChessPlayer",
-    "BoardState",
-    "MoveInfo",
-    "BoardTransform",
-    "MoveGenerator",
-    "RuleChecker",
-    "AttackMatrixManager",
     # move
     "Move",
     # game
