@@ -485,6 +485,7 @@ class TestReadPGN:
     def test_gbk_fallback_encoding(self):
         """Test GBK encoding fallback (lines 49-54)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         # Create a temp file with GBK-encoded content
         content = '[Game "Chinese Chess"]\n[Red "测试"]\n\n1. 炮二平五 炮８平５\n *\n'
@@ -492,7 +493,7 @@ class TestReadPGN:
             f.write(content.encode("gbk"))
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game is not None
         finally:
             os.unlink(tmp_path)
@@ -500,6 +501,7 @@ class TestReadPGN:
     def test_chardet_fallback(self):
         """Test chardet-based encoding fallback (lines 50-54)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         # Create a file with content that fails both utf-8 and gbk decode
         # Use bytes that are invalid in both encodings
@@ -508,7 +510,7 @@ class TestReadPGN:
             f.write(raw)
             tmp_path = f.name
         try:
-            read_from_pgn(tmp_path)
+            read_from_pgn(tmp_path, Game)
             # Should not crash even with bad encoding
         finally:
             os.unlink(tmp_path)
@@ -516,6 +518,7 @@ class TestReadPGN:
     def test_get_headers_all_lines_are_headers(self):
         """Test when all lines are headers, returns empty list (line 105)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         content = '[Game "Chinese Chess"]\n[Red "Player"]\n[Black "Player2"]\n'
         with tempfile.NamedTemporaryFile(
@@ -524,7 +527,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game is not None
             assert game.info.get("red") == "Player"
         finally:
@@ -533,6 +536,7 @@ class TestReadPGN:
     def test_get_steps_iccs_format(self):
         """Test ICCS format step parsing (lines 149-154)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0a1 i9i8\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -541,7 +545,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
             # assert game.first_move is not None
@@ -551,6 +555,7 @@ class TestReadPGN:
     def test_get_steps_iccs_5char(self):
         """Test ICCS 5-character format (line 151)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0-a1 i9-i8\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -559,7 +564,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
         finally:
@@ -568,6 +573,7 @@ class TestReadPGN:
     def test_get_steps_game_result(self):
         """Test game result markers in steps (lines 141-146)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         content = '[Game "Chinese Chess"]\n\n1. a0a1 i9i8 1-0\n'
         with tempfile.NamedTemporaryFile(
@@ -576,7 +582,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
         finally:
@@ -585,6 +591,7 @@ class TestReadPGN:
     def test_get_steps_move_none_returns_game(self):
         """Test when board.move_text returns None, returns game (line 158)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         content = '[Game "Chinese Chess"]\n\n1. 非法走法\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -593,7 +600,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            read_from_pgn(tmp_path)
+            read_from_pgn(tmp_path, Game)
             # Should return game object, not crash
         finally:
             os.unlink(tmp_path)
@@ -601,6 +608,7 @@ class TestReadPGN:
     def test_get_steps_fen_header(self):
         """Test FEN header creates custom init board (line 94)."""
         from cchess import read_from_pgn
+        from cchess.game import Game
 
         fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         content = f'[Game "Chinese Chess"]\n[FEN "{fen}"]\n\n *\n'
@@ -610,7 +618,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path)
+            game = read_from_pgn(tmp_path, Game)
             assert game.init_board.to_fen() == fen
         finally:
             os.unlink(tmp_path)
@@ -658,16 +666,18 @@ class TestReadCBR:
 
     def test_read_from_cbr_buffer_bad_magic(self):
         """Test read_from_cbr_buffer with bad magic returns None (line 211)."""
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbr_buffer
 
         bad_data = b"\x00" * 2214
-        result = read_from_cbr_buffer(bad_data)
+        result = read_from_cbr_buffer(bad_data, Game)
         assert result is None
 
     def test_read_from_cbr_buffer_move_side_black(self):
         """Test read_from_cbr_buffer with black to move (line 225)."""
         import struct
 
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbr_buffer
 
         # Build a minimal valid CBR buffer
@@ -703,13 +713,14 @@ class TestReadCBR:
         # Pad to at least 2214
         full_data = full_data.ljust(2214, b"\x00")
         full_data += b"\x00\x00\x00\x00"  # step info terminator
-        result = read_from_cbr_buffer(full_data)
+        result = read_from_cbr_buffer(full_data, Game)
         assert result is not None
 
     def test_read_from_cbr_invalid_fench_returns(self):
         """Test __read_steps when fench is None returns early (line 162)."""
         import struct
 
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -742,7 +753,7 @@ class TestReadCBR:
         # Add init info (annote_len = 0) + step terminator
         full_data += b"\x00\x00\x00\x00"  # a_len = 0
         full_data += b"\x00\x00\x00\x00"  # step_info all zeros
-        result = read_from_cbr_buffer(full_data)
+        result = read_from_cbr_buffer(full_data, Game)
         # Should not crash
         assert result is not None
 
@@ -750,6 +761,7 @@ class TestReadCBR:
         """Test read_from_cbl when no CBR magic found (line 274)."""
         import struct
 
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbl
 
         magic = b"CCBridgeLibrary\x00"
@@ -760,7 +772,7 @@ class TestReadCBR:
             f.write(data)
             tmp_path = f.name
         try:
-            result = read_from_cbl(tmp_path)
+            result = read_from_cbl(tmp_path, Game)
             assert result is not None
             assert len(result["games"]) == 0
         finally:
@@ -801,6 +813,7 @@ class TestReadCBR:
         """Test __read_steps with empty step_info (line 133)."""
         import struct
 
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -833,13 +846,14 @@ class TestReadCBR:
         # Add init info with annote_len = 0, then no step data
         full_data += b"\x00\x00\x00\x00"  # a_len = 0
         # No step data - decoder will hit end
-        result = read_from_cbr_buffer(full_data)
+        result = read_from_cbr_buffer(full_data, Game)
         assert result is not None
 
     def test_read_cbr_step_mark_all_zero(self):
         """Test __read_steps with all-zero step_mark (line 136)."""
         import struct
 
+        from cchess.game import Game
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -870,7 +884,7 @@ class TestReadCBR:
         full_data = header[: 2214 - 90] + bytes(boards_data)
         full_data = full_data.ljust(2214, b"\x00")
         full_data += b"\x00\x00\x00\x00"
-        result = read_from_cbr_buffer(full_data)
+        result = read_from_cbr_buffer(full_data, Game)
         assert result is not None
 
 

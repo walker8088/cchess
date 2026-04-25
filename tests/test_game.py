@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from pathlib import Path
 
-from cchess import read_from_xqf
+from cchess import Game, read_from_xqf
 
 # result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
 result_dict = {"红胜": "1-0", "黑胜": "0-1", "和棋": "1/2-1/2"}
@@ -49,12 +49,12 @@ class TestReaderXQF:
     """
 
     def test_base(self):
-        read_from_xqf(Path("tests", "data", "game_test.xqf"))
+        read_from_xqf(Path("tests", "data", "game_test.xqf"), Game)
         # assert moves == ''
 
     def test_k1(self):
         fen, moves, result = load_move_txt(Path("tests", "data", "test1_move.txt"))
-        game = read_from_xqf(Path("tests", "data", "test1.xqf"))
+        game = read_from_xqf(Path("tests", "data", "test1.xqf"), Game)
         assert game.init_board.to_fen() == fen
         assert game.info["result"] == result
 

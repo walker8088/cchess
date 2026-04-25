@@ -571,7 +571,7 @@ def _build_xqf_board(chess_mans):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: disable=unused-argument
+def read_from_xqf(full_file_name, game_class, read_annotation=True):  # pylint: disable=unused-argument
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
@@ -579,8 +579,8 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
 
     参数:
         full_file_name (str): XQF 文件路径
+        game_class: Game类，用于创建游戏实例
         read_annotation (bool): 是否读取注释
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
 
     返回:
         Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
@@ -596,17 +596,7 @@ def read_from_xqf(full_file_name, read_annotation=True, game=None):  # pylint: d
         header["step_base_buff"], header["version"], header["keys"]
     )
 
-    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
-    if game is None:
-        from .game import Game  # pylint: disable=import-outside-toplevel
-
-        game = Game(board, game_annotation)
-    else:
-        # 使用提供的game实例
-        game.init_board = board
-        game.annote = game_annotation
-        game.first_move = None
-        game.last_move = None
+    game = game_class(board, game_annotation)
 
     game.info.update(header["game_info"])
 

@@ -23,6 +23,7 @@ import chardet
 
 from .board import ChessBoard
 from .common import FULL_INIT_FEN
+from .move import Move
 
 
 # -----------------------------------------------------#
@@ -603,25 +604,17 @@ def _process_pgn_moves(node, board, game, move_class, parent_move=None):
         node = node.next_node
 
 
-def read_from_pgn(file_name, game=None):
+def read_from_pgn(file_name, game_class):
     """从 PGN 文件读取并解析为 `Game` 对象。
 
     Args:
         file_name: 文件路径
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+        game_class: Game类，用于创建游戏实例
     """
-    # 使用提供的game实例
-    from .game import Game  # pylint: disable=import-outside-toplevel
-    from .move import Move  # pylint: disable=import-outside-toplevel
-
     move_class = Move
     board = ChessBoard(FULL_INIT_FEN)
-    if game is None:
-        game = Game(board)
-    else:
-        game.init_board = board
-        game.first_move = None
-        game.last_move = None
+
+    game = game_class(board)
 
     # 读取文件
     text = _read_pgn_file(file_name)

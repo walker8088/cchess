@@ -275,9 +275,7 @@ class Game:  # pylint: disable=too-many-public-methods
             read_from_ubb_dhtml,  # pylint: disable=import-outside-toplevel
         )
 
-        # 先创建空的Game实例
-        game = Game()
-        return read_from_ubb_dhtml(txt, game)
+        return read_from_ubb_dhtml(txt, Game)
 
     @staticmethod
     def read_from(file_name):
@@ -285,41 +283,35 @@ class Game:  # pylint: disable=too-many-public-methods
 
         支持的后缀包括 .xqf, .pgn, .cbf, .cbr。
         """
-        # 先创建空的Game实例
-        game = Game()
-
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
             from .io_xqf import read_from_xqf
 
-            return read_from_xqf(file_name, game)
+            return read_from_xqf(file_name, Game)
         if ext == ".pgn":
             from .io_pgn import read_from_pgn
 
-            return read_from_pgn(file_name, game)
+            return read_from_pgn(file_name, Game)
         if ext == ".cbf":
             from .read_cbf import read_from_cbf
 
-            return read_from_cbf(file_name, game)
+            return read_from_cbf(file_name, Game)
         if ext == ".cbr":
             from .read_cbr import read_from_cbr
 
-            return read_from_cbr(file_name, game)
+            return read_from_cbr(file_name, Game)
         raise ValueError(f"Unknown file format:{file_name}")
 
     @staticmethod
     def read_from_lib(file_name):
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
-        # 先创建空的Game实例
-        game = Game()
-
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".cbl":
             from .read_cbr import (
                 read_from_cbl,  # pylint: disable=import-outside-toplevel
             )
 
-            return read_from_cbl(file_name, game)
+            return read_from_cbl(file_name, Game)
         raise ValueError(f"Unknown lib file format:{file_name}")
 
     def _format_move_text(self, move):

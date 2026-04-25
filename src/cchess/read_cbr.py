@@ -129,7 +129,9 @@ def _find_and_validate_cbl_records(contents, buff_start):
     return game_buffer, game_buffer_len, game_buffer_index
 
 
-def _parse_cbl_games(contents, buff_start, game_buffer_index, game_buffer_len):
+def _parse_cbl_games(
+    contents, buff_start, game_buffer_index, game_buffer_len, game_class
+):
     """解析 CBL 文件中的游戏列表
 
     Args:
@@ -137,6 +139,7 @@ def _parse_cbl_games(contents, buff_start, game_buffer_index, game_buffer_len):
         buff_start: 数据区起始位置
         game_buffer_index: 游戏缓冲区索引
         game_buffer_len: 游戏缓冲区长度
+        game_class: Game类，用于创建游戏实例
 
     Yields:
         tuple: (game, game_index) 或 None
@@ -148,7 +151,7 @@ def _parse_cbl_games(contents, buff_start, game_buffer_index, game_buffer_len):
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
-            game = read_from_cbr_buffer(book_buffer)
+            game = read_from_cbr_buffer(book_buffer, game_class)
             if game is not None:
                 game.info["index"] = game_index
                 yield game, game_index
@@ -313,12 +316,12 @@ def __read_steps(buff_decoder, game, parent_move, board):
 
 
 # -----------------------------------------------------#
-def read_from_cbr_buffer(contents, game=None):
+def read_from_cbr_buffer(contents, game_class):
     """从 CBR 文件的字节内容解析并返回 `Game` 对象。
 
     Args:
         contents: 文件内容字节
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+        game_class: Game类，用于创建游戏实例
     """
     (
         magic,
@@ -367,17 +370,7 @@ def read_from_cbr_buffer(contents, game=None):
 
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
     game_annote = __read_init_info(buff_decoder)
-    # 如果提供了game实例，使用它；否则创建新的
-    if game is None:
-        from .game import Game  # pylint: disable=import-outside-toplevel
-
-        game = Game(board, game_annote)
-    else:
-        # 使用提供的game实例
-        game.init_board = board
-        game.annote = game_annote
-        game.first_move = None
-        game.last_move = None
+    game = game_class(board, game_annote)
     game.info = game_info
 
     if not buff_decoder.is_end():
@@ -387,27 +380,27 @@ def read_from_cbr_buffer(contents, game=None):
 
 
 # -----------------------------------------------------#
-def read_from_cbr(file_name, game=None):
+def read_from_cbr(file_name, game_class):
     """从 `.cbr` 文件读取并解析为 `Game` 对象。
 
     Args:
         file_name: 文件路径
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+        game_class: Game类，用于创建游戏实例
     """
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    return read_from_cbr_buffer(contents, game)
+    return read_from_cbr_buffer(contents, game_class)
 
 
 # -----------------------------------------------------#
-def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-argument
+def read_from_cbl(file_name, game_class, verify=True):  # pylint: disable=unused-argument
     """从 `.cbl` 棋谱库文件读取并返回包含多个 `Game` 的字典。
 
     Args:
         file_name: 文件路径
+        game_class: Game类，用于创建游戏实例
         verify: 验证标志
-        game: 模板Game实例，用于创建新游戏（向后兼容）
     """
     with open(file_name, "rb") as f:
         contents = f.read()
@@ -427,7 +420,7 @@ def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-
         return lib_info
 
     for game, game_index in _parse_cbl_games(
-        contents, buff_start, game_buffer_index, game_buffer_len
+        contents, buff_start, game_buffer_index, game_buffer_len, game_class
     ):
         game.info["index"] = game_index
         lib_info["games"].append(game)
@@ -437,6 +430,8 @@ def read_from_cbl(file_name, verify=True, game=None):  # pylint: disable=unused-
 
 def read_from_cbl_progressing(file_name):
     """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。"""
+    from .game import Game
+
     with open(file_name, "rb") as f:
         contents = f.read()
 
@@ -464,7 +459,7 @@ def read_from_cbl_progressing(file_name):
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
-            game = read_from_cbr_buffer(book_buffer)
+            game = read_from_cbr_buffer(book_buffer, Game)
             if game is not None:
                 game.info["index"] = game_index
                 lib_info["games"].append(game)

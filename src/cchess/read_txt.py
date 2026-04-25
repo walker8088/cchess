@@ -28,32 +28,21 @@ def decode_txt_pos(pos):
 
 
 # -----------------------------------------------------#
-def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-many-locals
+def read_from_txt(moves_txt, game_class, pos_txt=None):  # pylint: disable=too-many-locals
     """从文本棋谱字符串读取并返回 `Game` 对象。
 
     Args:
         moves_txt: 走法文本
+        game_class: Game类，用于创建游戏实例
         pos_txt: 位置文本
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
     """
-    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
-    if game is None:
-        from .game import Game  # pylint: disable=import-outside-toplevel
 
     # 复用 txt_to_board 构造棋盘
     board = txt_to_board(pos_txt)
 
     last_move = None
     if not moves_txt:
-        # 如果提供了game实例，使用它；否则创建新的
-        if game is None:
-            return Game(board)
-        else:
-            # 使用提供的game实例
-            game.init_board = board
-            game.first_move = None
-            game.last_move = None
-            return game
+        return game_class(board)
 
     step_no = 0
     while step_no * 4 < len(moves_txt):
@@ -66,14 +55,7 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-ma
             if not last_move:
                 _, piece_color = fench_to_species(board.get_fench(move_from))
                 board.set_move_side(piece_color)
-                # 如果提供了game实例，使用它；否则创建新的
-                if game is None:
-                    game = Game(board)
-                else:
-                    # 使用提供的game实例
-                    game.init_board = board
-                    game.first_move = None
-                    game.last_move = None
+                game = game_class(board)
                 last_move = game
 
             new_move = board.move(move_from, move_to)
@@ -83,14 +65,7 @@ def read_from_txt(moves_txt, pos_txt=None, game=None):  # pylint: disable=too-ma
             raise CChessError(f"bad move at {step_no} {move_from} {move_to}")
         step_no += 1
     if step_no == 0:
-        # 如果提供了game实例，使用它；否则创建新的
-        if game is None:
-            game = Game(board)
-        else:
-            # 使用提供的game实例
-            game.init_board = board
-            game.first_move = None
-            game.last_move = None
+        game = game_class(board)
 
     return game
 
@@ -171,29 +146,19 @@ def txt_to_moves(board, moves_txt):
 
 
 # -----------------------------------------------------#
-def read_from_ubb_dhtml(ubb_text, game=None):
+def read_from_ubb_dhtml(ubb_text, game_class):
     """从 UBB DHTML 文本读取并返回 `Game` 对象。
 
     Args:
         ubb_text: UBB文本
-        game: 已存在的Game实例，如果为None则创建新实例（向后兼容）
+        game_class: Game类，用于创建游戏实例
     """
-    # 如果提供了game实例，使用它；否则创建新的（向后兼容）
-    if game is None:
-        from .game import Game  # pylint: disable=import-outside-toplevel
 
     info = ubb_to_dict(ubb_text)
     board = txt_to_board(info["binit"])
     moves = txt_to_moves(board, info["movelist"])
 
-    # 如果提供了game实例，使用它；否则创建新的
-    if game is None:
-        game = Game(board)
-    else:
-        # 使用提供的game实例
-        game.init_board = board
-        game.first_move = None
-        game.last_move = None
+    game = game_class(board)
 
     game.info = info
     for move in moves:
