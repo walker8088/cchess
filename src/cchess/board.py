@@ -559,13 +559,45 @@ class ChessBoard:
         return self.move(move_from, move_to, check)
 
     def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
-        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
-        ret = Move.from_text(self, move_str)
+        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。
+
+        根据走法文本中的数字类型自动检测走子方：
+        - 中文数字（一二三...）→ 红方格式
+        - 阿拉伯/全角数字（123...或１２３...）→ 黑方格式
+
+        对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
+        """
+        from .move import _detect_move_side_from_notation, _normalize_move_str
+
+        move_str = move_str.replace(' ', '')
+
+        # 从文本检测走子方格式
+        text_side = _detect_move_side_from_notation(move_str)
+        if text_side is None:
+            # 无法从文本判断，使用棋盘当前走子方
+            text_side = self.move_side().color
+
+        # 规范化局面（统一为红方视角解析）
+        normalized_board = self.normalized()
+
+        # 根据文本格式规范化走法字符串
+        if text_side == BLACK:
+            normalized_move_str = _normalize_move_str(move_str, BLACK, RED)
+        else:
+            normalized_move_str = move_str
+
+        # 在规范局面上解析（此时 normalized_board.move_side() == RED，
+        # 所以 _MoveTextParser.needs_denormalization == False，
+        # 返回的坐标是规范局面坐标）
+        ret = Move.from_text(normalized_board, normalized_move_str)
         if not ret:
             return None
 
-        for move_from, move_to in ret:
-            move = self.move(move_from, move_to, check)
+        # 将规范局面坐标反规范化回原局面坐标
+        for norm_from, norm_to in ret:
+            orig_from = self.denormalize_pos(norm_from)
+            orig_to = self.denormalize_pos(norm_to)
+            move = self.move(orig_from, orig_to, check)
             if move is not None:
                 return move
 
