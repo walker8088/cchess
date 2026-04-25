@@ -18,18 +18,33 @@ from .common import BLACK, RED, fench_to_species, opposite_color
 
 # pylint: disable=too-many-return-statements
 
+
+# 九宫格边界常量
+_PALACE_Y_MAX_RED = 2   # 红方九宫格最大y值
+_PALACE_X_MIN = 3         # 九宫格最小x值
+_PALACE_X_MAX = 5         # 九宫格最大x值
+_PALACE_Y_MIN_BLACK = 7 # 黑方九宫格最小y值
+
+# 河界常量
+_RIVER_RED_MAX = 4      # 红方半场最大y值（含河界）
+_RIVER_BLACK_MIN = 5    # 黑方半场最小y值（含河界）
+
+# 兵的活动范围常量
+_PAWN_Y_MIN_RED = 3     # 红兵最小y值（不能后退超过此值）
+_PAWN_Y_MAX_BLACK = 6   # 黑卒最大y值（不能后退超过此值）
+
 # -----------------------------------------------------#
 # 士象固定位置枚举
 _advisor_pos = (
-    (),
-    ((3, 0), (5, 0), (4, 1), (3, 2), (5, 2)),
-    ((3, 9), (5, 9), (4, 8), (3, 7), (5, 7)),
+    frozenset(),
+    frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
+    frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
 )
 
 _bishop_pos = (
-    (),
-    ((2, 0), (6, 0), (0, 2), (4, 2), (9, 2), (2, 4), (6, 4)),
-    ((2, 9), (6, 9), (0, 7), (4, 7), (9, 7), (2, 5), (6, 5)),
+    frozenset(),
+    frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
+    frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
 )
 
 # 滑走棋子方向常量（车、炮）
@@ -74,6 +89,21 @@ class Piece:
             return f"b{self.fench}"
         return f"r{self.fench.lower()}"
 
+    def is_enemy_piece(self, target_fench):
+        """判断目标棋子是否为敌方。
+        
+        参数:
+            target_fench: 目标棋子的 FEN 字符，None 表示空位
+        
+        返回:
+            bool: True 如果是敌方棋子，False 如果是友方棋子或空位
+        """
+        if target_fench is None:
+            return False
+        return (target_fench.isupper() and self.color == BLACK) or (
+            target_fench.islower() and self.color == RED
+        )
+
     def _create_moves_from_offsets(self, offsets):
         """从偏移量列表生成候选走子。
 
@@ -103,17 +133,13 @@ class Piece:
         for dx, dy in directions:
             x, y = curr_x + dx, curr_y + dy
 
-            while 0 <= x < 9 and 0 <= y <= 9:
+            while self.is_valid_pos((x, y)):
                 target = self.board._board[y][x]
 
                 if target is None:
                     moves.append(((curr_x, curr_y), (x, y)))
                 else:
-                    # 直接判断颜色：大写=RED，小写=BLACK
-                    is_enemy = (target.isupper() and self.color == BLACK) or (
-                        target.islower() and self.color == RED
-                    )
-                    if is_enemy:
+                    if self.is_enemy_piece(target):
                         moves.append(((curr_x, curr_y), (x, y)))
                     break
 
@@ -155,13 +181,13 @@ class King(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if pos[0] < 3 or pos[0] > 5:
+        if pos[0] < _PALACE_X_MIN or pos[0] > _PALACE_X_MAX:
             return False
 
-        if (self.color == RED) and (pos[1] > 2):
+        if (self.color == RED) and (pos[1] > _PALACE_Y_MAX_RED):
             return False
 
-        if (self.color == BLACK) and (pos[1] < 7):
+        if (self.color == BLACK) and (pos[1] < _PALACE_Y_MIN_BLACK):
             return False
 
         return True
@@ -255,9 +281,9 @@ class Bishop(Piece):
         if self.board.get_fench(middle_p((self.x, self.y), pos_to)) is not None:
             return False
 
-        if (self.color == RED) and (pos_to[1] > 4):
+        if (self.color == RED) and (pos_to[1] > _RIVER_RED_MAX):
             return False
-        if (self.color == BLACK) and (pos_to[1] < 5):
+        if (self.color == BLACK) and (pos_to[1] < _RIVER_BLACK_MIN):
             return False
 
         return True
@@ -306,14 +332,11 @@ class Knight(Piece):
         moves = []
         
         for dx, dy in offsets:
-            to_x = self.x + dx
-            to_y = self.y + dy
+            to_pos = (self.x + dx, self.y + dy)
             
             # 快速边界检查
-            if not (0 <= to_x <= 8 and 0 <= to_y <= 9):
+            if not self.is_valid_pos(to_pos):
                 continue
-            
-            to_pos = (to_x, to_y)
             
             # 检查蹩马腿
             if dx == 2 or dx == -2:
@@ -345,18 +368,14 @@ class Rook(Piece):
 
     def is_valid_move(self, pos_to):
         """判断车直线移动到目标位置是否合法（不能越子）。"""
+        # 必须在同一直线上
+        if self.x != pos_to[0] and self.y != pos_to[1]:
+            return False
+
+        # 根据方向选择计数方法
         if self.x != pos_to[0]:
-            if self.y != pos_to[1]:
-                return False
-
-            if self.board.count_x_line_in(self.y, self.x, pos_to[0]) == 0:
-                return True
-
-        else:
-            if self.board.count_y_line_in(self.x, self.y, pos_to[1]) == 0:
-                return True
-
-        return False
+            return self.board.count_x_line_in(self.y, self.x, pos_to[0]) == 0
+        return self.board.count_y_line_in(self.x, self.y, pos_to[1]) == 0
 
     def create_moves(self):
         """生成车所有可能的合法走子。"""
@@ -372,21 +391,23 @@ class Cannon(Piece):
 
     def is_valid_move(self, pos_to):
         """判断炮移动到目标位置是否合法（直行不越子，吃子需隔一子）。"""
-        if self.x != pos_to[0]:
-            if self.y != pos_to[1]:
-                return False
+        # 必须在同一直线上
+        if self.x != pos_to[0] and self.y != pos_to[1]:
+            return False
 
+        # 根据方向选择计数方法
+        if self.x != pos_to[0]:
             count = self.board.count_x_line_in(self.y, self.x, pos_to[0])
-            if (count == 0) and (self.board.get_fench(pos_to) is None):
-                return True
-            if (count == 1) and (self.board.get_fench(pos_to) is not None):
-                return True
         else:
             count = self.board.count_y_line_in(self.x, self.y, pos_to[1])
-            if (count == 0) and (self.board.get_fench(pos_to) is None):
-                return True
-            if (count == 1) and (self.board.get_fench(pos_to) is not None):
-                return True
+
+        target = self.board.get_fench(pos_to)
+        # 不吃子：中间无障碍
+        if count == 0 and target is None:
+            return True
+        # 吃子：中间恰好隔一个棋子
+        if count == 1 and target is not None:
+            return True
 
         return False
 
@@ -404,7 +425,7 @@ class Cannon(Piece):
             x, y = curr_x + dx, curr_y + dy
             screen_found = False  # 是否找到炮架
 
-            while 0 <= x < 9 and 0 <= y <= 9:
+            while self.is_valid_pos((x, y)):
                 target = self.board._board[y][x]
 
                 if not screen_found:
@@ -418,11 +439,7 @@ class Cannon(Piece):
                 else:
                     # 炮架后阶段
                     if target is not None:
-                        # 遇到第二个棋子，可以吃（仅限敌方）
-                        is_enemy = (target.isupper() and self.color == BLACK) or (
-                            target.islower() and self.color == RED
-                        )
-                        if is_enemy:
+                        if self.is_enemy_piece(target):
                             moves.append(((curr_x, curr_y), (x, y)))
                         # 无论是否吃子，都停止扫描
                         break
@@ -445,10 +462,10 @@ class Pawn(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if (self.color == RED) and pos[1] < 3:
+        if (self.color == RED) and pos[1] < _PAWN_Y_MIN_RED:
             return False
 
-        if (self.color == BLACK) and pos[1] > 6:
+        if (self.color == BLACK) and pos[1] > _PAWN_Y_MAX_BLACK:
             return False
 
         return True
@@ -472,10 +489,10 @@ class Pawn(Piece):
 
     def is_crossed_river(self):
         """判断兵/卒是否已经过河。"""
-        if (self.color == RED) and (self.y > 4):
+        if (self.color == RED) and (self.y > _RIVER_RED_MAX):
             return True
 
-        if (self.color == BLACK) and (self.y < 5):
+        if (self.color == BLACK) and (self.y < _RIVER_BLACK_MIN):
             return True
 
         return False
@@ -490,16 +507,16 @@ class Pawn(Piece):
         else:  # BLACK
             forward = (self.x, self.y - 1)
         # 检查前进位置是否在棋盘范围内
-        if 0 <= forward[0] < 9 and 0 <= forward[1] <= 9:
+        if self.is_valid_pos(forward):
             moves.append((curr_pos, forward))
 
         # 如果已经过河，可以左右移动
         if self.is_crossed_river():
             left = (self.x - 1, self.y)
             right = (self.x + 1, self.y)
-            if 0 <= left[0] < 9:
+            if self.is_valid_pos(left):
                 moves.append((curr_pos, left))
-            if 0 <= right[0] < 9:
+            if self.is_valid_pos(right):
                 moves.append((curr_pos, right))
 
         return filter(self.board.is_valid_move_t, moves)

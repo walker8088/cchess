@@ -14,11 +14,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import json
 from dataclasses import dataclass
 from typing import Iterator, List, Optional, Tuple
 
-from .common import fench_to_species, fench_to_txt_name, iccs2pos
+from .common import fench_to_species, fench_to_txt_name, iccs2pos, swap_fench, load_json
 from .constants import ANY_COLOR, BLACK, RED
 from .exception import CChessError
 from .move import Move
@@ -55,6 +54,9 @@ _text_board = [
     #'  九  八  七  六  五  四  三  二  一',
     #'',
 ]
+
+BOARD_WIDTH = 9
+BOARD_HEIGHT = 10
 
 _g_fen_num_set = set(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
 _g_fen_ch_set = set(("k", "a", "b", "n", "r", "c", "p"))
@@ -162,15 +164,15 @@ class ChessBoard:
     def clear(self) -> None:
         """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
         self._board: List[List[Optional[str]]] = [
-            [None for _ in range(9)] for _ in range(10)
+            [None for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)
         ]
         self._move_side = ChessPlayer(ANY_COLOR)
         # 攻击矩阵缓存
         self._red_attacks: List[List[bool]] = [
-            [False for _ in range(9)] for _ in range(10)
+            [False for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)
         ]
         self._black_attacks: List[List[bool]] = [
-            [False for _ in range(9)] for _ in range(10)
+            [False for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)
         ]
         self._attack_matrix_dirty = True
 
@@ -195,8 +197,8 @@ class ChessBoard:
             self._attack_matrix_dirty = b._attack_matrix_dirty
         else:
             # 旧版本棋盘没有这些属性，标记为脏
-            self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
-            self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
+            self._red_attacks = [[False for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
+            self._black_attacks = [[False for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
             self._attack_matrix_dirty = True
 
     def mirror(self) -> "ChessBoard":
@@ -219,12 +221,6 @@ class ChessBoard:
         大写表示红方、小写表示黑方。该方法将所有棋子字母大小写取反，
         同时切换走子方（调用 `next()`）。
         """
-
-        def swap_fench(fench: Optional[str]) -> Optional[str]:
-            """swap_fench 函数。"""
-            if fench is None:
-                return None
-            return fench.upper() if fench.islower() else fench.lower()
 
         b = self.copy()
         b._board = [
@@ -751,6 +747,39 @@ class ChessBoard:
                     to_pos = self.denormalize_pos(to_pos)
                 yield (from_pos, to_pos)
 
+    def _check_move_for_general(
+        self, pos_from: Tuple[int, int], pos_to: Tuple[int, int],
+        check_after_move: bool = True
+    ) -> bool:
+        """执行走子后检查将军状态的通用辅助方法。
+        
+        参数:
+            pos_from: 起始位置
+            pos_to: 目标位置
+            check_after_move: True 检查移动后己方是否被将军，
+                             False 检查移动后是否将军对方
+        
+        返回:
+            bool: 是否处于将军状态
+        """
+        move_info = self.make_move(pos_from, pos_to)
+        
+        if check_after_move:
+            # 检查移动后己方是否被将军
+            # make_move 不切换走子方，需要手动切换
+            self._move_side = self.move_side().next()
+            checking = self.is_checking()
+            self._move_side = move_info.prev_move_side
+        else:
+            # 检查移动后是否将军对方
+            original_player = self.move_side()
+            self._move_side = move_info.prev_move_side
+            checking = self.is_checking()
+            self._move_side = original_player
+        
+        self.unmake_move(move_info)
+        return checking
+
     def is_checked_move(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
     ) -> bool:
@@ -758,28 +787,13 @@ class ChessBoard:
         若走子非法，抛出 `CChessError('Invalid Move')`。"""
         if not self.is_valid_move(pos_from, pos_to):
             raise CChessError("Invalid Move")
-        move_info = self.make_move(pos_from, pos_to)
-        # make_move 不切换走子方，需要手动切换以检查移动后是否被将军
-        self._move_side = self.move_side().next()
-        checking = self.is_checking()
-        # 恢复走子方
-        self._move_side = move_info.prev_move_side
-        self.unmake_move(move_info)
-        return checking
+        return self._check_move_for_general(pos_from, pos_to, check_after_move=True)
 
     def is_checking_move(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
     ) -> bool:
         """判断执行该走子后是否对对方形成将军（不切换走子方）。"""
-        move_info = self.make_move(pos_from, pos_to)
-        # 临时恢复走子方到移动前，以检查移动是否将军
-        original_player = self.move_side()
-        self._move_side = move_info.prev_move_side
-        checking = self.is_checking()
-        # 恢复回切换后的走子方，以便 unmake_move 正确工作
-        self._move_side = original_player
-        self.unmake_move(move_info)
-        return checking
+        return self._check_move_for_general(pos_from, pos_to, check_after_move=False)
 
     def _compute_piece_attacks(self, piece: Piece) -> List[Tuple[int, int]]:
         """返回棋子可以攻击到的坐标列表（包括吃子位置）。"""
@@ -787,6 +801,17 @@ class ChessBoard:
         for from_pos, to_pos in piece.create_moves():
             attacks.append(to_pos)
         return attacks
+
+    def _get_attack_matrix(self, color: int) -> List[List[bool]]:
+        """根据颜色获取对应的攻击矩阵。
+        
+        参数:
+            color: 颜色值 (RED 或 BLACK)
+        
+        返回:
+            List[List[bool]]: 对应的攻击矩阵
+        """
+        return self._red_attacks if color == RED else self._black_attacks
 
     def _recompute_attack_matrix(self) -> None:
         """重新计算红黑双方的攻击矩阵，并将脏标志设置为 False。"""
@@ -799,10 +824,7 @@ class ChessBoard:
         for piece in self.get_pieces():
             attacks = self._compute_piece_attacks(piece)
             color = piece.color
-            if color == RED:
-                matrix = self._red_attacks
-            else:
-                matrix = self._black_attacks
+            matrix = self._get_attack_matrix(color)
             for x, y in attacks:
                 matrix[y][x] = True
         self._attack_matrix_dirty = False
@@ -814,10 +836,7 @@ class ChessBoard:
         king = self.get_king(self.move_side().opposite())
         if not king:
             return False
-        if self.move_side().color == RED:
-            matrix = self._red_attacks
-        else:
-            matrix = self._black_attacks
+        matrix = self._get_attack_matrix(self.move_side().color)
         return matrix[king.y][king.x]
 
     def is_checkmate(self) -> bool:
@@ -1045,8 +1064,7 @@ class ChessBoardOneHot(ChessBoard):
 
     def load_one_hot_dict(self, file):
         """从 JSON 文件加载棋子到独热向量的映射。"""
-        with open(file, "r", encoding="utf-8") as f:
-            self.__chess_dict = json.load(f)
+        self.__chess_dict = load_json(file) or {}
         self.__chess_dict[None] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def get_one_hot_board(self) -> list:

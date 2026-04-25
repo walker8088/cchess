@@ -25,6 +25,7 @@ from .common import (
     fench_to_text,
     full2half,
     pos2iccs,
+    swap_fench,
     text_to_fench,
 )
 
@@ -564,12 +565,6 @@ class Move:
         temp_board._board = self.move_info.board_before
         swapped_board = temp_board.swap()
         self.move_info.board_before = swapped_board._board
-
-        def swap_fench(fench):
-            """swap_fench 函数。"""
-            if fench is None:
-                return None
-            return fench.upper() if fench.islower() else fench.lower()
 
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
         self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)

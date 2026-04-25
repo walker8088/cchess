@@ -15,7 +15,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import enum
-import json
 import logging
 import os
 import subprocess
@@ -25,7 +24,7 @@ from queue import Empty, Queue
 from threading import Thread
 
 from .board import ChessBoard
-from .common import RED, fen_mirror, get_move_color, iccs_list_mirror, iccs_mirror
+from .common import load_json, save_json, RED, fen_mirror, get_move_color, iccs_list_mirror, iccs_mirror
 from .exception import EngineError
 
 # 引擎评分常量
@@ -597,19 +596,14 @@ class FenCache:
             cache_file (str): 缓存文件路径
         """
 
-        if not Path(cache_file).is_file():
-            self.fen_dict = {}
-        else:
-            with open(cache_file, "r", encoding="utf-8") as f:
-                self.fen_dict = json.load(f)
+        self.fen_dict = load_json(cache_file) or {}
 
         self.cache_file = cache_file
         self.need_save = False
 
     def save(self):
         """将内存缓存以 JSON 格式写回 `cache_file` 并清除 `need_save` 标志。"""
-        with open(self.cache_file, "w", encoding="utf-8") as f:
-            json.dump(self.fen_dict, f)
+        save_json(self.fen_dict, self.cache_file)
         self.need_save = False
 
 
