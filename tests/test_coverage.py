@@ -262,25 +262,25 @@ class TestMoveFromTextMultiPiece:
 
     def test_from_text_a_b_piece_ping_returns_none(self):
         # Advisor and Bishop cannot do 平 (horizontal move)
-        result = Move.text_move_to_std_move("a", RED, (3, 0), "平五")
+        result = Move.text_move_to_std_move("a", (3, 0), "平五")
         assert result is None
-        result = Move.text_move_to_std_move("b", RED, (2, 0), "平五")
+        result = Move.text_move_to_std_move("b", (2, 0), "平五")
         assert result is None
-        result = Move.text_move_to_std_move("n", RED, (2, 0), "平五")
+        result = Move.text_move_to_std_move("n", (2, 0), "平五")
         assert result is None
 
     def test_from_text_invalid_direction(self):
-        result = Move.text_move_to_std_move("r", RED, (0, 0), "左一")
+        result = Move.text_move_to_std_move("r", (0, 0), "左一")
         assert result is None
 
     def test_from_text_king_ping(self):
-        result = Move.text_move_to_std_move("k", RED, (4, 0), "平六")
+        result = Move.text_move_to_std_move("k", (4, 0), "平六")
         assert result is not None
         assert result == (3, 0)
 
     def test_from_text_chinese_numeral_fallback(self):
         # Test with Chinese numerals that need fallback mapping
-        result = Move.text_move_to_std_move("r", RED, (0, 0), "进一")
+        result = Move.text_move_to_std_move("r", (0, 0), "进一")
         assert result is not None
         assert result == (0, 1)
 
