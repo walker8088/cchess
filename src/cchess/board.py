@@ -19,12 +19,11 @@ from dataclasses import dataclass
 from typing import Iterator, List, Optional, Tuple
 
 from .attack_matrix_manager import AttackMatrixManager
-from .board_state import BoardState, ChessPlayer, MoveInfo
+from .board_state import BoardState, ChessPlayer
 from .board_transform import BoardTransform
 from .common import fench_to_species, fench_to_txt_name, iccs2pos
 from .constants import ANY_COLOR, BLACK, RED
 from .exception import CChessError
-from .move import Move
 from .move_generator import MoveGenerator
 from .piece import Piece
 from .rule_checker import RuleChecker

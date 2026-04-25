@@ -16,10 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import Optional, Tuple, TypeVar
 
-from .constants import ANY_COLOR, BLACK, RED
+from .constants import BLACK, RED
 
 # 类型变量
-T = TypeVar("T", bound="ChessBoard")
+T = TypeVar("T", bound="BoardTransform")
 
 
 class BoardTransform:

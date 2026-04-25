@@ -19,7 +19,6 @@ from typing import Optional, Tuple
 from .board_state import MoveInfo
 from .common import fench_to_species, iccs2pos
 from .constants import ANY_COLOR
-from .exception import CChessError
 from .move import Move
 
 

@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
 
-from cchess.board import ChessBoard, ChessPlayer, MoveInfo
+from cchess.board import ChessBoard, ChessPlayer
+from cchess.board_state import MoveInfo
 from cchess.common import BLACK, RED
 
 
