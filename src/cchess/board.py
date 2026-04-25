@@ -157,8 +157,7 @@ class ChessBoard:
             fen: 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
         """
         self.clear()
-        if fen:
-            self.from_fen(fen)
+        self.from_fen(fen)
 
     def clear(self) -> None:
         """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
@@ -177,10 +176,6 @@ class ChessBoard:
 
     def copy(self) -> "ChessBoard":
         """返回棋盘的快照（独立副本）。"""
-        return self.snapshot()
-
-    def snapshot(self) -> "ChessBoard":
-        """返回完全独立的棋盘副本（需要时使用）。"""
         b = self.__class__()
         b._board = [row[:] for row in self._board]
         b.set_move_side(self.move_side())
@@ -300,14 +295,6 @@ class ChessBoard:
         # 否则原棋盘是黑方走子，需要应用 flip 变换
         return (8 - pos[0], 9 - pos[1])
 
-    def set_move_color(self, color):
-        """设置当前走子方为指定颜色（整数或 `ChessPlayer` 内部值）。"""
-        self._move_side = ChessPlayer(color)
-
-    def get_move_color(self):
-        """返回当前走子方的颜色整数值。"""
-        return self._move_side.color
-
     # move_player 已被废弃，请使用 move_side() 和 set_move_side() 方法
 
     def move_side(self):
@@ -370,15 +357,6 @@ class ChessBoard:
         fench = self._board[pos[1]][pos[0]]
         if fench is None:
             return None
-        return RED if fench.isupper() else BLACK
-
-    def get_fench_color(self, pos):
-        """返回指定位置棋子的颜色（`RED` 或 `BLACK`），若无棋子返回 None。"""
-        fench = self.get_fench(pos)
-
-        if not fench:
-            return None
-
         return RED if fench.isupper() else BLACK
 
     def get_fenchs(self, fench):
@@ -942,7 +920,7 @@ class ChessBoard:
                     chess = z_pieces[letter]
                     key ^= Z_HASH_TABLE[chess * 256 + square]
 
-        if self.get_move_color() == RED:
+        if self.move_side().color == RED:
             key ^= Z_RED_KEY
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))

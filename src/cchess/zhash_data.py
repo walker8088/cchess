@@ -3721,12 +3721,12 @@ def hash_board(self, board):
                     if letter in z_pieces:
                         chess = z_pieces[letter]
                         hashValue ^= Z_HASH_TABLE[chess * 256 + square]
-                        
-        if (board.get_move_color() == RED):
+
+        if (board.move_side().color == RED):
             hashValue ^= Z_RED_KEY
-            
-        return (hashValue & ((1 << 63) - 1)) - (hashValue & (1 << 63))    
-        
+
+        return (hashValue & ((1 << 63) - 1)) - (hashValue & (1 << 63))
+
 def hash_fen(self, fen):
         board = ChessBoard(fen)
         return self.hash_board(board)

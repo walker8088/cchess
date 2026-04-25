@@ -1402,12 +1402,12 @@ class TestBoard:
         assert fench == "R"
         assert board.get_fench((0, 0)) is None
 
-    def test_board_get_fench_color(self):
-        """Test ChessBoard.get_fench_color."""
+    def test_board_occupied_color(self):
+        """Test ChessBoard.occupied for color checking."""
         board = ChessBoard(FULL_INIT_FEN)
-        assert board.get_fench_color((0, 0)) == RED
-        assert board.get_fench_color((0, 9)) == BLACK
-        assert board.get_fench_color((4, 4)) is None
+        assert board.occupied((0, 0)) == RED
+        assert board.occupied((0, 9)) == BLACK
+        assert board.occupied((4, 4)) is None
 
     def test_board_to_full_fen(self):
         """Test ChessBoard.to_full_fen (line 542)."""

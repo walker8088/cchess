@@ -42,19 +42,20 @@ class TestBoardExtended:
         assert fench == "R"
         assert board.get_fench((0, 0)) is None
 
-    def test_get_fench_color(self):
+    def test_occupied_color(self):
+        """测试 occupied 方法获取棋子颜色"""
         board = ChessBoard(FULL_INIT_FEN)
         # 红方棋子
-        color = board.get_fench_color((0, 0))
+        color = board.occupied((0, 0))
         assert color == RED
 
         # 黑方棋子
-        color = board.get_fench_color((0, 9))
+        color = board.occupied((0, 9))
         assert color == BLACK
 
         # 空位置
         board.clear()
-        color = board.get_fench_color((4, 4))
+        color = board.occupied((4, 4))
         assert color is None  # 空位置返回None
 
     def test_get_fenchs_x(self):

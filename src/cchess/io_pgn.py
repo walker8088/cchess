@@ -589,7 +589,7 @@ def _process_pgn_moves(node, board, game, move_class, parent_move=None):
             # 处理变招
             for variation in node.move.variations:
                 # 保存当前棋盘状态（应用走法前的状态）
-                saved_board = board.snapshot()
+                saved_board = board.copy()
 
                 # 递归处理变招
                 _process_pgn_moves(
