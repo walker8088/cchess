@@ -89,7 +89,6 @@ class TestEngineException:
         # 不 assert 任何状态，只要不抛未捕获的异常就算通过
 
 
-@pytest.mark.skip(reason="需要外部引擎文件，在CI环境中跳过")
 class TestUcci:
     def setup_method(self):
         # 获取项目根目录（tests 目录的父目录）
@@ -103,7 +102,7 @@ class TestUcci:
         assert self.engine.load("eleeye")[0] is False
 
         # 使用绝对路径加载引擎
-        engine_path = os.path.join(self.project_root, "Engine", "eleeye", "eleeye.exe")
+        engine_path = os.path.join(self.project_root, "Engine", "eleeye", "ELEEYE.EXE")
         assert self.engine.load(engine_path)[0] is True
         assert self.engine.wait_for_ready() is True
         assert self.engine.engine_status == EngineStatus.READY
