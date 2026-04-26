@@ -14,24 +14,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .common import BLACK, RED, fench_to_species, opposite_color
+from .common import BLACK, RED, fench_to_species, next_color
 
 # pylint: disable=too-many-return-statements
 
 
 # 九宫格边界常量
-_PALACE_Y_MAX_RED = 2   # 红方九宫格最大y值
-_PALACE_X_MIN = 3         # 九宫格最小x值
-_PALACE_X_MAX = 5         # 九宫格最大x值
-_PALACE_Y_MIN_BLACK = 7 # 黑方九宫格最小y值
+_PALACE_Y_MAX_RED = 2  # 红方九宫格最大y值
+_PALACE_X_MIN = 3  # 九宫格最小x值
+_PALACE_X_MAX = 5  # 九宫格最大x值
+_PALACE_Y_MIN_BLACK = 7  # 黑方九宫格最小y值
 
 # 河界常量
-_RIVER_RED_MAX = 4      # 红方半场最大y值（含河界）
-_RIVER_BLACK_MIN = 5    # 黑方半场最小y值（含河界）
+_RIVER_RED_MAX = 4  # 红方半场最大y值（含河界）
+_RIVER_BLACK_MIN = 5  # 黑方半场最小y值（含河界）
 
 # 兵的活动范围常量
-_PAWN_Y_MIN_RED = 3     # 红兵最小y值（不能后退超过此值）
-_PAWN_Y_MAX_BLACK = 6   # 黑卒最大y值（不能后退超过此值）
+_PAWN_Y_MIN_RED = 3  # 红兵最小y值（不能后退超过此值）
+_PAWN_Y_MAX_BLACK = 6  # 黑卒最大y值（不能后退超过此值）
 
 # -----------------------------------------------------#
 # 士象固定位置枚举
@@ -91,10 +91,10 @@ class Piece:
 
     def is_enemy_piece(self, target_fench):
         """判断目标棋子是否为敌方。
-        
+
         参数:
             target_fench: 目标棋子的 FEN 字符，None 表示空位
-        
+
         返回:
             bool: True 如果是敌方棋子，False 如果是友方棋子或空位
         """
@@ -194,7 +194,7 @@ class King(Piece):
 
     def is_valid_move(self, pos_to):
         """判断将/帅移动到目标位置是否合法（含白脸将规则）。"""
-        k2 = self.board.get_king(opposite_color(self.color))
+        k2 = self.board.get_king(next_color(self.color))
         if k2 is not None:
             if (
                 (self.x == k2.x)
@@ -219,7 +219,7 @@ class King(Piece):
             (self.x, self.y - 1),
         ]
 
-        k2 = self.board.get_king(opposite_color(self.color))
+        k2 = self.board.get_king(next_color(self.color))
         if k2 is not None:
             positions.append((k2.x, k2.y))
 
@@ -319,43 +319,49 @@ class Knight(Piece):
 
     def create_moves(self):
         """生成马所有可能的合法走子。
-        
+
         使用预计算的偏移量，减少运行时计算。
         """
         # 马的 8 个可能移动方向
         offsets = [
-            (1, 2), (1, -2), (-1, 2), (-1, -2),
-            (2, 1), (2, -1), (-2, 1), (-2, -1),
+            (1, 2),
+            (1, -2),
+            (-1, 2),
+            (-1, -2),
+            (2, 1),
+            (2, -1),
+            (-2, 1),
+            (-2, -1),
         ]
-        
+
         curr_pos = (self.x, self.y)
         moves = []
-        
+
         for dx, dy in offsets:
             to_pos = (self.x + dx, self.y + dy)
-            
+
             # 快速边界检查
             if not self.is_valid_pos(to_pos):
                 continue
-            
+
             # 检查蹩马腿
             if dx == 2 or dx == -2:
                 block_pos = (self.x + (1 if dx > 0 else -1), self.y)
             else:
                 block_pos = (self.x, self.y + (1 if dy > 0 else -1))
-            
+
             if self.board.get_fench(block_pos) is not None:
                 continue
-            
+
             # 检查目标位置
             target_fench = self.board.get_fench(to_pos)
             if target_fench is not None:
                 _, target_color = fench_to_species(target_fench)
                 if target_color == self.color:
                     continue
-            
+
             moves.append((curr_pos, to_pos))
-        
+
         return moves
 
 

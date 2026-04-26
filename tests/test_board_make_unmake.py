@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
 
-from cchess.board import ChessBoard, ChessPlayer, MoveInfo
+from cchess.board import ChessBoard, MoveInfo
 from cchess.common import BLACK, RED
 
 
@@ -39,7 +39,7 @@ class TestMakeUnmake:
         assert board.get_fench((4, 0)) is None
         assert board.get_fench((4, 1)) == "K"
         # make_move 是底层函数，不切换走子方
-        assert board.move_side().color == RED
+        assert board.move_side() == RED
 
     def test_unmake_move_basic(self):
         """测试撤销移动"""
@@ -52,7 +52,7 @@ class TestMakeUnmake:
         board.unmake_move(move_info)
         # 检查恢复
         assert board._board == initial_board
-        assert board.move_side().color == RED
+        assert board.move_side() == RED
         assert board._attack_matrix_dirty == True  # 脏标志应为 True，因为移动后设置
 
     def test_make_capture(self):
@@ -98,9 +98,9 @@ class TestMakeUnmake:
         initial_player = board.move_side()
         move = board.move((4, 0), (4, 1))
         if move:
-            assert board.move_side().color != initial_player.color
+            assert board.move_side() != initial_player
             board.unmake_move(move.move_info)
-            assert board.move_side().color == initial_player.color
+            assert board.move_side() == initial_player
 
     def test_multiple_moves_unmake(self):
         """测试连续移动和撤销"""

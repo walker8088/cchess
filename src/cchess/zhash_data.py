@@ -107,7 +107,7 @@ z_c90 = [
     0xCB,
 ]
 
-z_pieces = {
+Z_MAP_PIECES = {
     "K": 0,
     "A": 1,
     "B": 2,
@@ -3718,8 +3718,8 @@ def hash_board(self, board):
              for x in range(9):
                     square = z_c90[x + (9 - y) * 9]
                     letter = board.get_fench((x, y))
-                    if letter in z_pieces:
-                        chess = z_pieces[letter]
+                    if letter in Z_MAP_PIECES:
+                        chess = Z_MAP_PIECES[letter]
                         hashValue ^= Z_HASH_TABLE[chess * 256 + square]
 
         if (board.move_side().color == RED):

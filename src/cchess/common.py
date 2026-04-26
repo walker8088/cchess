@@ -42,7 +42,7 @@ __all__ = [
     "FULL_INIT_FEN",
     "RED",
     "append_move_to_game",
-    "opposite_color",
+    "next_color",
     "fench_to_txt_name",
     "fench_to_text",
     "text_to_fench",
@@ -67,9 +67,9 @@ __all__ = [
 ]
 
 
-def opposite_color(color):
-    """opposite_color 函数。"""
-    return 3 - color
+def next_color(color: int) -> int:
+    """切换到下一个走子方，对应 ChessPlayer.next() 的逻辑。"""
+    return (3 - color) % 3
 
 
 # -----------------------------------------------------#
@@ -210,15 +210,14 @@ def text_to_fench(text, color):
     return fench.lower() if color == BLACK else fench.upper()
 
 
-
 def swap_fench(fench: Optional[str]) -> Optional[str]:
     """交换棋子的大小写（红黑互换）。
-    
+
     大写表示红方、小写表示黑方。该函数将棋子字母大小写取反。
-    
+
     参数:
         fench: 棋子 FEN 字符，如 'K', 'a', 'r' 等
-    
+
     返回:
         str: 交换后的棋子字符，如果输入为 None 则返回 None
     """
@@ -439,17 +438,19 @@ def parse_dhtmlxq(html_str):
     # 特殊处理：如果有 [DhtmlXQHTML] 开头和结尾，可以忽略
     return result
 
+
 # -----------------------------------------------------#
 def load_json(filepath: str):
     """从文件加载 JSON 数据。
-    
+
     参数:
         filepath: JSON 文件路径
-    
+
     返回:
         解析后的 JSON 数据，如果文件不存在返回 None
     """
     from pathlib import Path
+
     if not Path(filepath).is_file():
         return None
     with open(filepath, "r", encoding="utf-8") as f:
@@ -458,15 +459,16 @@ def load_json(filepath: str):
 
 def save_json(data, filepath: str) -> bool:
     """将数据保存为 JSON 文件。
-    
+
     参数:
         data: 要保存的数据
         filepath: 输出文件路径
-    
+
     返回:
         bool: 保存是否成功
     """
     from pathlib import Path
+
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f)

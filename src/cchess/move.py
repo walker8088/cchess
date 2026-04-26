@@ -24,6 +24,7 @@ from .common import (
     fench_to_species,
     fench_to_text,
     full2half,
+    next_color,
     pos2iccs,
     swap_fench,
     text_to_fench,
@@ -569,7 +570,7 @@ class Move:
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
         self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
 
-        self.move_info.prev_move_side = self.move_info.prev_move_side.next()
+        self.move_info.prev_move_side = next_color(self.move_info.prev_move_side)
 
         self._clear_caches()
 
@@ -1018,7 +1019,7 @@ class _MoveTextParser:
         self.piece_fench = None
         self.piece_name = None
         # 记录是否需要坐标转换
-        self.needs_denormalization = board.move_side().color == BLACK
+        self.needs_denormalization = board.move_side() == BLACK
 
     def parse(self):
         """执行解析，返回原局面中的走法坐标"""

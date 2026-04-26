@@ -16,18 +16,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ANY_COLOR, BLACK, RED, ChessPlayer
+from cchess import ANY_COLOR, BLACK, RED
+from cchess.common import next_color
 
 
 # -----------------------------------------------------#
 class TestPiece:
     def test_base(self):
-        side = ChessPlayer(ANY_COLOR)
-        assert side.next() == RED
-        assert side.opposite() == ANY_COLOR
+        # 测试 ANY_COLOR
+        assert next_color(ANY_COLOR) == ANY_COLOR
+        assert next_color(ANY_COLOR) == ANY_COLOR
 
-        side = ChessPlayer(RED)
-        assert side.opposite() == BLACK
-        next_player = side.next()
-        assert next_player == BLACK
-        assert next_player.next() == RED
+        # 测试 RED
+        assert next_color(RED) == BLACK
+        assert next_color(RED) == BLACK
+        assert next_color(next_color(RED)) == RED

@@ -25,7 +25,6 @@ import pytest
 import cchess
 from cchess import (
     ChessBoard,
-    ChessPlayer,
     EngineError,
     EngineManager,
     EngineStatus,
@@ -136,7 +135,7 @@ class TestUcci:
                     break
                 elif action == "dead":
                     # print(output)
-                    if board.move_side().color == cchess.RED:
+                    if board.move_side() == cchess.RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN

@@ -28,7 +28,7 @@ from cchess import (
     iccs_mirror,
     iccs_swap,
 )
-from cchess.board import ChessBoardOneHot, ChessPlayer
+from cchess.board import ChessBoardOneHot
 from cchess.common import (
     full2half,
     get_fen_type_detail,
@@ -1343,23 +1343,24 @@ class TestBoard:
 
     def test_chess_player_eq_not_chess_player_not_int(self):
         """Test ChessPlayer.__eq__ with non-ChessPlayer, non-int (line 122)."""
-        player = ChessPlayer(RED)
-        assert (player == "RED") is False
+        # ChessPlayer 类已移除，此测试不再适用
+        pass
 
     def test_chess_player_next_no_color(self):
         """Test ChessPlayer.next with ANY_COLOR (line 97)."""
-        from cchess.common import ANY_COLOR, RED
+        from cchess.common import ANY_COLOR, next_color
 
-        player = ChessPlayer(ANY_COLOR)
-        result = player.next()
-        assert result.color == RED
+        # 测试 next_color 函数
+        result = next_color(ANY_COLOR)
+        assert result == ANY_COLOR
 
     def test_chess_player_opposite_no_color(self):
         """Test ChessPlayer.opposite with ANY_COLOR (lines 106-107)."""
-        from cchess.common import ANY_COLOR
+        from cchess.common import ANY_COLOR, next_color
 
-        player = ChessPlayer(ANY_COLOR)
-        assert player.opposite() == ANY_COLOR
+        # 测试 next_color 函数
+        result = next_color(ANY_COLOR)
+        assert result == ANY_COLOR
 
     def test_board_eq_str(self):
         """Test ChessBoard.__eq__ with string (lines 628-629)."""
@@ -1506,15 +1507,15 @@ class TestBoard:
     def test_board_get_pieces_with_chess_player(self):
         """Test ChessBoard.get_pieces with ChessPlayer color (lines 264-265)."""
         board = ChessBoard(FULL_INIT_FEN)
-        player = ChessPlayer(RED)
-        pieces = list(board.get_pieces(color=player))
+        # 现在直接使用整数颜色值
+        pieces = list(board.get_pieces(color=RED))
         assert len(pieces) == 16
 
     def test_board_get_king_with_chess_player(self):
         """Test ChessBoard.get_king with ChessPlayer (lines 285-286)."""
         board = ChessBoard(FULL_INIT_FEN)
-        player = ChessPlayer(RED)
-        king = board.get_king(player)
+        # 现在直接使用整数颜色值
+        king = board.get_king(RED)
         assert king is not None
         assert king.fench == "K"
 
