@@ -102,12 +102,7 @@ _v_dict = {
 # -----------------------------------------------------#
 def pos2iccs(pos_from, pos_to):
     """pos2iccs 函数。"""
-    return (
-        chr(ord("a") + pos_from[0])
-        + str(pos_from[1])
-        + chr(ord("a") + pos_to[0])
-        + str(pos_to[1])
-    )
+    return f"{chr(ord('a') + pos_from[0])}{pos_from[1]}{chr(ord('a') + pos_to[0])}{pos_to[1]}"
 
 
 def iccs2pos(iccs):
