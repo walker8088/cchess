@@ -1497,6 +1497,8 @@ class Move:
         """解析中文走法字符串，返回标准化的走子 ((pos_from, pos_to))。
 
         使用规范局面（红方视角）处理所有走法，统一红黑方逻辑。
+
+        注意：此函数主要用于测试，生产代码请使用 board.move_text()。
         """
         move_str = move_str.replace(" ", "")
         return _MoveTextParser(board, move_str).parse()
@@ -1584,7 +1586,7 @@ class _MoveTextParser:
         return moves
 
     def _parse_multi_pieces(self):
-        """解析多棋子情况（如"前炮平五"、"中炮平五"、"后炮平五"）"""
+        """解析多棋子情况（如"前炮平五"、"中兵平五"、"后炮平五"）"""
         positions = self.normalized_board.get_fenchs(self.fench)
         if not positions:
             return None

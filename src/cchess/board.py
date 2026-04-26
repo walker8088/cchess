@@ -523,7 +523,11 @@ class ChessBoard:
 
         对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
         """
-        from .move import _detect_move_side_from_text, _normalize_move_str
+        from .move import (
+            _detect_move_side_from_text,
+            _MoveTextParser,
+            _normalize_move_str,
+        )
 
         move_str = move_str.replace(" ", "")
 
@@ -545,7 +549,8 @@ class ChessBoard:
         # 在规范局面上解析（此时 normalized_board.move_side() == RED，
         # 所以 _MoveTextParser.needs_denormalization == False，
         # 返回的坐标是规范局面坐标）
-        ret = Move.from_text(normalized_board, normalized_move_str)
+        parser = _MoveTextParser(normalized_board, normalized_move_str)
+        ret = parser.parse()
         if not ret:
             return None
 

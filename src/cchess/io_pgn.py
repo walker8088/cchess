@@ -23,7 +23,6 @@ import chardet
 
 from .board import ChessBoard
 from .common import FULL_INIT_FEN
-from .move import Move
 
 
 # -----------------------------------------------------#
@@ -488,21 +487,8 @@ def _try_parse_and_apply_move(board, move_str, game, parent_move):
     Returns:
         tuple: (move, success)
     """
-    # 解析中文走法，返回的是 [((from_x, from_y), (to_x, to_y))] 列表
-    move_results = Move.from_text(board, move_str)
-    if move_results is None or len(move_results) == 0:
-        return None, False
-
-    # 取第一个可能的走法（通常只有一个）
-    move_data = move_results[0]
-    if len(move_data) != 2:
-        return None, False
-
-    # move_data 是 ((from_x, from_y), (to_x, to_y))
-    from_pos, to_pos = move_data
-
-    # 使用board.move执行走法，这会自动切换走子方并进行合法性检查
-    move = board.move(from_pos, to_pos)
+    # 使用 board.move_text() 直接解析并执行走法
+    move = board.move_text(move_str)
     if move is None:
         return None, False
 
@@ -594,7 +580,7 @@ def read_from_pgn(file_name, game_class):
         current_board = _parse_pgn_headers(pgn_game, game)
 
         # 直接使用当前棋盘，不进行规范化
-        # Move.from_text 内部已经使用规范局面处理
+        # board.move_text() 内部已经使用规范局面处理
         _process_pgn_moves(pgn_game.moves, current_board, game)
 
     except Exception as e:
