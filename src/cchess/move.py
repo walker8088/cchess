@@ -123,6 +123,29 @@ class MoveNotation:
         "p": ("卒", "卒", "pawn"),
     }
 
+    # 反向棋子类型映射（从中文到FEN字符）
+    REVERSE_PIECE_MAP = {}
+    for fen_char, (simp, trad, eng) in PIECE_MAP.items():
+        REVERSE_PIECE_MAP[simp] = fen_char
+        if trad != simp:  # 繁体不同时添加
+            REVERSE_PIECE_MAP[trad] = fen_char
+
+    # 中文限定词映射
+    CHINESE_QUALIFIER_MAP = {
+        "前": "f",
+        "中": "m",
+        "后": "b",
+        "一": "1",
+        "二": "2",
+        "三": "3",
+        "四": "4",
+        "五": "5",
+        "六": "6",
+        "七": "7",
+        "八": "8",
+        "九": "9",
+    }
+
     # 列数字映射（红方视角，从右到左）
     # 红方视角：最右边是第一路（一），最左边是第九路（九）
     COLUMN_MAP = {
@@ -166,6 +189,11 @@ class MoveNotation:
         "2": ("二", "二", "2nd"),
         "3": ("三", "三", "3rd"),
         "4": ("四", "四", "4th"),
+        "5": ("五", "五", "5th"),
+        "6": ("六", "六", "6th"),
+        "7": ("七", "七", "7th"),
+        "8": ("八", "八", "8th"),
+        "9": ("九", "九", "9th"),
     }
 
     def __init__(
@@ -307,6 +335,135 @@ class MoveNotation:
             is_check=move.is_checking,
             is_checkmate=move.is_checkmate,
             piece_color=color,
+        )
+
+    @classmethod
+    def from_text(cls, text, board):
+        """从中文走法文本解析中间表示
+
+        参数:
+            text: 中文走法字符串，如"炮二平五"、"前车进一"
+            board: ChessBoard对象，用于获取棋盘状态
+
+        返回:
+            MoveNotation对象，解析失败返回None
+        """
+        if not text or not board:
+            return None
+
+        text = text.replace(" ", "")
+        if not text:
+            return None
+
+        # 1. 解析限定词
+        qualifier = ""
+        offset = 0  # 当前解析位置偏移
+        first_char = text[0]
+        if first_char in cls.CHINESE_QUALIFIER_MAP:
+            qualifier = cls.CHINESE_QUALIFIER_MAP[first_char]
+            offset = 1  # 跳过限定词
+
+        # 2. 解析棋子类型
+        if len(text) <= offset:
+            return None
+
+        piece_char = text[offset]
+        if piece_char not in cls.REVERSE_PIECE_MAP:
+            return None
+
+        piece_type = cls.REVERSE_PIECE_MAP[piece_char]
+        offset += 1
+
+        # 3. 解析方向和距离
+        # 格式：有限定词时：[限定词][棋子][方向][距离] (如"后车进一")
+        #       无限定词时：[棋子][列][方向][距离] (如"炮二平五")
+        if len(text) < offset + 2:
+            return None
+
+        column = None  # 默认无列信息（有限定词时）
+
+        # 检查是否存在列信息
+        # 如果 offset 后的字符不在方向字符中，则认为是列信息
+        direction_chars = {"进", "進", "退", "平"}
+        if text[offset] not in direction_chars:
+            # 存在列信息
+            column_char = text[offset]
+            offset += 1
+
+            # 在COLUMN_MAP中查找列
+            for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
+                if column_char == chinese_num or column_char == fullwidth_num:
+                    column = col_idx
+                    break
+
+            if column is None:
+                return None
+
+        # 现在解析方向和距离
+        if len(text) < offset + 2:
+            return None
+
+        direction_char = text[offset]
+        distance_char = text[offset + 1 :]
+
+        # 方向映射
+        direction_map_reverse = {
+            "进": "+",
+            "進": "+",  # 繁体
+            "退": "-",
+            "平": "=",
+        }
+
+        if direction_char not in direction_map_reverse:
+            return None
+
+        direction = direction_map_reverse[direction_char]
+
+        # 距离解析
+        distance = None
+
+        # 确定棋子类型（小写用于比较）
+        piece_type_lower = piece_type.lower()
+
+        if direction == "=":
+            # 平移动：距离表示目标列
+            for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
+                if distance_char == chinese_num or distance_char == fullwidth_num:
+                    distance = col_idx
+                    break
+        else:
+            # 进/退移动：需要根据棋子类型确定距离表示方式
+            if piece_type_lower in ["a", "b", "n"]:  # 士、象、马
+                # 士、象、马：距离表示目标列
+                for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
+                    if distance_char == chinese_num or distance_char == fullwidth_num:
+                        distance = col_idx
+                        break
+            else:  # 王、车、炮、兵
+                # 王、车、炮、兵：距离表示步数
+                for num_key, num_val in cls.CHINESE_QUALIFIER_MAP.items():
+                    if distance_char == num_key:
+                        # 中文数字到半角数字
+                        try:
+                            distance = int(num_val)
+                            break
+                        except (ValueError, TypeError):
+                            continue
+
+        if distance is None:
+            return None
+
+        # 4. 确定棋子颜色
+        # 根据棋子类型大小写确定颜色
+        piece_color = RED if piece_type.isupper() else BLACK
+
+        return cls(
+            piece_type=piece_type,
+            column=column,
+            direction=direction,
+            distance=distance,
+            qualifier=qualifier,
+            piece_color=piece_color,
         )
 
     def to_compact(self):
@@ -1516,11 +1673,22 @@ class _MoveTextParser:
         self.fench = None
         self.piece_fench = None
         self.piece_name = None
+        # 中间表示
+        self.notation = None
         # 记录是否需要坐标转换
         self.needs_denormalization = board.move_side() == BLACK
 
     def parse(self):
         """执行解析，返回原局面中的走法坐标"""
+        # 首先尝试使用 MoveNotation 中间表示解析
+        self.notation = MoveNotation.from_text(self.move_str, self.original_board)
+        if self.notation:
+            # 使用中间表示解析
+            result = self._parse_from_notation()
+            if result:
+                return result
+
+        # 回退到原始解析方法
         if not self._parse_basic_info():
             return None
 
@@ -1545,6 +1713,29 @@ class _MoveTextParser:
 
     def _parse_basic_info(self):
         """解析基本信息：棋子名称、FEN字符"""
+        # 如果有中间表示，从中获取信息
+        if self.notation:
+            # 从中间表示获取棋子信息
+            piece_type = self.notation.piece_type.upper()  # 规范局面使用大写
+
+            # 棋子类型到 FEN 字符的映射
+            piece_type_to_fench = {
+                "K": "K",
+                "A": "A",
+                "B": "B",
+                "N": "N",
+                "R": "R",
+                "C": "C",
+                "P": "P",
+            }
+
+            if piece_type in piece_type_to_fench:
+                self.fench = piece_type_to_fench[piece_type]
+                self.piece_fench = self.fench.lower()
+                self.work_side = RED
+                return True
+
+        # 回退到原始解析方法
         # 确定棋子名称
         if self.move_str[0] in ["前", "中", "后", "一", "二", "三", "四", "五"]:
             self.piece_name = self.move_str[1]
@@ -1641,3 +1832,130 @@ class _MoveTextParser:
             denormalized_moves.append((denormalized_from, denormalized_to))
 
         return denormalized_moves
+
+    def _parse_from_notation(self):
+        """从 MoveNotation 中间表示解析走法坐标"""
+        if not self.notation:
+            return None
+
+        # 从中间表示获取棋子信息
+        piece_type = self.notation.piece_type
+        column = self.notation.column
+        direction = self.notation.direction
+        distance = self.notation.distance
+        qualifier = self.notation.qualifier
+
+        # 将棋子类型转换为 FEN 字符（规范局面下使用红方）
+        piece_type_upper = piece_type.upper()
+
+        # 棋子类型到 FEN 字符的映射
+        piece_type_to_fench = {
+            "K": "K",
+            "A": "A",
+            "B": "B",
+            "N": "N",
+            "R": "R",
+            "C": "C",
+            "P": "P",
+        }
+
+        if piece_type_upper not in piece_type_to_fench:
+            return None
+
+        self.fench = piece_type_to_fench[piece_type_upper]
+        self.piece_fench = self.fench.lower()
+
+        # 在规范局面中，所有走子方都视为红方
+        self.work_side = RED
+
+        # 根据限定词和列获取候选棋子位置
+        positions = []
+
+        if qualifier:
+            # 有限定词：获取所有该类型的棋子
+            all_positions = self.normalized_board.get_fenchs(self.fench)
+            if not all_positions:
+                return None
+
+            # 根据棋子类型和限定词排序
+            if self.piece_fench in ["r", "c", "n", "p"]:
+                # 车、炮、马、兵：按 y 坐标降序排序（红方视角：前->后）
+                all_positions.sort(key=lambda p: p[1], reverse=True)
+
+                # 根据限定词选择棋子
+                if qualifier == "f":  # 前
+                    if len(all_positions) > 0:
+                        positions = [all_positions[0]]
+                elif qualifier == "m":  # 中
+                    if len(all_positions) > 1:
+                        positions = [all_positions[1]]
+                elif qualifier == "b":  # 后
+                    if len(all_positions) > 0:
+                        positions = [all_positions[-1]]
+                elif qualifier.isdigit():  # 数字限定词
+                    idx = int(qualifier) - 1
+                    if 0 <= idx < len(all_positions):
+                        positions = [all_positions[idx]]
+        else:
+            # 无限定词：按列查找
+            positions = self.normalized_board.get_fenchs_x(self.fench, column)
+
+        if not positions:
+            return None
+
+        # 对于非士/象的棋子，如果同列有多个且没有限定词，则无法确定
+        if len(positions) > 1 and not qualifier and self.piece_fench not in ["a", "b"]:
+            return None
+
+        # 构建中文走法字符串，使用 Move.text_move_to_std_move 计算目标坐标
+        # 方向字符映射
+        direction_char_map = {"+": "进", "-": "退", "=": "平"}
+        direction_char = direction_char_map.get(direction, "")
+
+        # 步数距离字符映射（中文数字）
+        step_distance_map = {
+            1: "一",
+            2: "二",
+            3: "三",
+            4: "四",
+            5: "五",
+            6: "六",
+            7: "七",
+            8: "八",
+            9: "九",
+        }
+
+        # 根据棋子类型和方向确定距离字符的含义
+        if direction == "=":
+            # 平移动：距离表示目标列索引（0-8）
+            # 使用 COLUMN_MAP 将列索引转换为中文数字
+            if 0 <= distance <= 8:
+                distance_char = self.notation.COLUMN_MAP[distance][0]
+            else:
+                distance_char = ""
+        elif self.piece_fench in ["a", "b", "n"]:
+            # 士、象、马：距离表示目标列索引（0-8）
+            if 0 <= distance <= 8:
+                distance_char = self.notation.COLUMN_MAP[distance][0]
+            else:
+                distance_char = ""
+        else:
+            # 王、车、炮、兵：距离表示步数（1-9）
+            distance_char = step_distance_map.get(distance, "")
+
+        # 构建走法字符串
+        move_str = direction_char + distance_char
+
+        # 为每个候选位置计算目标坐标
+        moves = []
+        for pos in positions:
+            # 使用 Move.text_move_to_std_move 计算目标坐标
+            pos_to = Move.text_move_to_std_move(self.piece_fench, pos, move_str)
+            if pos_to:
+                moves.append((pos, pos_to))
+
+        if not moves:
+            return None
+
+        # 将规范局面中的坐标转换回原局面
+        return self._denormalize_moves(moves)
