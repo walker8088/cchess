@@ -101,6 +101,452 @@ _ZH_TO_HALF = {
 _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
 
 
+# -----------------------------------------------------#
+class MoveNotation:
+    """走法中间表示，支持多种输出格式"""
+
+    # 棋子类型映射
+    PIECE_MAP = {
+        "K": ("帅", "將", "king"),
+        "k": ("将", "將", "king"),
+        "A": ("仕", "士", "advisor"),
+        "a": ("士", "士", "advisor"),
+        "B": ("相", "象", "elephant"),
+        "b": ("象", "象", "elephant"),
+        "N": ("马", "馬", "knight"),
+        "n": ("马", "馬", "knight"),
+        "R": ("车", "車", "rook"),
+        "r": ("车", "車", "rook"),
+        "C": ("炮", "砲", "cannon"),
+        "c": ("炮", "砲", "cannon"),
+        "P": ("兵", "兵", "pawn"),
+        "p": ("卒", "卒", "pawn"),
+    }
+
+    # 列数字映射（红方视角，从右到左）
+    # 红方视角：最右边是第一路（一），最左边是第九路（九）
+    COLUMN_MAP = {
+        0: ("九", "９"),  # 最左边
+        1: ("八", "８"),
+        2: ("七", "７"),
+        3: ("六", "６"),
+        4: ("五", "５"),
+        5: ("四", "４"),
+        6: ("三", "３"),
+        7: ("二", "２"),
+        8: ("一", "１"),  # 最右边
+    }
+
+    # 全角数字映射（黑方使用）
+    FULLWIDTH_NUM_MAP = {
+        0: "９",
+        1: "８",
+        2: "７",
+        3: "６",
+        4: "５",
+        5: "４",
+        6: "３",
+        7: "２",
+        8: "１",
+    }
+
+    # 方向映射
+    DIRECTION_MAP = {
+        "+": ("进", "進", "advances"),
+        "-": ("退", "退", "retreats"),
+        "=": ("平", "平", "moves horizontally to"),
+    }
+
+    # 限定词映射
+    QUALIFIER_MAP = {
+        "f": ("前", "前", "front"),
+        "m": ("中", "中", "middle"),
+        "b": ("后", "後", "back"),
+        "1": ("一", "一", "1st"),
+        "2": ("二", "二", "2nd"),
+        "3": ("三", "三", "3rd"),
+        "4": ("四", "四", "4th"),
+    }
+
+    def __init__(
+        self,
+        piece_type,
+        column,
+        direction,
+        distance,
+        qualifier="",
+        is_capture=False,
+        is_check=False,
+        is_checkmate=False,
+        piece_color=None,
+    ):
+        self.piece_type = piece_type  # K/A/B/N/R/C/P
+        self.column = column  # 0-8（红方视角）
+        self.direction = direction  # +/ -/=
+        self.distance = distance  # 1-9
+        self.qualifier = qualifier  # f/m/b/1/2/3/4
+        self.is_capture = is_capture
+        self.is_check = is_check
+        self.is_checkmate = is_checkmate
+        self.piece_color = piece_color  # RED/BLACK
+
+    @classmethod
+    def from_move(cls, move):
+        """从Move对象创建中间表示"""
+        # 获取棋子信息
+        board = move.board_before()
+        fench = board.get_fench(move.pos_from)
+        species, color = fench_to_species(fench)
+
+        # 确定棋子类型（大写红方，小写黑方）
+        piece_type = species.upper() if color == RED else species.lower()
+
+        # 计算列（红方视角）
+        column = move.pos_from[0]
+        if color == BLACK:
+            # 黑方需要转换为红方视角
+            column = 8 - column
+
+        # 计算方向和目标信息
+        diff = move.pos_to[1] - move.pos_from[1]
+        if color == BLACK:
+            diff = -diff
+
+        if diff == 0:
+            direction = "="
+            # 平移动：目标列（红方视角）
+            target_column = move.pos_to[0]
+            if color == BLACK:
+                target_column = 8 - target_column
+            # 对于平移动，距离表示目标列
+            distance = target_column
+        else:
+            direction = "+" if diff > 0 else "-"
+
+            # 对于士、相、马，前进/后退显示的是目标列
+            # 对于王、车、炮、兵，前进/后退显示的是步数
+            if species in ("a", "b", "n"):  # 士、相、马
+                # 目标列（红方视角）
+                target_column = move.pos_to[0]
+                if color == BLACK:
+                    target_column = 8 - target_column
+                distance = target_column
+            else:  # 王、车、炮、兵
+                distance = abs(diff)
+
+        # 确定限定词
+        qualifier = ""
+
+        # 将/帅、士/仕、象/相没有限定词，无论有多少个
+        if species in ("k", "a", "b"):
+            qualifier = ""
+        else:
+            # 检查同列是否有多个相同棋子（车、马、炮、兵）
+            count = 0
+            positions = []
+            for y in range(10):
+                if board._board[y][move.pos_from[0]] == fench:  # pylint: disable=protected-access
+                    positions.append((move.pos_from[0], y))
+                    count += 1
+
+            if count > 1:
+                # 排序位置（红方从下到上，黑方从上到下）
+                # 当y坐标相同时，按x坐标排序（红方从左到右，黑方从右到左）
+                if color == RED:
+                    # 红方：从下到上，当y相同时从左到右
+                    positions.sort(key=lambda p: (p[1], p[0]), reverse=True)
+                else:
+                    # 黑方：从上到下，当y相同时从右到左
+                    positions.sort(key=lambda p: (p[1], -p[0]))
+
+                # 找到当前位置的索引
+                idx = positions.index(move.pos_from)
+
+                if count == 2:
+                    qualifier = "f" if idx == 0 else "b"  # 前/后
+                elif count == 3:
+                    if idx == 0:
+                        qualifier = "f"  # 前
+                    elif idx == 1:
+                        qualifier = "m"  # 中
+                    else:
+                        qualifier = "b"  # 后
+                elif count == 4:
+                    # 排序后：前(idx=0), 二(idx=1), 三(idx=2), 后(idx=3)
+                    if idx == 0:
+                        qualifier = "f"  # 前
+                    elif idx == 1:
+                        qualifier = "2"  # 二
+                    elif idx == 2:
+                        qualifier = "3"  # 三
+                    else:  # idx == 3
+                        qualifier = "b"  # 后
+                elif count == 5:
+                    if idx == 0:
+                        qualifier = "f"  # 前
+                    elif idx == count - 1:
+                        qualifier = "b"  # 后
+                    else:
+                        # 使用数字限定词：二、三、四
+                        qualifier = str(idx + 1)  # 1+1=2, 2+1=3, 3+1=4
+                elif count > 5:
+                    if idx == 0:
+                        qualifier = "f"  # 前
+                    elif idx == count - 1:
+                        qualifier = "b"  # 后
+                    else:
+                        qualifier = str(idx + 1)  # 数字限定词
+
+        return cls(
+            piece_type,
+            column,
+            direction,
+            distance,
+            qualifier,
+            is_capture=bool(move.captured),
+            is_check=move.is_checking,
+            is_checkmate=move.is_checkmate,
+            piece_color=color,
+        )
+
+    def to_compact(self):
+        """转换为紧凑格式"""
+        result = ""
+        if self.qualifier:
+            result += self.qualifier
+        result += self.piece_type
+        result += str(self.column + 1)  # 转换为1-9
+        result += self.direction
+        result += str(self.distance)
+
+        # 添加特殊标记
+        if self.is_capture:
+            result += "x"
+        if self.is_check:
+            result += "+"
+        if self.is_checkmate:
+            result += "#"
+
+        return result
+
+    def to_chinese(self, traditional=False, use_fullwidth_for_black=True):
+        """转换为中文（简体/繁体）
+
+        参数:
+            traditional: 是否使用繁体中文
+            use_fullwidth_for_black: 黑方是否使用全角数字
+        """
+        piece_name = self.PIECE_MAP[self.piece_type][1 if traditional else 0]
+
+        # 根据棋子颜色选择数字格式
+        if self.piece_color == BLACK and use_fullwidth_for_black:
+            # 黑方使用全角数字
+            direction_name = self.DIRECTION_MAP[self.direction][1 if traditional else 0]
+
+            # 处理限定词（黑方限定词使用全角数字）
+            qualifier_name = ""
+            if self.qualifier:
+                if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
+                    # 数字限定词转换为全角
+                    if self.qualifier in ("1", "2", "3", "4"):
+                        # 对于"前四三二后"的情况
+                        fullwidth_map = {
+                            "1": "１",
+                            "2": "２",
+                            "3": "３",
+                            "4": "４",
+                        }
+                        qualifier_name = fullwidth_map.get(
+                            self.qualifier, self.qualifier
+                        )
+                    else:
+                        qualifier_name = str(self.qualifier)
+                else:
+                    qualifier_name = self.QUALIFIER_MAP.get(
+                        self.qualifier, ("", "", "")
+                    )[1 if traditional else 0]
+
+            # 构建结果
+            if self.direction == "=":
+                # 平移动：目标列使用全角数字
+                target_column = (
+                    self.FULLWIDTH_NUM_MAP.get(self.distance, str(self.distance))
+                    if 0 <= self.distance <= 8
+                    else str(self.distance)
+                )
+                # 有限定词时不显示列标识
+                if qualifier_name:
+                    return (
+                        f"{qualifier_name}{piece_name}{direction_name}{target_column}"
+                    )
+                else:
+                    column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                    return f"{piece_name}{column_name}{direction_name}{target_column}"
+            else:
+                # 进退移动
+                if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
+                    # 目标列使用全角数字
+                    target_column = (
+                        self.FULLWIDTH_NUM_MAP.get(self.distance, str(self.distance))
+                        if 0 <= self.distance <= 8
+                        else str(self.distance)
+                    )
+                    # 有限定词时不显示列标识
+                    if qualifier_name:
+                        return f"{qualifier_name}{piece_name}{direction_name}{target_column}"
+                    else:
+                        column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                        return (
+                            f"{piece_name}{column_name}{direction_name}{target_column}"
+                        )
+                else:  # 王、车、炮、兵
+                    # 步数使用全角数字
+                    if 1 <= self.distance <= 9:
+                        # 将步数转换为全角数字
+                        distance_name = str(self.distance)
+                        fullwidth_digits = {
+                            "1": "１",
+                            "2": "２",
+                            "3": "３",
+                            "4": "４",
+                            "5": "５",
+                            "6": "６",
+                            "7": "７",
+                            "8": "８",
+                            "9": "９",
+                        }
+                        distance_name = "".join(
+                            fullwidth_digits.get(c, c) for c in distance_name
+                        )
+                    else:
+                        distance_name = str(self.distance)
+                    # 有限定词时不显示列标识
+                    if qualifier_name:
+                        return f"{qualifier_name}{piece_name}{direction_name}{distance_name}"
+                    else:
+                        column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                        return (
+                            f"{piece_name}{column_name}{direction_name}{distance_name}"
+                        )
+        else:
+            # 红方或黑方不使用全角数字时，使用中文数字
+            direction_name = self.DIRECTION_MAP[self.direction][1 if traditional else 0]
+
+            # 处理限定词
+            qualifier_name = ""
+            if self.qualifier:
+                if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
+                    # 数字限定词转换为中文数字
+                    num_map = {
+                        "1": "一",
+                        "2": "二",
+                        "3": "三",
+                        "4": "四",
+                        "5": "五",
+                        "6": "六",
+                        "7": "七",
+                        "8": "八",
+                        "9": "九",
+                    }
+                    qualifier_name = num_map.get(self.qualifier, self.qualifier)
+                else:
+                    qualifier_name = self.QUALIFIER_MAP.get(
+                        self.qualifier, ("", "", "")
+                    )[1 if traditional else 0]
+
+            # 构建结果
+            if self.direction == "=":
+                # 平移动：目标列使用列映射
+                target_column = (
+                    self.COLUMN_MAP[self.distance][0]
+                    if 0 <= self.distance <= 8
+                    else str(self.distance)
+                )
+                # 有限定词时不显示列标识
+                if qualifier_name:
+                    return (
+                        f"{qualifier_name}{piece_name}{direction_name}{target_column}"
+                    )
+                else:
+                    column_name = self.COLUMN_MAP[self.column][0]
+                    return f"{piece_name}{column_name}{direction_name}{target_column}"
+            else:
+                # 进退移动
+                if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
+                    # 目标列使用列映射
+                    target_column = (
+                        self.COLUMN_MAP[self.distance][0]
+                        if 0 <= self.distance <= 8
+                        else str(self.distance)
+                    )
+                    # 有限定词时不显示列标识
+                    if qualifier_name:
+                        return f"{qualifier_name}{piece_name}{direction_name}{target_column}"
+                    else:
+                        column_name = self.COLUMN_MAP[self.column][0]
+                        return (
+                            f"{piece_name}{column_name}{direction_name}{target_column}"
+                        )
+                else:  # 王、车、炮、兵
+                    # 步数使用中文数字（一-九）
+                    if 1 <= self.distance <= 9:
+                        distance_name = (
+                            _HALF_TO_ZH[self.distance]
+                            if self.distance < len(_HALF_TO_ZH)
+                            else str(self.distance)
+                        )
+                    else:
+                        distance_name = str(self.distance)
+                    # 有限定词时不显示列标识
+                    if qualifier_name:
+                        return f"{qualifier_name}{piece_name}{direction_name}{distance_name}"
+                    else:
+                        column_name = self.COLUMN_MAP[self.column][0]
+                        return (
+                            f"{piece_name}{column_name}{direction_name}{distance_name}"
+                        )
+
+    def to_english(self):
+        """转换为英文"""
+        piece_name = self.PIECE_MAP[self.piece_type][2]
+        column_num = self.column + 1
+        direction_name = self.DIRECTION_MAP[self.direction][2]
+        qualifier_name = (
+            self.QUALIFIER_MAP.get(self.qualifier, ("", "", ""))[2]
+            if self.qualifier
+            else ""
+        )
+
+        if self.direction == "=":
+            target_column = self.distance + 1  # 转换为1-9
+            result = f"{qualifier_name} {piece_name} at file {column_num} {direction_name} file {target_column}"
+        else:
+            # 对于士、相、马，显示目标列
+            # 对于王、车、炮、兵，显示步数
+            if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
+                target_column = self.distance + 1  # 转换为1-9
+                result = f"{qualifier_name} {piece_name} at file {column_num} {direction_name} file {target_column}"
+            else:  # 王、车、炮、兵
+                result = f"{qualifier_name} {piece_name} at file {column_num} {direction_name} {self.distance}"
+
+        # 清理空格
+        result = " ".join(result.split())
+
+        # 添加特殊标记
+        if self.is_capture:
+            result += " capturing"
+        if self.is_check:
+            result += " with check"
+        if self.is_checkmate:
+            result += " with checkmate"
+
+        return result
+
+    def __str__(self):
+        return self.to_compact()
+
+
+# -----------------------------------------------------#
 def _detect_move_side_from_text(move_str):
     """根据着法字符串中的数字类型检测走子方。
 
@@ -726,32 +1172,62 @@ class Move:
         """初始化并返回一个空的走子线路字典。"""
         return {"index": 0, "name": "0", "variations": [], "moves": []}
 
-    def to_text(self, detailed=False):
-        """返回此走子的中文可读文本表示。
+    def to_text(
+        self,
+        detailed=False,
+        format="chinese",
+        traditional=False,
+        use_fullwidth_for_black=True,
+    ):
+        """返回此走子的文本表示。
 
-        若 `detailed` 为 True，则在返回字符串后附加括号内的详细信息，
-        例如吃子、将军或将死等注记。
+        参数:
+            detailed: 是否显示详细信息（吃子、将军等）
+            format: 输出格式，可选值："chinese"（默认）、"compact"、"english"、"iccs"
+            traditional: 当format为"chinese"时，是否使用繁体中文
+            use_fullwidth_for_black: 当format为"chinese"时，黑方是否使用全角数字
+
+        返回:
+            指定格式的走法字符串
         """
-        fench = self.board_before().get_fench(self.pos_from)
-        _, piece_color = fench_to_species(fench)
-        diff = self.pos_to[1] - self.pos_from[1]
+        if format == "iccs":
+            text = self.to_iccs()
+        else:
+            notation = MoveNotation.from_move(self)
 
-        # 黑方是红方的反向操作
-        if piece_color == BLACK:
-            diff = -diff
+            if format == "compact":
+                text = notation.to_compact()
+            elif format == "english":
+                text = notation.to_english()
+            else:  # "chinese" or default
+                text = notation.to_chinese(traditional, use_fullwidth_for_black)
 
-        diff_str = self._get_direction_str(diff)
-        dest_str = self._get_dest_str(fench, piece_color, diff)
-        name_str = self.__get_text_name(self.pos_from)
+        if detailed:
+            details = []
+            if self.captured:
+                # 根据格式选择吃子表示
+                if format == "english":
+                    details.append("captures")
+                else:
+                    details.append("吃" + fench_to_text(self.captured))
+            if self.is_checkmate:
+                if format == "english":
+                    details.append("checkmate")
+                else:
+                    details.append("将死")
+            elif self.is_checking:
+                if format == "english":
+                    details.append("check")
+                else:
+                    details.append("将军")
 
-        text = name_str + diff_str + dest_str
-        if not detailed:
-            return text
+            if details:
+                if format == "english":
+                    text = f"{text} ({' '.join(details)})"
+                else:
+                    text = f"{text}({','.join(details)})"
 
-        details = self._get_detailed_info()
-        if len(details) == 0:
-            return text
-        return f"{text}({','.join(details)})"
+        return text
 
     def _get_direction_str(self, diff):
         """获取走法方向字符串（平/进/退）"""
@@ -760,7 +1236,7 @@ class Move:
         return "进" if diff > 0 else "退"
 
     def _get_dest_str(self, fench, piece_color, diff):
-        """获取目标位置字符串"""
+        """获取目标位置字符串（兼容旧版）"""
         # 根据走子方确定使用哪个索引
         # 红方使用中文数字，黑方使用全角数字
         if piece_color == RED:
@@ -875,29 +1351,48 @@ class Move:
             h_index_black = ("１", "２", "３", "４", "５", "６", "７", "８", "９")
             return piece_name + h_index_black[pos[0]]
 
-    def to_text_detail(self, show_variation, show_annote):
+    def to_text_detail(
+        self,
+        show_variation,
+        show_annote,
+        format="chinese",
+        traditional=False,
+        use_fullwidth_for_black=True,
+    ):
         """返回走子的文本表示，可选择是否显示变招和注释。"""
         if show_variation:
             txt = self.to_text_variation()
         else:
-            txt = self.to_text()
+            txt = self.to_text(
+                format=format,
+                traditional=traditional,
+                use_fullwidth_for_black=use_fullwidth_for_black,
+            )
 
         annote = self.annote if show_annote else ""
 
         return (txt, annote)
 
-    def to_text_variation(self):
+    def to_text_variation(
+        self, format="chinese", traditional=False, use_fullwidth_for_black=True
+    ):
         """返回带有变招标记的走子文本表示（多分支以方括号包裹）。"""
         assert len(self.variations_all) > 0
 
         # 父节点只有一个孩子，那就是自己
         if len(self.variations_all) == 1:
-            return self.to_text()
+            return self.to_text(
+                format=format,
+                traditional=traditional,
+                use_fullwidth_for_black=use_fullwidth_for_black,
+            )
 
         txts = []
         for _index, m in enumerate(self.variations_all):
             if m == self:
-                txts.append(f"{m.to_text()}")
+                txts.append(
+                    f"{m.to_text(format=format, traditional=traditional, use_fullwidth_for_black=use_fullwidth_for_black)}"
+                )
             else:
                 txts.append("*")  # m.to_text())
 
