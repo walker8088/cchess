@@ -186,7 +186,11 @@ class ChessBoard:
 
         b = self.copy()
         b._board = [
-            [swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)
+            [
+                swap_fench(self._board[y][x]) if self._board[y][x] is not None else None
+                for x in range(9)
+            ]
+            for y in range(10)
         ]
 
         b.set_move_side(next_color(b.move_side()))

@@ -24,7 +24,7 @@ from cchess import (
     RED,
     CChessError,
     ChessBoard,
-    get_move_color,
+    fen_move_color,
     iccs2pos,
     iccs_flip,
     iccs_mirror,
@@ -171,14 +171,14 @@ class TestBoard:
         assert board.copy().move_text("相三进一").to_iccs() == "g0i2"
 
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w"
-        assert get_move_color(fen) == RED
+        assert fen_move_color(fen) == RED
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w - - 0 1"
-        assert get_move_color(fen) == RED
+        assert fen_move_color(fen) == RED
 
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b"
-        assert get_move_color(fen) == BLACK
+        assert fen_move_color(fen) == BLACK
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b - - 0 1"
-        assert get_move_color(fen) == BLACK
+        assert fen_move_color(fen) == BLACK
 
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)

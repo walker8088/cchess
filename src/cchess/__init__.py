@@ -25,12 +25,12 @@ from .common import (
     RED,
     fen_flip,
     fen_mirror,
+    fen_move_color,
     fen_swap,
     fench_to_species,
     fench_to_text,
     get_fen_type,
     get_fen_type_detail,
-    get_move_color,
     iccs2pos,
     iccs_flip,
     iccs_list_mirror,
@@ -48,8 +48,6 @@ from .engine import (
 from .engine_async import AsyncEngine, analyse_position, play_move
 from .exception import CChessError, EngineError
 from .game import Game
-from .io_pgn import read_from_pgn
-from .io_xqf import read_from_xqf
 from .move import Move
 from .piece import (
     Advisor,
@@ -61,8 +59,6 @@ from .piece import (
     Piece,
     Rook,
 )
-from .read_cbf import read_from_cbf
-from .read_cbr import read_from_cbl, read_from_cbr
 
 __all__ = [
     # exception
@@ -83,7 +79,7 @@ __all__ = [
     "fen_mirror",
     "fen_flip",
     "fen_swap",
-    "get_move_color",
+    "fen_move_color",
     "get_fen_type",
     "get_fen_type_detail",
     "FULL_INIT_BOARD",
@@ -114,12 +110,6 @@ __all__ = [
     "AsyncEngine",
     "play_move",
     "analyse_position",
-    # io
-    "read_from_xqf",
-    "read_from_pgn",
-    "read_from_cbf",
-    "read_from_cbr",
-    "read_from_cbl",
     # version
     "__version__",
 ]

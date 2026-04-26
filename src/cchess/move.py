@@ -568,7 +568,8 @@ class Move:
         self.move_info.board_before = swapped_board._board
 
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
-        self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
+        if self.move_info.captured_fench is not None:
+            self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
 
         self.move_info.prev_move_side = next_color(self.move_info.prev_move_side)
 

@@ -484,8 +484,8 @@ class TestReadPGN:
 
     def test_gbk_fallback_encoding(self):
         """Test GBK encoding fallback (lines 49-54)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         # Create a temp file with GBK-encoded content
         content = '[Game "Chinese Chess"]\n[Red "测试"]\n\n1. 炮二平五 炮８平５\n *\n'
@@ -500,8 +500,8 @@ class TestReadPGN:
 
     def test_chardet_fallback(self):
         """Test chardet-based encoding fallback (lines 50-54)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         # Create a file with content that fails both utf-8 and gbk decode
         # Use bytes that are invalid in both encodings
@@ -517,8 +517,8 @@ class TestReadPGN:
 
     def test_get_headers_all_lines_are_headers(self):
         """Test when all lines are headers, returns empty list (line 105)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Red "Player"]\n[Black "Player2"]\n'
         with tempfile.NamedTemporaryFile(
@@ -535,8 +535,8 @@ class TestReadPGN:
 
     def test_get_steps_iccs_format(self):
         """Test ICCS format step parsing (lines 149-154)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0a1 i9i8\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -554,8 +554,8 @@ class TestReadPGN:
 
     def test_get_steps_iccs_5char(self):
         """Test ICCS 5-character format (line 151)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0-a1 i9-i8\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -572,8 +572,8 @@ class TestReadPGN:
 
     def test_get_steps_game_result(self):
         """Test game result markers in steps (lines 141-146)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n\n1. a0a1 i9i8 1-0\n'
         with tempfile.NamedTemporaryFile(
@@ -590,8 +590,8 @@ class TestReadPGN:
 
     def test_get_steps_move_none_returns_game(self):
         """Test when board.move_text returns None, returns game (line 158)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n\n1. 非法走法\n *\n'
         with tempfile.NamedTemporaryFile(
@@ -607,8 +607,8 @@ class TestReadPGN:
 
     def test_get_steps_fen_header(self):
         """Test FEN header creates custom init board (line 94)."""
-        from cchess import read_from_pgn
         from cchess.game import Game
+        from cchess.io_pgn import read_from_pgn
 
         fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         content = f'[Game "Chinese Chess"]\n[FEN "{fen}"]\n\n *\n'

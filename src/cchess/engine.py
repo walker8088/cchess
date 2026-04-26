@@ -24,7 +24,16 @@ from queue import Empty, Queue
 from threading import Thread
 
 from .board import ChessBoard
-from .common import load_json, save_json, RED, fen_mirror, get_move_color, iccs_list_mirror, iccs_mirror
+from .common import (
+    RED,
+    fen_mirror,
+    fen_move_color,
+    iccs_list_mirror,
+    iccs_mirror,
+    is_int,
+    load_json,
+    save_json,
+)
 from .exception import EngineError
 
 # 引擎评分常量
@@ -33,53 +42,8 @@ _CHECKMATE_SCORE = 30000  # 将杀基础评分
 # -----------------------------------------------------#
 logger = logging.getLogger(__name__)
 
+
 # -----------------------------------------------------#
-
-
-def is_int(s: str) -> bool:
-    """判断字符串是否表示一个有效的整数。
-
-    支持：
-    - 正整数（如 "123"）
-    - 负整数（如 "-456"）
-    - 零（如 "0"、"-0"、"+0"）
-    - 可选的正负号（"+" 或 "-"）
-    - 首尾空格（如 " 123 "）
-
-    不支持：
-    - 小数（如 "123.45"）
-    - 前导零（如 "00123"，除了 "0" 本身）
-    - 其他非数字字符
-
-    参数：
-        s (str): 要判断的字符串
-
-    返回：
-        bool: True 表示是有效整数字符串，False 表示不是
-    """
-    s = s.strip()  # 去除首尾空格
-    if not s:
-        return False
-
-    # 处理可选的正负号
-    if s[0] in ("+", "-"):
-        s = s[1:]
-
-    if not s:
-        return False  # 如 "+" 或 "-"
-
-    # 单独处理 "0"
-    if s == "0":
-        return True
-
-    # 不允许前导零
-    if s[0] == "0":
-        return False
-
-    # 其余部分必须全为数字
-    return s.isdigit()
-
-
 def parse_engine_info_to_dict(s):
     """把引擎输出的 info 字符串解析为字典。
 
@@ -546,7 +510,7 @@ class FenCache:
         则对动作做镜像后返回。
         返回值为动作字典或 None（若缓存未命中）。
         """
-        move_color = get_move_color(fen)
+        move_color = fen_move_color(fen)
 
         info, state = self.get(fen)
         if info is None:

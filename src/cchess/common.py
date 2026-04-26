@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
 import re
 from collections import OrderedDict
-from typing import Optional
 
 # pylint: disable=missing-function-docstring,import-outside-toplevel
 # -----------------------------------------------------#
@@ -59,10 +58,10 @@ __all__ = [
     "fen_flip",
     "fen_mirror",
     "fen_swap",
+    "fen_move_color",
     "get_fen_type",
     "get_fen_type_detail",
     "get_fen_pieces",
-    "get_move_color",
     "parse_dhtmlxq",
 ]
 
@@ -193,19 +192,19 @@ def fench_to_txt_name(fench):
 
 
 def fench_to_text(fench):
-    """fench_to_text 函数。"""
+    """"""
     return _fench_name_dict[fench]
 
 
 def text_to_fench(text, color):
-    """text_to_fench 函数。"""
+    """"""
     if text not in _name_fench_dict:
         return None
     fench = _name_fench_dict[text]
     return fench.lower() if color == BLACK else fench.upper()
 
 
-def swap_fench(fench: Optional[str]) -> Optional[str]:
+def swap_fench(fench: str) -> str:
     """交换棋子的大小写（红黑互换）。
 
     大写表示红方、小写表示黑方。该函数将棋子字母大小写取反。
@@ -214,10 +213,8 @@ def swap_fench(fench: Optional[str]) -> Optional[str]:
         fench: 棋子 FEN 字符，如 'K', 'a', 'r' 等
 
     返回:
-        str: 交换后的棋子字符，如果输入为 None 则返回 None
+        str: 交换后的棋子字符
     """
-    if fench is None:
-        return None
     return fench.upper() if fench.islower() else fench.lower()
 
 
@@ -226,35 +223,35 @@ _SPECIES_CACHE = {}
 
 
 def fench_to_species(fen_ch):
-    """fench_to_species 函数。"""
+    """"""
     if fen_ch not in _SPECIES_CACHE:
         _SPECIES_CACHE[fen_ch] = (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
     return _SPECIES_CACHE[fen_ch]
 
 
 # -----------------------------------------------------#
-def get_move_color(fen):
-    """get_move_color 函数。"""
+def fen_move_color(fen):
+    """"""
     color = fen.rstrip().split(" ")[1].lower()
     return RED if color == "w" else BLACK
 
 
 def fen_mirror(fen):
-    """fen_mirror 函数。"""
+    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_mirror(fen)
 
 
 def fen_flip(fen):
-    """fen_flip 函数。"""
+    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_flip(fen)
 
 
 def fen_swap(fen):
-    """fen_swap 函数。"""
+    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_swap(fen)
@@ -307,7 +304,7 @@ p_dict = {
 
 # -----------------------------------------------------#
 def get_fen_pieces(fen):
-    """get_fen_pieces 函数。"""
+    """"""
     pieces = OrderedDict()
     fen_base = fen.split(" ")[0]
     for ch in fen_base:
@@ -320,7 +317,7 @@ def get_fen_pieces(fen):
 
 
 def get_fen_type(fen):
-    """get_fen_type 函数。"""
+    """"""
     pieces = get_fen_pieces(fen)
     for ch in ["K", "A", "B"]:
         if ch in pieces:
@@ -340,7 +337,7 @@ def get_fen_type(fen):
 
 # -----------------------------------------------------#
 def get_fen_type_detail(fen):
-    """get_fen_type_detail 函数。"""
+    """"""
     pieces = get_fen_pieces(fen)
 
     title_red = ""
@@ -468,3 +465,48 @@ def save_json(data, filepath: str) -> bool:
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f)
     return True
+
+
+# -----------------------------------------------------#
+def is_int(s: str) -> bool:
+    """判断字符串是否表示一个有效的整数。
+
+    支持：
+    - 正整数（如 "123"）
+    - 负整数（如 "-456"）
+    - 零（如 "0"、"-0"、"+0"）
+    - 可选的正负号（"+" 或 "-"）
+    - 首尾空格（如 " 123 "）
+
+    不支持：
+    - 小数（如 "123.45"）
+    - 前导零（如 "00123"，除了 "0" 本身）
+    - 其他非数字字符
+
+    参数：
+        s (str): 要判断的字符串
+
+    返回：
+        bool: True 表示是有效整数字符串，False 表示不是
+    """
+    s = s.strip()  # 去除首尾空格
+    if not s:
+        return False
+
+    # 处理可选的正负号
+    if s[0] in ("+", "-"):
+        s = s[1:]
+
+    if not s:
+        return False  # 如 "+" 或 "-"
+
+    # 单独处理 "0"
+    if s == "0":
+        return True
+
+    # 不允许前导零
+    if s[0] == "0":
+        return False
+
+    # 其余部分必须全为数字
+    return s.isdigit()
