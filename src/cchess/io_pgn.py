@@ -213,26 +213,31 @@ class PGNTokenizer:
         self.index = 0
         self.length = len(text)
 
+    # 预计算字符集合用于快速分类
+    _RESULT_CHARS = frozenset({"1", "0", "½", "*"})
+    _MOVE_CHARS = frozenset({"+", "#", "="})
+    _SINGLE_TOKEN_CHARS = frozenset({"{", "(", ")"})
+
     def tokenize(self) -> List[Dict[str, Any]]:
         """执行分词操作"""
         while self.index < self.length:
             char = self.text[self.index]
 
-            if char.isspace():
+            # 快速路径：单字符标记
+            if char in self._SINGLE_TOKEN_CHARS:
+                if char == "{":
+                    self._process_annotation()
+                elif char == "(":
+                    self._process_variation_start()
+                else:  # char == ")"
+                    self._process_variation_end()
+            elif char.isspace():
                 self._skip_whitespace()
-            elif char == "{":
-                self._process_annotation()
-            elif char == "(":
-                self._process_variation_start()
-            elif char == ")":
-                self._process_variation_end()
             elif char.isdigit():
                 self._process_move_number()
-            elif char in ["1", "0", "½", "*"] and self._is_result_start():
-                # 结果标记检查必须在 move 检查之前
+            elif char in self._RESULT_CHARS and self._is_result_start():
                 self._process_result()
-            elif char.isalpha() or char in "+#=" or not char.isascii():
-                # 处理 ASCII 字符和非 ASCII 字符（如中文）
+            elif char.isalpha() or char in self._MOVE_CHARS or not char.isascii():
                 self._process_move()
             else:
                 self.index += 1
@@ -299,13 +304,24 @@ class PGNTokenizer:
         result = self.text[start : self.index]
         self.tokens.append({"type": "result", "value": result})
 
+    # 结果标记中可能包含的分隔符
+    _RESULT_SEPARATORS = frozenset({"-", "/", "*"})
+
     def _is_result_start(self) -> bool:
         """检查是否是结果开始"""
-        # 检查接下来的3个字符中是否包含-或/或*
-        lookahead = min(3, self.length - self.index)
-        return any(
-            c in self.text[self.index : self.index + lookahead] for c in ["-", "/", "*"]
-        )
+        # 直接索引检查，避免切片和循环
+        text = self.text
+        idx = self.index
+        length = self.length
+
+        # 检查当前位置及后续字符是否包含结果分隔符
+        if idx < length and text[idx] in self._RESULT_SEPARATORS:
+            return True
+        if idx + 1 < length and text[idx + 1] in self._RESULT_SEPARATORS:
+            return True
+        if idx + 2 < length and text[idx + 2] in self._RESULT_SEPARATORS:
+            return True
+        return False
 
 
 # -----------------------------------------------------#

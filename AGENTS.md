@@ -85,7 +85,6 @@ python -m pytest tests/test_coverage.py -x -q
 
 ### 已知问题
 
-- `test_main.py::test_main_entry` - 预存在失败，与 CBF 文件格式解析有关
 - `test_engine.py` - 需要外部引擎文件，CI 环境跳过
 
 ## Git 工作流
@@ -145,17 +144,17 @@ print(f'get_pieces x10000: {elapsed:.3f}s')
 ## 待办事项
 
 ### 高优先级
-- [ ] 修复 `test_main_entry` CBF 解析问题
+- [x] 修复 `test_main_entry` CBF 解析问题 (已验证稳定通过)
 - [ ] 添加类型提示到 board.py 和 piece.py
-- [ ] 优化 `Move.from_text()` 复杂度 (当前 D25)
+- [x] 优化 `Move.from_text()` 复杂度 (已降低至可接受范围)
 
 ### 中优先级
-- [ ] 优化马的走法生成算法
+- [x] 优化马的走法生成算法 (预计算偏移量 + 内联边界检查)
 - [ ] 扩展缓存机制到走法生成
-- [ ] 优化 `PGNParser.tokenize()` 复杂度 (当前 D22)
+- [x] 优化 `PGNParser.tokenize()` 复杂度 (使用分发表 + 预计算字符集)
 
 ### 低优先级
-- [ ] 清理注释掉的代码
+- [x] 清理注释掉的代码 (已检查，无需清理)
 - [ ] 补充模块级文档字符串
 - [ ] 实现走法排序启发式
 
