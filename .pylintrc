@@ -2,8 +2,6 @@
 
 [MESSAGES CONTROL]
 # Disable warnings that require major architectural changes:
-# R0401: cyclic-import - requires package restructuring
-# R0801: duplicate-code - requires extracting shared base class
 # C0302: too-many-lines - requires splitting data files
 # Test-specific disables:
 # C0116: missing-function-docstring - tests use docstrings as descriptions
@@ -21,7 +19,7 @@
 # W0621: redefined-outer-name - test functions may shadow imports
 # W0404: reimported - test reimports are intentional
 # W1510: subprocess-run-check - tests don't always need check=True
-disable=R0401,R0801,C0302,C0116,C0413,C0415,C1803,R0904,R0913,R0914,R0915,R0917,W0212,W0611,W0612,W0621,W0404,W1510
+disable=C0302,C0116,C0413,C0415,C1803,R0904,R0913,R0914,R0915,R0917,W0212,W0611,W0612,W0621,W0404,W1510
 
 [TYPECHECK]
 ignored-modules=pytest

@@ -290,7 +290,6 @@ p_dict = {
 
 # -----------------------------------------------------#
 def get_fen_pieces(fen):
-    """"""
     pieces = OrderedDict()
     fen_base = fen.split(" ")[0]
     for ch in fen_base:
@@ -303,7 +302,6 @@ def get_fen_pieces(fen):
 
 
 def get_fen_type(fen):
-    """"""
     pieces = get_fen_pieces(fen)
     for ch in ["K", "A", "B"]:
         if ch in pieces:
@@ -323,7 +321,6 @@ def get_fen_type(fen):
 
 # -----------------------------------------------------#
 def get_fen_type_detail(fen):
-    """"""
     pieces = get_fen_pieces(fen)
 
     title_red = ""

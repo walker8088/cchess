@@ -112,7 +112,7 @@ class ChessBoard:
         self.clear()
         self.from_fen(fen)
 
-    def clear(self) -> None:
+    def clear(self) -> "ChessBoard":
         """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
         self._board: List[List[Optional[str]]] = [
             [None for _ in range(9)] for _ in range(10)
@@ -133,11 +133,12 @@ class ChessBoard:
         """获取当前走子方（整数颜色值）"""
         return self._move_side
 
-    def set_move_side(self, value):
+    def set_move_side(self, value) -> "ChessBoard":
         """设置走子方，支持整数"""
         if value > 3:
             raise CChessError(f"Invalid move side: {value}")
         self._move_side = value
+        return self
 
     def copy(self) -> "ChessBoard":
         """返回棋盘的快照（独立副本）。"""
@@ -149,7 +150,7 @@ class ChessBoard:
         b._attack_matrix_dirty = self._attack_matrix_dirty
         return b
 
-    def from_board(self, b: "ChessBoard") -> None:
+    def from_board(self, b: "ChessBoard") -> "ChessBoard":
         """从另一个ChessBoard Copy属性"""
         self._board = b._board
         self._move_side = b.move_side()
@@ -163,6 +164,7 @@ class ChessBoard:
             self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
             self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
             self._attack_matrix_dirty = True
+        return self
 
     def mirror(self) -> "ChessBoard":
         """返回新棋盘: 沿竖直中线镜像（左右翻转）。"""

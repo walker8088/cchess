@@ -196,6 +196,42 @@ class MoveNotation:
         "9": ("九", "九"),
     }
 
+    # 反向查找：列号字符 -> 列索引 (O(1) 查找)
+    _COLUMN_CHAR_TO_IDX: dict[str, int] = {}
+    for idx, (chinese, fullwidth) in COLUMN_MAP.items():
+        _COLUMN_CHAR_TO_IDX[chinese] = idx
+        _COLUMN_CHAR_TO_IDX[fullwidth] = idx
+
+    # 反向查找：中文数字 -> 整数 (O(1) 查找)
+    _CHINESE_NUM_TO_INT: dict[str, int] = {
+        "一": 1,
+        "二": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "１": 1,
+        "２": 2,
+        "３": 3,
+        "４": 4,
+        "５": 5,
+        "６": 6,
+        "７": 7,
+        "８": 8,
+        "９": 9,
+    }
+
+    # 方向字符 -> 符号映射 (O(1) 查找)
+    _DIRECTION_CHAR_TO_SYMBOL: dict[str, str] = {
+        "进": "+",
+        "進": "+",
+        "退": "-",
+        "平": "=",
+    }
+
     def __init__(
         self,
         piece_type,
@@ -357,104 +393,49 @@ class MoveNotation:
 
         # 1. 解析限定词
         qualifier = ""
-        offset = 0  # 当前解析位置偏移
+        offset = 0
         first_char = text[0]
         if first_char in cls.CHINESE_QUALIFIER_MAP:
             qualifier = cls.CHINESE_QUALIFIER_MAP[first_char]
-            offset = 1  # 跳过限定词
+            offset = 1
 
         # 2. 解析棋子类型
         if len(text) <= offset:
             return None
 
         piece_char = text[offset]
-        if piece_char not in cls.REVERSE_PIECE_MAP:
+        piece_type = cls.REVERSE_PIECE_MAP.get(piece_char)
+        if piece_type is None:
             return None
-
-        piece_type = cls.REVERSE_PIECE_MAP[piece_char]
         offset += 1
 
-        # 3. 解析方向和距离
-        # 格式：有限定词时：[限定词][棋子][方向][距离] (如"后车进一")
-        #       无限定词时：[棋子][列][方向][距离] (如"炮二平五")
+        # 3. 解析列、方向和距离
         if len(text) < offset + 2:
             return None
 
-        column = None  # 默认无列信息（有限定词时）
-
-        # 检查是否存在列信息
-        # 如果 offset 后的字符不在方向字符中，则认为是列信息
-        direction_chars = {"进", "進", "退", "平"}
-        if text[offset] not in direction_chars:
+        # 判断是否有列信息（有限定词时无列，否则需要检查是否是方向字符）
+        column = None
+        if text[offset] not in cls._DIRECTION_CHAR_TO_SYMBOL:
             # 存在列信息
-            column_char = text[offset]
-            offset += 1
-
-            # 在COLUMN_MAP中查找列
-            for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
-                if column_char == chinese_num or column_char == fullwidth_num:
-                    column = col_idx
-                    break
-
+            column = cls._COLUMN_CHAR_TO_IDX.get(text[offset])
             if column is None:
                 return None
+            offset += 1
+            if len(text) < offset + 2:
+                return None
 
-        # 现在解析方向和距离
-        if len(text) < offset + 2:
+        # 解析方向
+        direction = cls._DIRECTION_CHAR_TO_SYMBOL.get(text[offset])
+        if direction is None:
             return None
 
-        direction_char = text[offset]
+        # 解析距离（O(1) 查找）
         distance_char = text[offset + 1 :]
-
-        # 方向映射
-        direction_map_reverse = {
-            "进": "+",
-            "進": "+",  # 繁体
-            "退": "-",
-            "平": "=",
-        }
-
-        if direction_char not in direction_map_reverse:
-            return None
-
-        direction = direction_map_reverse[direction_char]
-
-        # 距离解析
-        distance = None
-
-        # 确定棋子类型（小写用于比较）
-        piece_type_lower = piece_type.lower()
-
-        if direction == "=":
-            # 平移动：距离表示目标列
-            for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
-                if distance_char == chinese_num or distance_char == fullwidth_num:
-                    distance = col_idx
-                    break
-        else:
-            # 进/退移动：需要根据棋子类型确定距离表示方式
-            if piece_type_lower in ["a", "b", "n"]:  # 士、象、马
-                # 士、象、马：距离表示目标列
-                for col_idx, (chinese_num, fullwidth_num) in cls.COLUMN_MAP.items():
-                    if distance_char == chinese_num or distance_char == fullwidth_num:
-                        distance = col_idx
-                        break
-            else:  # 王、车、炮、兵
-                # 王、车、炮、兵：距离表示步数
-                for num_key, num_val in cls.CHINESE_QUALIFIER_MAP.items():
-                    if distance_char == num_key:
-                        # 中文数字到半角数字
-                        try:
-                            distance = int(num_val)
-                            break
-                        except (ValueError, TypeError):
-                            continue
-
+        distance = cls._parse_distance_char(distance_char, direction, piece_type)
         if distance is None:
             return None
 
         # 4. 确定棋子颜色
-        # 根据棋子类型大小写确定颜色
         piece_color = RED if piece_type.isupper() else BLACK
 
         return cls(
@@ -465,6 +446,27 @@ class MoveNotation:
             qualifier=qualifier,
             piece_color=piece_color,
         )
+
+    @classmethod
+    def _parse_distance_char(
+        cls, distance_char: str, direction: str, piece_type: str
+    ) -> int | None:
+        """解析距离字符，根据方向和棋子类型返回对应的数字。
+
+        参数:
+            distance_char: 距离字符（中文数字或全角数字）
+            direction: 方向符号 ("+", "-", "=")
+            piece_type: 棋子类型字符 (K/A/B/N/R/C/P)
+
+        返回:
+            距离数字，解析失败返回 None
+        """
+        # 平移或士/象/马：距离表示目标列
+        if direction == "=" or piece_type.lower() in ("a", "b", "n"):
+            return cls._COLUMN_CHAR_TO_IDX.get(distance_char)
+        else:
+            # 王/车/炮/兵：距离表示步数
+            return cls._CHINESE_NUM_TO_INT.get(distance_char)
 
     def to_compact(self):
         """转换为紧凑格式"""
@@ -536,9 +538,8 @@ class MoveNotation:
                     return (
                         f"{qualifier_name}{piece_name}{direction_name}{target_column}"
                     )
-                else:
-                    column_name = self.FULLWIDTH_NUM_MAP[self.column]
-                    return f"{piece_name}{column_name}{direction_name}{target_column}"
+                column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                return f"{piece_name}{column_name}{direction_name}{target_column}"
             else:
                 # 进退移动
                 if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
@@ -551,11 +552,8 @@ class MoveNotation:
                     # 有限定词时不显示列标识
                     if qualifier_name:
                         return f"{qualifier_name}{piece_name}{direction_name}{target_column}"
-                    else:
-                        column_name = self.FULLWIDTH_NUM_MAP[self.column]
-                        return (
-                            f"{piece_name}{column_name}{direction_name}{target_column}"
-                        )
+                    column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                    return f"{piece_name}{column_name}{direction_name}{target_column}"
                 else:  # 王、车、炮、兵
                     # 步数使用全角数字
                     if 1 <= self.distance <= 9:
@@ -580,11 +578,8 @@ class MoveNotation:
                     # 有限定词时不显示列标识
                     if qualifier_name:
                         return f"{qualifier_name}{piece_name}{direction_name}{distance_name}"
-                    else:
-                        column_name = self.FULLWIDTH_NUM_MAP[self.column]
-                        return (
-                            f"{piece_name}{column_name}{direction_name}{distance_name}"
-                        )
+                    column_name = self.FULLWIDTH_NUM_MAP[self.column]
+                    return f"{piece_name}{column_name}{direction_name}{distance_name}"
         else:
             # 红方或黑方不使用全角数字时，使用中文数字
             direction_name = self.DIRECTION_MAP[self.direction][1 if traditional else 0]
@@ -639,11 +634,8 @@ class MoveNotation:
                     # 有限定词时不显示列标识
                     if qualifier_name:
                         return f"{qualifier_name}{piece_name}{direction_name}{target_column}"
-                    else:
-                        column_name = self.COLUMN_MAP[self.column][0]
-                        return (
-                            f"{piece_name}{column_name}{direction_name}{target_column}"
-                        )
+                    column_name = self.COLUMN_MAP[self.column][0]
+                    return f"{piece_name}{column_name}{direction_name}{target_column}"
                 else:  # 王、车、炮、兵
                     # 步数使用中文数字（一-九）
                     if 1 <= self.distance <= 9:
@@ -657,11 +649,8 @@ class MoveNotation:
                     # 有限定词时不显示列标识
                     if qualifier_name:
                         return f"{qualifier_name}{piece_name}{direction_name}{distance_name}"
-                    else:
-                        column_name = self.COLUMN_MAP[self.column][0]
-                        return (
-                            f"{piece_name}{column_name}{direction_name}{distance_name}"
-                        )
+                    column_name = self.COLUMN_MAP[self.column][0]
+                    return f"{piece_name}{column_name}{direction_name}{distance_name}"
 
     def __str__(self):
         return self.to_compact()
@@ -720,8 +709,7 @@ def _convert_digit_format(digit_char, move_side):
             return None
         if move_side == 1:  # RED: 半角转中文
             return _HALF_TO_ZH[half_digit]
-        else:  # BLACK: 半角转全角
-            return chr(0xFF10 + half_digit)
+        return chr(0xFF10 + half_digit)
 
     # 中文数字（仅用于红方）
     if digit_char in _ZH_TO_HALF:
@@ -1359,8 +1347,7 @@ class Move:
                 return h_index[self.pos_to[0]]
             elif diff > 0:
                 return v_index[diff]
-            else:
-                return v_index[-diff]
+            return v_index[-diff]
         else:
             # 士相马的规则
             return h_index[self.pos_to[0]]
@@ -1655,8 +1642,7 @@ class _MoveTextParser:
             return self._parse_multi_lines()
         elif first_char in ["前", "中", "后"]:
             return self._parse_multi_pieces()
-        else:
-            return self._parse_simple()
+        return self._parse_simple()
 
     def _parse_basic_info(self):
         """解析基本信息：棋子名称、FEN字符"""

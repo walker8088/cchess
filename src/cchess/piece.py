@@ -36,6 +36,31 @@ _bishop_pos = (
 # 滑走棋子方向常量（车、炮）
 _SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
 
+# 马棋子走法偏移量常量（8个方向）
+_KNIGHT_OFFSETS = (
+    (1, 2),
+    (1, -2),
+    (-1, 2),
+    (-1, -2),
+    (2, 1),
+    (2, -1),
+    (-2, 1),
+    (-2, -1),
+)
+
+# 马棋子蹩马腿偏移量（与 _KNIGHT_OFFSETS 一一对应）
+# |dx|==2 时蹩腿在横向 (±1, 0)，|dy|==2 时蹩腿在纵向 (0, ±1)
+_KNIGHT_BLOCKS = (
+    (0, 1),  # (1, 2): 纵向2格，蹩腿在上方
+    (0, -1),  # (1, -2): 纵向2格，蹩腿在下方
+    (0, 1),  # (-1, 2): 纵向2格，蹩腿在上方
+    (0, -1),  # (-1, -2): 纵向2格，蹩腿在下方
+    (1, 0),  # (2, 1): 横向2格，蹩腿在右方
+    (1, 0),  # (2, -1): 横向2格，蹩腿在右方
+    (-1, 0),  # (-2, 1): 横向2格，蹩腿在左方
+    (-1, 0),  # (-2, -1): 横向2格，蹩腿在左方
+)
+
 
 # -----------------------------------------------------#
 def abs_diff(x, y):
@@ -100,8 +125,12 @@ class Piece:
             过滤后的合法走子迭代器
         """
         curr_pos = (self.x, self.y)
-        positions = [(self.x + dx, self.y + dy) for dx, dy in offsets]
-        moves = [(curr_pos, to_pos) for to_pos in positions]
+        # 内联边界检查：0 <= x <= 8, 0 <= y <= 9
+        moves = []
+        for dx, dy in offsets:
+            nx, ny = self.x + dx, self.y + dy
+            if 0 <= nx <= 8 and 0 <= ny <= 9:
+                moves.append((curr_pos, (nx, ny)))
         return filter(self.board.is_valid_move_t, moves)
 
     def _create_sliding_moves(self, directions):
@@ -115,12 +144,14 @@ class Piece:
         """
         moves = []
         curr_x, curr_y = self.x, self.y
+        board = self.board._board
 
         for dx, dy in directions:
             x, y = curr_x + dx, curr_y + dy
 
-            while self.is_valid_pos((x, y)):
-                target = self.board._board[y][x]
+            # 内联边界检查：0 <= x < 9, 0 <= y <= 9
+            while 0 <= x <= 8 and 0 <= y <= 9:
+                target = board[y][x]
 
                 if target is None:
                     moves.append(((curr_x, curr_y), (x, y)))
@@ -308,45 +339,34 @@ class Knight(Piece):
 
         使用预计算的偏移量，减少运行时计算。
         """
-        # 马的 8 个可能移动方向
-        offsets = [
-            (1, 2),
-            (1, -2),
-            (-1, 2),
-            (-1, -2),
-            (2, 1),
-            (2, -1),
-            (-2, 1),
-            (-2, -1),
-        ]
 
         curr_pos = (self.x, self.y)
+        board = self.board._board  # 直接访问棋盘数组
         moves = []
 
-        for dx, dy in offsets:
-            to_pos = (self.x + dx, self.y + dy)
+        for i, (dx, dy) in enumerate(_KNIGHT_OFFSETS):
+            nx, ny = self.x + dx, self.y + dy
 
             # 快速边界检查
-            if not self.is_valid_pos(to_pos):
+            if not (0 <= nx <= 8 and 0 <= ny <= 9):
                 continue
 
             # 检查蹩马腿
-            if dx == 2 or dx == -2:
-                block_pos = (self.x + (1 if dx > 0 else -1), self.y)
-            else:
-                block_pos = (self.x, self.y + (1 if dy > 0 else -1))
-
-            if self.board.get_fench(block_pos) is not None:
+            bx, by = self.x + _KNIGHT_BLOCKS[i][0], self.y + _KNIGHT_BLOCKS[i][1]
+            if board[by][bx] is not None:
                 continue
 
             # 检查目标位置
-            target_fench = self.board.get_fench(to_pos)
+            target_fench = board[ny][nx]
             if target_fench is not None:
-                _, target_color = fench_to_species(target_fench)
-                if target_color == self.color:
+                # 快速颜色判断：大写=红方，小写=黑方
+                is_red = target_fench.isupper()
+                if (is_red and self.color == RED) or (
+                    not is_red and self.color == BLACK
+                ):
                     continue
 
-            moves.append((curr_pos, to_pos))
+            moves.append((curr_pos, (nx, ny)))
 
         return moves
 
@@ -493,22 +513,21 @@ class Pawn(Piece):
         """生成兵/卒所有可能的合法走子。"""
         curr_pos = (self.x, self.y)
         moves = []
-        # 前进方向
-        if self.color == RED:
-            forward = (self.x, self.y + 1)
-        else:  # BLACK
-            forward = (self.x, self.y - 1)
-        # 检查前进位置是否在棋盘范围内
-        if self.is_valid_pos(forward):
+        # 前进方向：红方+1，黑方-1
+        dy = 1 if self.color == RED else -1
+        forward = (self.x, self.y + dy)
+        # 快速边界检查（y 范围 0-9）
+        if 0 <= forward[1] <= 9:
             moves.append((curr_pos, forward))
 
-        # 如果已经过河，可以左右移动
-        if self.is_crossed_river():
-            left = (self.x - 1, self.y)
-            right = (self.x + 1, self.y)
-            if self.is_valid_pos(left):
-                moves.append((curr_pos, left))
-            if self.is_valid_pos(right):
-                moves.append((curr_pos, right))
+        # 过河后可左右移动：红方 y>=5，黑方 y<=4
+        crossed = (self.y >= 5) if self.color == RED else (self.y <= 4)
+        if crossed:
+            # 左右移动，x 范围 0-8
+            lx, rx = self.x - 1, self.x + 1
+            if lx >= 0:
+                moves.append((curr_pos, (lx, self.y)))
+            if rx <= 8:
+                moves.append((curr_pos, (rx, self.y)))
 
         return filter(self.board.is_valid_move_t, moves)

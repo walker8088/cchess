@@ -114,7 +114,7 @@ def _parse_cbl_header(contents):
                 raise CChessError(
                     f"文件看起来是文本文件而非 CBL 棋谱库文件，magic: {repr(magic[:8])}..."
                 )
-        except Exception:
+        except UnicodeDecodeError:
             pass
         raise CChessError(
             f"不支持的 CBL 文件格式，期望 magic: 'CCBridgeLibrary\\x00'，实际: {repr(magic)}"
@@ -177,7 +177,7 @@ def _parse_cbl_games(
                 game.info["index"] = game_index
                 yield game, game_index
                 game_index += 1
-        except Exception as e:
+        except (struct.error, KeyError, IndexError, CChessError) as e:
             raise CChessError(
                 f"{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}"
             ) from e
@@ -446,7 +446,7 @@ def read_from_cbl_progressing(file_name):
                 game.info["index"] = game_index
                 lib_info["games"].append(game)
                 game_index += 1
-        except Exception as e:
+        except (struct.error, KeyError, IndexError, CChessError) as e:
             raise CChessError(
                 f"{game_buffer_index}/{count}, {len(contents)}, {len(book_buffer)}, {e}"
             ) from e
