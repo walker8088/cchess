@@ -5,19 +5,20 @@ CChess 性能基准测试套件
 提供可重复的性能测试，自动检测性能回归。
 """
 
-import time
 import statistics
+import time
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from cchess import ChessBoard, FULL_INIT_FEN, RED, BLACK
-from cchess.piece import Piece
+from cchess import BLACK, FULL_INIT_FEN, RED, ChessBoard
 from cchess.common import fench_to_species
+from cchess.piece import Piece
 
 
 @dataclass
 class BenchmarkResult:
     """基准测试结果"""
+
     name: str
     iterations: int
     total_time: float
@@ -30,10 +31,10 @@ class BenchmarkResult:
 
 class Benchmark:
     """性能基准测试类"""
-    
+
     def __init__(self, name: str, iterations: int = 1000):
         """初始化基准测试。
-        
+
         参数:
             name: 测试名称
             iterations: 迭代次数
@@ -41,31 +42,31 @@ class Benchmark:
         self.name = name
         self.iterations = iterations
         self.results: List[BenchmarkResult] = []
-    
+
     def run(self, func, *args, **kwargs) -> BenchmarkResult:
         """运行基准测试。
-        
+
         参数:
             func: 要测试的函数
             *args: 函数参数
             **kwargs: 函数关键字参数
-        
+
         返回:
             BenchmarkResult 对象
         """
         times = []
-        
+
         # 预热
         for _ in range(10):
             func(*args, **kwargs)
-        
+
         # 正式测试
         for _ in range(self.iterations):
             start = time.perf_counter()
             func(*args, **kwargs)
             end = time.perf_counter()
             times.append((end - start) * 1000)  # 转换为毫秒
-        
+
         avg_time = statistics.mean(times)
         result = BenchmarkResult(
             name=self.name,
@@ -77,18 +78,18 @@ class Benchmark:
             std_dev_ms=statistics.stdev(times) if len(times) > 1 else 0,
             ops_per_sec=1000 / avg_time if avg_time > 0 else 0,
         )
-        
+
         self.results.append(result)
         return result
-    
+
     def print_report(self):
         """打印基准测试报告"""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"性能基准测试报告: {self.name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"迭代次数: {self.iterations}")
-        print(f"{'='*60}")
-        
+        print(f"{'=' * 60}")
+
         for result in self.results:
             print(f"\n测试: {result.name}")
             print(f"  平均耗时: {result.avg_time_ms:.3f} ms")
@@ -102,11 +103,12 @@ class Benchmark:
 # 预定义基准测试用例
 # -----------------------------------------------------#
 
+
 def benchmark_get_pieces():
-    """测试 get_pieces() 性能"""
+    """测试 get_all_pieces() 性能"""
     board = ChessBoard(FULL_INIT_FEN)
-    bench = Benchmark("get_pieces", iterations=1000)
-    return bench.run(lambda: list(board.get_pieces()))
+    bench = Benchmark("get_all_pieces", iterations=1000)
+    return bench.run(lambda: list(board.get_all_pieces()))
 
 
 def benchmark_create_moves():
@@ -132,7 +134,7 @@ def benchmark_fench_to_species():
 def benchmark_rook_moves():
     """测试车走法生成性能"""
     board = ChessBoard("9/9/9/9/9/9/9/9/9/4K4 w")
-    board.set_piece('R', (4, 4))
+    board.put_fench("R", (4, 4))
     bench = Benchmark("Rook moves", iterations=1000)
     return bench.run(lambda: list(board.create_piece_moves((4, 4))))
 
@@ -140,7 +142,7 @@ def benchmark_rook_moves():
 def benchmark_cannon_moves():
     """测试炮走法生成性能"""
     board = ChessBoard("9/9/9/9/9/9/9/9/9/4K4 w")
-    board.set_piece('C', (4, 4))
+    board.put_fench("C", (4, 4))
     bench = Benchmark("Cannon moves", iterations=1000)
     return bench.run(lambda: list(board.create_piece_moves((4, 4))))
 
@@ -148,7 +150,7 @@ def benchmark_cannon_moves():
 def benchmark_knight_moves():
     """测试马走法生成性能"""
     board = ChessBoard("9/9/9/9/9/9/9/9/9/4K4 w")
-    board.set_piece('N', (4, 4))
+    board.put_fench("N", (4, 4))
     bench = Benchmark("Knight moves", iterations=1000)
     return bench.run(lambda: list(board.create_piece_moves((4, 4))))
 
@@ -156,7 +158,7 @@ def benchmark_knight_moves():
 def benchmark_pawn_moves():
     """测试兵走法生成性能"""
     board = ChessBoard("9/9/9/9/9/9/9/9/9/4K4 w")
-    board.set_piece('P', (4, 4))
+    board.put_fench("P", (4, 4))
     bench = Benchmark("Pawn moves", iterations=1000)
     return bench.run(lambda: list(board.create_piece_moves((4, 4))))
 
@@ -178,10 +180,10 @@ def benchmark_normalized():
 
 def run_all_benchmarks():
     """运行所有基准测试"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("CChess 性能基准测试套件")
-    print("="*60)
-    
+    print("=" * 60)
+
     benchmarks = [
         ("get_pieces", benchmark_get_pieces),
         ("create_moves", benchmark_create_moves),
@@ -194,7 +196,7 @@ def run_all_benchmarks():
         ("move_text", benchmark_move_text),
         ("normalized", benchmark_normalized),
     ]
-    
+
     results = []
     for name, func in benchmarks:
         print(f"\n运行测试: {name}...")
@@ -204,16 +206,18 @@ def run_all_benchmarks():
             print(f"  完成: {result.avg_time_ms:.3f} ms/次")
         except Exception as e:
             print(f"  失败: {e}")
-    
+
     # 打印汇总报告
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("汇总报告")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"{'测试名称':<20} {'平均耗时(ms)':<15} {'吞吐量(ops/s)':<15}")
-    print("-"*60)
+    print("-" * 60)
     for result in results:
-        print(f"{result.name:<20} {result.avg_time_ms:<15.3f} {result.ops_per_sec:<15.1f}")
-    
+        print(
+            f"{result.name:<20} {result.avg_time_ms:<15.3f} {result.ops_per_sec:<15.1f}"
+        )
+
     return results
 
 

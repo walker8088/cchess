@@ -39,7 +39,7 @@ _XQF_STEP_HAS_VAR = 0x40  # 有变招标志
 _XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
 
 
-def _decode_pos(man_pos):
+def _xqf_decode_pos(man_pos):
     """将单个压缩的棋子位置整数解码为 (x, y) 坐标。
 
     XQF 中棋子位置一般以十进制编码，函数将其拆为列和行。
@@ -47,7 +47,7 @@ def _decode_pos(man_pos):
     return (int(man_pos // 10), man_pos % 10)
 
 
-def _decode_pos2(man_pos):
+def _xqf_decode_pos2(man_pos):
     """将包含两个压缩位置的元组解码为 ((from_x,from_y),(to_x,to_y))。"""
     return (
         (int(man_pos[0] // 10), man_pos[0] % 10),
@@ -113,24 +113,24 @@ class XQFBuffDecoder:
         return data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24)
 
 
-# -------------------------------------------------
+# -------------------------------------------------#
+# Pascal code here from XQFRW.pas
+# KeyMask   : dTByte;                         // 加密掩码
+# ProductId : dTDWord;                        // 产品号(厂商的产品号)
+# KeyOrA    : dTByte;
+# KeyOrB    : dTByte;
+# KeyOrC    : dTByte;
+# KeyOrD    : dTByte;
+# KeysSum   : dTByte;                         // 加密的钥匙和
+# KeyXY     : dTByte;                         // 棋子布局位置钥匙
+# KeyXYf    : dTByte;                         // 棋谱起点钥匙
+# KeyXYt    : dTByte;                         // 棋谱终点钥匙
+
+
 def __init_decrypt_key(buff_str):
     """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。"""
 
     keys = XQFKey()
-
-    # Pascal code here from XQFRW.pas
-    # KeyMask   : dTByte;                         // 加密掩码
-    # ProductId : dTDWord;                        // 产品号(厂商的产品号)
-    # KeyOrA    : dTByte;
-    # KeyOrB    : dTByte;
-    # KeyOrC    : dTByte;
-    # KeyOrD    : dTByte;
-    # KeysSum   : dTByte;                         // 加密的钥匙和
-    # KeyXY     : dTByte;                         // 棋子布局位置钥匙
-    # KeyXYf    : dTByte;                         // 棋谱起点钥匙
-    # KeyXYt    : dTByte;                         // 棋谱终点钥匙
-
     (
         HEAD_KeyMask,
         _HEAD_ProductId,
@@ -315,7 +315,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
             step_info, buff_decoder, keys
         )
 
-    move_from, move_to = _decode_pos2(step_info)
+    move_from, move_to = _xqf_decode_pos2(step_info)
     annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
 
     good_move = parent_move
@@ -545,7 +545,7 @@ def _build_xqf_board(chess_mans):
             man_pos = chess_mans[side * 16 + man_index]
             if man_pos == 0xFF:
                 continue
-            pos = _decode_pos(man_pos)
+            pos = _xqf_decode_pos(man_pos)
             fen_ch = chr(ord(chessman_kinds[man_index]) + side * 32)
             board.put_fench(fen_ch, pos)
 
@@ -691,9 +691,9 @@ class XQFWriter:
         board = self.game.init_board
         pieces_dict = {}
         for key in ["R", "N", "B", "A", "K", "C", "P"]:
-            pieces_dict[key] = board.get_fenchs(key)
+            pieces_dict[key] = board.get_fench_positions(key)
             key_lower = key.lower()
-            pieces_dict[key_lower] = board.get_fenchs(key_lower)
+            pieces_dict[key_lower] = board.get_fench_positions(key_lower)
 
         fenchs = "RNBAKABNRCCPPPPP"
         for x in range(2):

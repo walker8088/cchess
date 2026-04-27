@@ -42,6 +42,119 @@ class TestBoardExtended:
         assert fench == "R"
         assert board.get_fench((0, 0)) is None
 
+    def test_put_fench_chain_calls(self):
+        """测试 put_fench 的链式调用功能"""
+        board = ChessBoard()
+
+        # 链式调用放置多个棋子
+        board.put_fench("K", (4, 0)).put_fench("k", (4, 9)).put_fench(
+            "R", (0, 0)
+        ).put_fench("r", (0, 9))
+
+        # 验证棋子放置正确
+        assert board.get_fench((4, 0)) == "K"
+        assert board.get_fench((4, 9)) == "k"
+        assert board.get_fench((0, 0)) == "R"
+        assert board.get_fench((0, 9)) == "r"
+
+        # 链式调用移除棋子
+        board.put_fench(None, (0, 0)).put_fench(None, (0, 9))
+
+        # 验证棋子已移除
+        assert board.get_fench((0, 0)) is None
+        assert board.get_fench((0, 9)) is None
+
+        # 验证其他棋子仍然存在
+        assert board.get_fench((4, 0)) == "K"
+        assert board.get_fench((4, 9)) == "k"
+
+    def test_clear_and_from_fen_chain_calls(self):
+        """测试 clear 和 from_fen 方法的链式调用替代 setup_board"""
+        board = ChessBoard()
+
+        # 使用 clear 替代 setup_board(None) 的链式调用示例
+        board.clear().put_fench("R", (4, 4)).put_fench("k", (4, 9))
+
+        # 验证棋子放置正确
+        assert board.get_fench((4, 4)) == "R"
+        assert board.get_fench((4, 9)) == "k"
+
+        # 使用 from_fen 加载特定局面并进行链式调用
+        board.from_fen("4k4/9/9/9/9/9/9/9/9/4K4 w").put_fench("R", (0, 0)).put_fench(
+            "r", (0, 9)
+        )
+
+        # 验证所有棋子放置正确
+        assert board.get_fench((4, 0)) == "K"  # 红帅
+        assert board.get_fench((4, 9)) == "k"  # 黑将
+        assert board.get_fench((0, 0)) == "R"  # 红车
+        assert board.get_fench((0, 9)) == "r"  # 黑车
+
+    def test_pop_fench_removal(self):
+        """测试 pop_fench 移除棋子功能"""
+        board = ChessBoard()
+
+        # 放置棋子
+        board.put_fench("R", (0, 0))
+        board.put_fench("k", (4, 9))
+
+        # 验证棋子存在
+        assert board.get_fench((0, 0)) == "R"
+        assert board.get_fench((4, 9)) == "k"
+
+        # 移除棋子并验证返回值
+        removed_fench = board.pop_fench((0, 0))
+        assert removed_fench == "R"
+        assert board.get_fench((0, 0)) is None
+
+        # 移除另一个棋子
+        removed_fench = board.pop_fench((4, 9))
+        assert removed_fench == "k"
+        assert board.get_fench((4, 9)) is None
+
+        # 移除不存在的棋子
+        removed_fench = board.pop_fench((1, 1))
+        assert removed_fench is None
+        assert board.get_fench((1, 1)) is None
+
+    def test_clear_chain_calls(self):
+        """测试 clear 方法的链式调用"""
+        board = ChessBoard()
+
+        # 先放置一些棋子
+        board.put_fench("R", (0, 0))
+        board.put_fench("k", (4, 9))
+        assert board.get_fench((0, 0)) == "R"
+        assert board.get_fench((4, 9)) == "k"
+
+        # 清空棋盘并立即放置新棋子（链式调用）
+        board.clear().put_fench("K", (4, 0)).put_fench("r", (0, 9))
+
+        # 验证旧棋子已清除
+        assert board.get_fench((0, 0)) is None
+        assert board.get_fench((4, 9)) is None
+
+        # 验证新棋子已放置
+        assert board.get_fench((4, 0)) == "K"
+        assert board.get_fench((0, 9)) == "r"
+
+    def test_from_fen_chain_calls(self):
+        """测试 from_fen 方法的链式调用"""
+        board = ChessBoard()
+
+        # 从 FEN 加载并立即进行链式调用
+        board.from_fen("4k4/9/9/9/9/9/9/9/9/4K4 w").put_fench("R", (0, 0)).put_fench(
+            "r", (0, 9)
+        )
+
+        # 验证 FEN 中的棋子
+        assert board.get_fench((4, 0)) == "K"  # 红帅
+        assert board.get_fench((4, 9)) == "k"  # 黑将
+
+        # 验证链式调用添加的棋子
+        assert board.get_fench((0, 0)) == "R"  # 红车
+        assert board.get_fench((0, 9)) == "r"  # 黑车
+
     def test_occupied_color(self):
         """测试 occupied 方法获取棋子颜色"""
         board = ChessBoard(FULL_INIT_FEN)
@@ -58,16 +171,53 @@ class TestBoardExtended:
         color = board.occupied((4, 4))
         assert color is None  # 空位置返回None
 
-    def test_get_fenchs_x(self):
+    def test_get_fench_positions_x(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 获取第0列的所有车
-        rooks = board.get_fenchs_x("R", 0)
+        rooks = board.get_fench_positions_x("R", 0)
         assert len(rooks) == 1
         assert rooks[0] == (0, 0)
 
         # 获取不存在的棋子
-        empty = board.get_fenchs_x("X", 4)
+        empty = board.get_fench_positions_x("X", 4)
         assert len(empty) == 0
+
+    def test_get_fench_positions(self):
+        """测试 get_fench_positions 方法"""
+        board = ChessBoard(FULL_INIT_FEN)
+
+        # 获取所有红车
+        red_rooks = board.get_fench_positions("R")
+        assert len(red_rooks) == 2
+        assert (0, 0) in red_rooks
+        assert (8, 0) in red_rooks
+
+        # 获取所有黑车
+        black_rooks = board.get_fench_positions("r")
+        assert len(black_rooks) == 2
+        assert (0, 9) in black_rooks
+        assert (8, 9) in black_rooks
+
+        # 获取所有红兵
+        red_pawns = board.get_fench_positions("P")
+        assert len(red_pawns) == 5
+        for i in range(5):
+            assert (i * 2, 3) in red_pawns
+
+        # 获取所有黑兵
+        black_pawns = board.get_fench_positions("p")
+        assert len(black_pawns) == 5
+        for i in range(5):
+            assert (i * 2, 6) in black_pawns
+
+        # 获取不存在的棋子
+        empty = board.get_fench_positions("X")
+        assert len(empty) == 0
+
+        # 清空棋盘后测试
+        board.clear()
+        empty_after_clear = board.get_fench_positions("R")
+        assert len(empty_after_clear) == 0
 
     def test_detect_move_pieces(self):
         board1 = ChessBoard(FULL_INIT_FEN)
@@ -131,3 +281,109 @@ class TestBoardExtended:
         board2 = ChessBoard(FULL_INIT_FEN)
         is_checking = board2.is_checking_move((0, 0), (0, 1))
         assert is_checking is False
+
+    def test_is_mirror(self):
+        """测试 is_mirror 方法判断棋盘水平对称性"""
+        # 测试初始局面 - 应该是对称的
+        board = ChessBoard(FULL_INIT_FEN)
+        assert board.is_mirror() is True, "初始局面应该水平对称"
+
+        # 创建对称局面
+        symmetric_board = ChessBoard()
+        symmetric_board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
+        symmetric_board.put_fench("R", (0, 0)).put_fench("R", (8, 0))
+        symmetric_board.put_fench("r", (0, 9)).put_fench("r", (8, 9))
+        symmetric_board.put_fench("N", (1, 0)).put_fench("N", (7, 0))
+        symmetric_board.put_fench("n", (1, 9)).put_fench("n", (7, 9))
+        assert symmetric_board.is_mirror() is True, "完全对称局面应该返回True"
+
+        # 创建不对称局面
+        asymmetric_board = ChessBoard()
+        asymmetric_board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
+        asymmetric_board.put_fench("R", (0, 0)).put_fench(
+            "R", (7, 0)
+        )  # 不对称：右车在(7,0)而不是(8,0)
+        asymmetric_board.put_fench("r", (0, 9)).put_fench("r", (8, 9))
+        assert asymmetric_board.is_mirror() is False, "不对称局面应该返回False"
+
+        # 测试棋子类型不对称
+        type_asymmetric_board = ChessBoard()
+        type_asymmetric_board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
+        type_asymmetric_board.put_fench("R", (0, 0)).put_fench(
+            "N", (8, 0)
+        )  # 不对称：左边是车，右边是马
+        assert type_asymmetric_board.is_mirror() is False, "棋子类型不对称应该返回False"
+
+        # 测试空棋盘 - 应该对称
+        empty_board = ChessBoard()
+        empty_board.clear()
+        assert empty_board.is_mirror() is True, "空棋盘应该对称"
+
+        # 测试单个棋子在中间列 - 应该对称
+        center_board = ChessBoard()
+        center_board.put_fench("K", (4, 0))  # 中间列
+        assert center_board.is_mirror() is True, "中间列单个棋子应该对称"
+
+        # 测试与 mirror() 方法的一致性
+        test_board = ChessBoard()
+        test_board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
+        test_board.put_fench("R", (1, 0)).put_fench("R", (7, 0))
+        test_board.put_fench("P", (2, 3)).put_fench("P", (6, 3))
+
+        # 验证优化方法与原始逻辑的一致性
+        mirrored_board = test_board.mirror()
+        fen_original = test_board.to_fen()
+        fen_mirrored = mirrored_board.to_fen()
+
+        # 如果棋盘对称，那么镜像后的FEN应该与原FEN相同
+        is_symmetric_by_fen = fen_original == fen_mirrored
+        is_symmetric_by_method = test_board.is_mirror()
+
+        assert is_symmetric_by_fen == is_symmetric_by_method, "优化方法应与原始逻辑一致"
+
+    def test_is_mirror_performance(self):
+        """测试 is_mirror 方法的性能"""
+        import time
+
+        # 创建一个对称局面用于性能测试
+        board = ChessBoard()
+        board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
+        board.put_fench("R", (0, 0)).put_fench("R", (8, 0))
+        board.put_fench("r", (0, 9)).put_fench("r", (8, 9))
+        board.put_fench("N", (1, 0)).put_fench("N", (7, 0))
+        board.put_fench("n", (1, 9)).put_fench("n", (7, 9))
+        board.put_fench("B", (2, 0)).put_fench("B", (6, 0))
+        board.put_fench("b", (2, 9)).put_fench("b", (6, 9))
+        board.put_fench("A", (3, 0)).put_fench("A", (5, 0))
+        board.put_fench("a", (3, 9)).put_fench("a", (5, 9))
+        board.put_fench("C", (1, 2)).put_fench("C", (7, 2))
+        board.put_fench("c", (1, 7)).put_fench("c", (7, 7))
+        board.put_fench("P", (0, 3)).put_fench("P", (2, 3)).put_fench(
+            "P", (4, 3)
+        ).put_fench("P", (6, 3)).put_fench("P", (8, 3))
+        board.put_fench("p", (0, 6)).put_fench("p", (2, 6)).put_fench(
+            "p", (4, 6)
+        ).put_fench("p", (6, 6)).put_fench("p", (8, 6))
+
+        # 运行多次测试以获得稳定的时间测量
+        iterations = 10000
+        start_time = time.perf_counter()
+
+        for _ in range(iterations):
+            result = board.is_mirror()
+            assert result is True  # 确保结果是正确的
+
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        avg_time_ms = (total_time / iterations) * 1000
+
+        # 验证性能：平均时间应小于1毫秒
+        # 这是优化后的期望性能，原实现可能需要2-3毫秒
+        assert avg_time_ms < 1.0, f"is_mirror() 性能不佳: {avg_time_ms:.3f} ms/次"
+
+        # 输出性能信息（测试通过后显示）
+        print(f"\nis_mirror() 性能测试结果:")
+        print(f"  迭代次数: {iterations}")
+        print(f"  总时间: {total_time:.3f} 秒")
+        print(f"  平均时间: {avg_time_ms:.3f} ms/次")
+        print(f"  吞吐量: {iterations / total_time:.0f} 次/秒")

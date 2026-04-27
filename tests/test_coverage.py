@@ -1131,8 +1131,8 @@ class TestGame:
         game.append_first_move(move2)
         assert game.first_move.len_variations() == 2
 
-    def test_game_save_to_pgn_with_annote(self):
-        """Test Game.save_to_pgn with annote (lines 321-322)."""
+    def test_game_save_to_with_annote(self):
+        """Test Game.save_to with annote (lines 321-322)."""
         board = ChessBoard(FULL_INIT_FEN)
         game = Game(board)
         game.annote = "Test annotation"
@@ -1142,29 +1142,34 @@ class TestGame:
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:
-            game.save_to_pgn(tmp_path)
+            game.save_to(tmp_path)
             with open(tmp_path, "r", encoding="utf-8") as f:
                 content = f.read()
             assert "Test annotation" in content
         finally:
             os.unlink(tmp_path)
 
-    def test_game_save_to_pgn_no_moves(self):
-        """Test Game.save_to_pgn with no moves."""
+    def test_game_save_to_no_moves(self):
+        """Test Game.save_to with no moves."""
         board = ChessBoard(FULL_INIT_FEN)
         game = Game(board)
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:
-            game.save_to_pgn(tmp_path)
+            game.save_to(tmp_path)
             with open(tmp_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            assert "*" in content
+            # 检查 PGN 头信息是否包含正确的 FEN
+            assert '[Game "Chinese Chess"]' in content
+            assert (
+                '[Fen "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w"]'
+                in content
+            )
         finally:
             os.unlink(tmp_path)
 
-    def test_game_save_to_pgn_odd_index(self):
-        """Test Game.save_to_pgn with odd index (line 331)."""
+    def test_game_save_to_odd_index(self):
+        """Test Game.save_to with odd index (line 331)."""
         board = ChessBoard(FULL_INIT_FEN)
         game = Game(board)
         move1 = board.copy().move((0, 0), (0, 1))
@@ -1175,24 +1180,24 @@ class TestGame:
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:
-            game.save_to_pgn(tmp_path)
+            game.save_to(tmp_path)
             with open(tmp_path, "r", encoding="utf-8") as f:
                 content = f.read()
             assert "01." in content or "1." in content
         finally:
             os.unlink(tmp_path)
 
-    def test_game_save_to_pgn_custom_fen(self):
-        """Test Game.save_to_pgn with non-default init fen (line 319)."""
+    def test_game_save_to_custom_fen(self):
+        """Test Game.save_to with non-default init fen (line 319)."""
         board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
         game = Game(board)
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:
-            game.save_to_pgn(tmp_path)
+            game.save_to(tmp_path)
             with open(tmp_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            assert "FEN" in content
+            assert "Fen" in content
         finally:
             os.unlink(tmp_path)
 
@@ -1504,11 +1509,11 @@ class TestBoard:
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
         assert board.get_king(RED) is None
 
-    def test_board_get_pieces_with_chess_player(self):
-        """Test ChessBoard.get_pieces with ChessPlayer color (lines 264-265)."""
+    def test_board_get_all_pieces_with_chess_player(self):
+        """Test ChessBoard.get_all_pieces with ChessPlayer color (lines 264-265)."""
         board = ChessBoard(FULL_INIT_FEN)
         # 现在直接使用整数颜色值
-        pieces = list(board.get_pieces(color=RED))
+        pieces = list(board.get_all_pieces(color=RED))
         assert len(pieces) == 16
 
     def test_board_get_king_with_chess_player(self):
