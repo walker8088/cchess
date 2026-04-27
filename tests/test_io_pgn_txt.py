@@ -207,15 +207,6 @@ class TestPGNParser:
     def parse_tokens(self, text):
         return self.parser.tokenize(text)
 
-    def test_read_file(self):
-        tmp = Path("tests", "data", "test_parser.pgn")
-        tmp.parent.mkdir(parents=True, exist_ok=True)
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write('[Event "Test"]\n\n1. 兵七进一 马８进７ 1-0\n')
-        game = self.parser.read_file(str(tmp))
-        assert game.headers["Event"] == "Test"
-        os.remove(tmp)
-
 
 class TestPGNWriter:
     def setup_method(self):

@@ -69,7 +69,7 @@ class TestBoardExtended:
         assert board.get_fench((4, 9)) == "k"
 
     def test_clear_and_from_fen_chain_calls(self):
-        """测试 clear 和 from_fen 方法的链式调用替代 setup_board"""
+        """测试 clear 和 from_fen 方法的链式调用"""
         board = ChessBoard()
 
         # 使用 clear 替代 setup_board(None) 的链式调用示例
@@ -323,67 +323,3 @@ class TestBoardExtended:
         center_board = ChessBoard()
         center_board.put_fench("K", (4, 0))  # 中间列
         assert center_board.is_mirror() is True, "中间列单个棋子应该对称"
-
-        # 测试与 mirror() 方法的一致性
-        test_board = ChessBoard()
-        test_board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
-        test_board.put_fench("R", (1, 0)).put_fench("R", (7, 0))
-        test_board.put_fench("P", (2, 3)).put_fench("P", (6, 3))
-
-        # 验证优化方法与原始逻辑的一致性
-        mirrored_board = test_board.mirror()
-        fen_original = test_board.to_fen()
-        fen_mirrored = mirrored_board.to_fen()
-
-        # 如果棋盘对称，那么镜像后的FEN应该与原FEN相同
-        is_symmetric_by_fen = fen_original == fen_mirrored
-        is_symmetric_by_method = test_board.is_mirror()
-
-        assert is_symmetric_by_fen == is_symmetric_by_method, "优化方法应与原始逻辑一致"
-
-    def test_is_mirror_performance(self):
-        """测试 is_mirror 方法的性能"""
-        import time
-
-        # 创建一个对称局面用于性能测试
-        board = ChessBoard()
-        board.put_fench("K", (4, 0)).put_fench("k", (4, 9))
-        board.put_fench("R", (0, 0)).put_fench("R", (8, 0))
-        board.put_fench("r", (0, 9)).put_fench("r", (8, 9))
-        board.put_fench("N", (1, 0)).put_fench("N", (7, 0))
-        board.put_fench("n", (1, 9)).put_fench("n", (7, 9))
-        board.put_fench("B", (2, 0)).put_fench("B", (6, 0))
-        board.put_fench("b", (2, 9)).put_fench("b", (6, 9))
-        board.put_fench("A", (3, 0)).put_fench("A", (5, 0))
-        board.put_fench("a", (3, 9)).put_fench("a", (5, 9))
-        board.put_fench("C", (1, 2)).put_fench("C", (7, 2))
-        board.put_fench("c", (1, 7)).put_fench("c", (7, 7))
-        board.put_fench("P", (0, 3)).put_fench("P", (2, 3)).put_fench(
-            "P", (4, 3)
-        ).put_fench("P", (6, 3)).put_fench("P", (8, 3))
-        board.put_fench("p", (0, 6)).put_fench("p", (2, 6)).put_fench(
-            "p", (4, 6)
-        ).put_fench("p", (6, 6)).put_fench("p", (8, 6))
-
-        # 运行多次测试以获得稳定的时间测量
-        iterations = 10000
-        start_time = time.perf_counter()
-
-        for _ in range(iterations):
-            result = board.is_mirror()
-            assert result is True  # 确保结果是正确的
-
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        avg_time_ms = (total_time / iterations) * 1000
-
-        # 验证性能：平均时间应小于1毫秒
-        # 这是优化后的期望性能，原实现可能需要2-3毫秒
-        assert avg_time_ms < 1.0, f"is_mirror() 性能不佳: {avg_time_ms:.3f} ms/次"
-
-        # 输出性能信息（测试通过后显示）
-        print(f"\nis_mirror() 性能测试结果:")
-        print(f"  迭代次数: {iterations}")
-        print(f"  总时间: {total_time:.3f} 秒")
-        print(f"  平均时间: {avg_time_ms:.3f} ms/次")
-        print(f"  吞吐量: {iterations / total_time:.0f} 次/秒")

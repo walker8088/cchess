@@ -203,27 +203,6 @@ class PGNParser:
 
         return PGNGame(headers=headers, moves=moves, result=result)
 
-    def read_file(self, file_name):
-        """从文件读取 PGN 文本并解析为 `PGNGame`。"""
-        with open(file_name, "rb") as f:
-            raw = f.read()
-
-        # 优先尝试 utf-8，失败后尝试 GBK（PGN 文件常见编码），
-        # 最后才依赖 chardet 的检测结果
-        try:
-            text = raw.decode("utf-8")
-        except UnicodeDecodeError:
-            try:
-                text = raw.decode("gbk")
-            except UnicodeDecodeError:
-                detected = chardet.detect(raw)
-                encoding = detected.get("encoding", "gbk")
-                if encoding and encoding.lower().startswith("utf"):
-                    encoding = "gbk"
-                text = raw.decode(encoding, errors="replace")
-
-        return self.parse(text)
-
 
 class PGNTokenizer:
     """PGN分词器，使用状态机模式降低复杂度"""
