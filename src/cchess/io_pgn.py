@@ -545,8 +545,7 @@ def _process_pgn_moves(node, board, game, parent_move=None):
                 # 递归处理变招
                 _process_pgn_moves(variation, saved_board, game, parent_move)
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.warning("PGN解析错误: %s", e)
+        except Exception:  # pylint: disable=broad-exception-caught
             # 走法解析或应用出错，继续处理下一个走法
             node = node.next_node
             continue
