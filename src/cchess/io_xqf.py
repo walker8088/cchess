@@ -321,6 +321,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     good_move = parent_move
     fench = board.get_fench(move_from)
     if fench:
+        # pylint: disable=duplicate-code
         _, piece_color = fench_to_species(fench)
         board.set_move_side(piece_color)
         if board.is_valid_move(move_from, move_to):

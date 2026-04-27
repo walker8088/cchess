@@ -282,6 +282,7 @@ def _cbr_read_steps(buff_decoder, game, parent_move, board):
     fench = board.get_fench(move_from)
     if not fench:
         return
+    # pylint: disable=duplicate-code
     _, piece_color = fench_to_species(fench)
     board.set_move_side(piece_color)
 
