@@ -1681,7 +1681,7 @@ class TestEngine:
     def test_fen_cache_get_mirror(self):
         """Test FenCache.get with mirror (lines 527-529)."""
         cache = FenCache()
-        from cchess.common import fen_mirror
+        from cchess.board import fen_mirror
 
         fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         mirrored = fen_mirror(fen)

@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .board import ChessBoard
+from .board import ChessBoard, fen_flip, fen_mirror, fen_swap
 from .common import (
     ANY_COLOR,
     BLACK,
@@ -23,10 +23,7 @@ from .common import (
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
     RED,
-    fen_flip,
-    fen_mirror,
     fen_move_color,
-    fen_swap,
     fench_to_species,
     fench_to_text,
     get_fen_type,

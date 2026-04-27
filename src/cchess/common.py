@@ -55,9 +55,6 @@ __all__ = [
     "iccs_list_mirror",
     "half2full",
     "full2half",
-    "fen_flip",
-    "fen_mirror",
-    "fen_swap",
     "fen_move_color",
     "get_fen_type",
     "get_fen_type_detail",
@@ -225,22 +222,6 @@ def fen_move_color(fen):
     return RED if color == "w" else BLACK
 
 
-def fen_mirror(fen):
-    from .board import ChessBoard
-
-    return ChessBoard.fen_mirror(fen)
-
-
-def fen_flip(fen):
-    from .board import ChessBoard
-
-    return ChessBoard.fen_flip(fen)
-
-
-def fen_swap(fen):
-    from .board import ChessBoard
-
-    return ChessBoard.fen_swap(fen)
 
 
 # -----------------------------------------------------#

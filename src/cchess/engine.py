@@ -24,9 +24,9 @@ from queue import Empty, Queue
 from threading import Thread
 
 from .board import ChessBoard
+from .board import fen_mirror
 from .common import (
     RED,
-    fen_mirror,
     fen_move_color,
     iccs_list_mirror,
     iccs_mirror,

@@ -1016,3 +1016,20 @@ class ChessBoardOneHot(ChessBoard):
         :return: 字典，棋子-独热编码的映射
         """
         return self.__chess_dict.copy()
+
+
+# -----------------------------------------------------#
+# 模块级 FEN 变换函数（避免从 common.py 导入 board 导致循环导入）
+def fen_mirror(fen: str) -> str:
+    """返回 FEN 字符串的水平镜像版本（左右翻转）。"""
+    return ChessBoard.fen_mirror(fen)
+
+
+def fen_flip(fen: str) -> str:
+    """返回 FEN 字符串的垂直翻转版本（上下翻转）。"""
+    return ChessBoard.fen_flip(fen)
+
+
+def fen_swap(fen: str) -> str:
+    """返回 FEN 字符串的交换版本（红黑互换）。"""
+    return ChessBoard.fen_swap(fen)
