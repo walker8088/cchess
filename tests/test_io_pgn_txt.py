@@ -58,29 +58,39 @@ class TestMoveNode:
 
 
 class TestPGNGame:
-    def test_set_header(self):
-        game = PGNGame()
-        game.set_header("Event", "Test")
+    def test_headers(self):
+        headers = {"Event": "Test", "Date": "2024.01.01"}
+        game = PGNGame(headers=headers, moves=None, result=None)
         assert game.headers["Event"] == "Test"
+        assert game.headers["Date"] == "2024.01.01"
 
-    def test_add_move(self):
-        game = PGNGame()
-        node = game.add_move("兵七进一")
-        assert node.move.notation == "兵七进一"
-        assert game.moves is not None
+    def test_moves(self):
+        move = PGNMove("兵七进一")
+        node = MoveNode(move)
+        game = PGNGame(headers={}, moves=node, result=None)
+        assert game.moves.move.notation == "兵七进一"
 
-    def test_add_multiple_moves(self):
-        game = PGNGame()
-        game.add_move("兵七进一")
-        game.add_move("马８进７")
+    def test_multiple_moves(self):
+        move1 = PGNMove("兵七进一")
+        node1 = MoveNode(move1)
+        move2 = PGNMove("马８进７")
+        node2 = MoveNode(move2)
+        node1.next_node = node2
+        game = PGNGame(headers={}, moves=node1, result=None)
         assert game.moves.next_node is not None
         assert game.moves.next_node.move.notation == "马８进７"
 
-    def test_add_move_with_annote(self):
-        game = PGNGame()
-        node = game.add_move("炮二平五", "开局")
-        assert node.move.notation == "炮二平五"
-        assert node.move.annote == "开局"
+    def test_moves_with_annote(self):
+        move = PGNMove("炮二平五")
+        move.annote = "开局"
+        node = MoveNode(move)
+        game = PGNGame(headers={}, moves=node, result=None)
+        assert game.moves.move.notation == "炮二平五"
+        assert game.moves.move.annote == "开局"
+
+    def test_result(self):
+        game = PGNGame(headers={}, moves=None, result="1-0")
+        assert game.result == "1-0"
 
 
 class TestPGNParser:

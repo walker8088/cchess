@@ -19,9 +19,8 @@ from xml.etree import ElementTree as et
 from .board import ChessBoard
 from .exception import CChessError
 
+
 # -----------------------------------------------------#
-
-
 def read_from_cbf(file_name, game_class):  # pylint: disable=too-many-locals
     """从 CBF 文件读取棋局并转换为 `Game` 对象。
 

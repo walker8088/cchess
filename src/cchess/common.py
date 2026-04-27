@@ -100,12 +100,10 @@ _v_dict = {
 
 # -----------------------------------------------------#
 def pos2iccs(pos_from, pos_to):
-    """pos2iccs 函数。"""
     return f"{chr(ord('a') + pos_from[0])}{pos_from[1]}{chr(ord('a') + pos_to[0])}{pos_to[1]}"
 
 
 def iccs2pos(iccs):
-    """iccs2pos 函数。"""
     return (
         (ord(iccs[0]) - ord("a"), int(iccs[1])),
         (ord(iccs[2]) - ord("a"), int(iccs[3])),
@@ -113,22 +111,18 @@ def iccs2pos(iccs):
 
 
 def iccs_mirror(iccs):
-    """iccs_mirror 函数。"""
     return f"{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}"
 
 
 def iccs_flip(iccs):
-    """iccs_flip 函数。"""
     return f"{iccs[0]}{_v_dict[iccs[1]]}{iccs[2]}{_v_dict[iccs[3]]}"
 
 
 def iccs_swap(iccs):
-    """iccs_swap 函数。"""
     return f"{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}"
 
 
 def iccs_list_mirror(iccs_list):
-    """iccs_list_mirror 函数。"""
     return [iccs_mirror(x) for x in iccs_list]
 
 
@@ -184,7 +178,6 @@ _fench_txt_name_dict = {
 
 # -----------------------------------------------------#
 def fench_to_txt_name(fench):
-    """fench_to_txt_name 函数。"""
     if fench not in _fench_txt_name_dict:
         return None
 
@@ -192,12 +185,10 @@ def fench_to_txt_name(fench):
 
 
 def fench_to_text(fench):
-    """"""
     return _fench_name_dict[fench]
 
 
 def text_to_fench(text, color):
-    """"""
     if text not in _name_fench_dict:
         return None
     fench = _name_fench_dict[text]
@@ -223,7 +214,6 @@ _SPECIES_CACHE = {}
 
 
 def fench_to_species(fen_ch):
-    """"""
     if fen_ch not in _SPECIES_CACHE:
         _SPECIES_CACHE[fen_ch] = (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
     return _SPECIES_CACHE[fen_ch]
@@ -231,27 +221,23 @@ def fench_to_species(fen_ch):
 
 # -----------------------------------------------------#
 def fen_move_color(fen):
-    """"""
     color = fen.rstrip().split(" ")[1].lower()
     return RED if color == "w" else BLACK
 
 
 def fen_mirror(fen):
-    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_mirror(fen)
 
 
 def fen_flip(fen):
-    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_flip(fen)
 
 
 def fen_swap(fen):
-    """"""
     from .board import ChessBoard
 
     return ChessBoard.fen_swap(fen)

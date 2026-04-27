@@ -23,8 +23,8 @@ from .exception import CChessError
 # pylint: disable=too-many-locals,too-many-branches
 # -----------------------------------------------------#
 CODING_PAGE_CBR = "utf-16-le"
-result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
-piece_dict = {
+_cbr_result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
+_cbr_piece_dict = {
     # 红方
     0x11: "R",  # 车
     0x12: "N",  # 马
@@ -59,6 +59,24 @@ _CBL_INDEX_OFFSETS = (
 _DEFAULT_CBL_OFFSET = 349248  # 默认偏移量
 
 
+# -----------------------------------------------------#
+def _cbr_decode_pos(p):
+    """"""
+    return (p % 9, 9 - p // 9)
+
+
+def cut_bytes_to_str(buff):
+    """将字节缓冲区截断到首个空字节并解码为字符串。"""
+    end_index = buff.find(b"\x00\x00")
+    # TODO 探查一下error原因
+    if end_index >= 0:
+        annote = buff[:end_index].decode(CODING_PAGE_CBR, errors="ignore")
+    else:
+        annote = buff.decode(CODING_PAGE_CBR, errors="ignore")
+    return annote
+
+
+# -----------------------------------------------------#
 def _get_cbl_data_offset(book_count):
     """根据棋谱数量获取数据区起始偏移量
 
@@ -74,6 +92,7 @@ def _get_cbl_data_offset(book_count):
     return _DEFAULT_CBL_OFFSET
 
 
+# -----------------------------------------------------#
 def _parse_cbl_header(contents):
     """解析 CBL 文件头
 
@@ -104,6 +123,7 @@ def _parse_cbl_header(contents):
     return cut_bytes_to_str(lib_name), book_count, True
 
 
+# -----------------------------------------------------#
 def _find_and_validate_cbl_records(contents, buff_start):
     """查找并验证 CBL 记录缓冲区
 
@@ -129,6 +149,7 @@ def _find_and_validate_cbl_records(contents, buff_start):
     return game_buffer, game_buffer_len, game_buffer_index
 
 
+# -----------------------------------------------------#
 def _parse_cbl_games(
     contents, buff_start, game_buffer_index, game_buffer_len, game_class
 ):
@@ -163,26 +184,6 @@ def _parse_cbl_games(
 
         count += 1
         game_buffer_index += _CBL_RECORD_SIZE
-
-
-# -----------------------------------------------------#
-
-
-# -----------------------------------------------------#
-def _decode_pos(p):
-    """_decode_pos 函数。"""
-    return (p % 9, 9 - p // 9)
-
-
-def cut_bytes_to_str(buff):
-    """将字节缓冲区截断到首个空字节并解码为字符串。"""
-    end_index = buff.find(b"\x00\x00")
-    # TODO 探查一下error原因
-    if end_index >= 0:
-        annote = buff[:end_index].decode(CODING_PAGE_CBR, errors="ignore")
-    else:
-        annote = buff.decode(CODING_PAGE_CBR, errors="ignore")
-    return annote
 
 
 # -----------------------------------------------------#
@@ -230,7 +231,7 @@ class CbrBuffDecoder:
 
 
 # -----------------------------------------------------#
-def __read_init_info(buff_decoder):
+def _cbr_read_init_info(buff_decoder):
     """读取并返回走子前的初始化注释信息。"""
     # 注释长度, 为0则没有注释
     a_len = buff_decoder.read_int()
@@ -241,7 +242,7 @@ def __read_init_info(buff_decoder):
 
 
 # -----------------------------------------------------#
-def __read_steps(buff_decoder, game, parent_move, board):
+def _cbr_read_steps(buff_decoder, game, parent_move, board):
     """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。"""
     if buff_decoder.is_end():
         return
@@ -272,8 +273,8 @@ def __read_steps(buff_decoder, game, parent_move, board):
         annote_len = 0
 
     board_bak = board.copy()
-    move_from = _decode_pos(step_from)
-    move_to = _decode_pos(step_to)
+    move_from = _cbr_decode_pos(step_from)
+    move_to = _cbr_decode_pos(step_to)
     annote = buff_decoder.read_str(annote_len) if annote_len > 0 else None
 
     fench = board.get_fench(move_from)
@@ -290,10 +291,10 @@ def __read_steps(buff_decoder, game, parent_move, board):
         return
 
     if has_next_move:
-        __read_steps(buff_decoder, game, good_move, board)
+        _cbr_read_steps(buff_decoder, game, good_move, board)
 
     if has_var_step:
-        __read_steps(buff_decoder, game, parent_move, board_bak)
+        _cbr_read_steps(buff_decoder, game, parent_move, board_bak)
 
 
 # -----------------------------------------------------#
@@ -336,7 +337,7 @@ def read_from_cbr_buffer(contents, game_class):
     game_info["event"] = cut_bytes_to_str(event)
     game_info["red"] = cut_bytes_to_str(red)
     game_info["black"] = cut_bytes_to_str(black)
-    game_info["result"] = result_dict[game_result]
+    game_info["result"] = _cbr_result_dict[game_result]
     board = ChessBoard()
     if move_side == 1:
         board.set_move_side(RED)
@@ -346,16 +347,16 @@ def read_from_cbr_buffer(contents, game_class):
     for x in range(9):
         for y in range(10):
             v = boards[y * 9 + x]
-            if v in piece_dict:
-                board.put_fench(piece_dict[v], (x, 9 - y))
+            if v in _cbr_piece_dict:
+                board.put_fench(_cbr_piece_dict[v], (x, 9 - y))
 
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
-    game_annote = __read_init_info(buff_decoder)
+    game_annote = _cbr_read_init_info(buff_decoder)
     game = game_class(board, game_annote)
     game.info = game_info
 
     if not buff_decoder.is_end():
-        __read_steps(buff_decoder, game, None, board)
+        _cbr_read_steps(buff_decoder, game, None, board)
 
     return game
 

@@ -15,6 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
+# -----------------------------------------------------#
 class CChessError(Exception):
     """中国象棋库通用异常。"""
 
@@ -24,6 +25,7 @@ class CChessError(Exception):
         self.reason = reason
 
 
+# -----------------------------------------------------#
 class EngineError(Exception):
     """引擎通信或执行过程中发生的异常。"""
 
@@ -31,3 +33,6 @@ class EngineError(Exception):
         """__init__ 方法。"""
         super().__init__(reason)
         self.reason = reason
+
+
+# -----------------------------------------------------#

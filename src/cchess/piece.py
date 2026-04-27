@@ -19,20 +19,6 @@ from .common import BLACK, RED, fench_to_species, next_color
 # pylint: disable=too-many-return-statements
 
 
-# 九宫格边界常量
-_PALACE_Y_MAX_RED = 2  # 红方九宫格最大y值
-_PALACE_X_MIN = 3  # 九宫格最小x值
-_PALACE_X_MAX = 5  # 九宫格最大x值
-_PALACE_Y_MIN_BLACK = 7  # 黑方九宫格最小y值
-
-# 河界常量
-_RIVER_RED_MAX = 4  # 红方半场最大y值（含河界）
-_RIVER_BLACK_MIN = 5  # 黑方半场最小y值（含河界）
-
-# 兵的活动范围常量
-_PAWN_Y_MIN_RED = 3  # 红兵最小y值（不能后退超过此值）
-_PAWN_Y_MAX_BLACK = 6  # 黑卒最大y值（不能后退超过此值）
-
 # -----------------------------------------------------#
 # 士象固定位置枚举
 _advisor_pos = (
@@ -181,13 +167,13 @@ class King(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if pos[0] < _PALACE_X_MIN or pos[0] > _PALACE_X_MAX:
+        if pos[0] < 3 or pos[0] > 5:
             return False
 
-        if (self.color == RED) and (pos[1] > _PALACE_Y_MAX_RED):
+        if (self.color == RED) and (pos[1] > 2):
             return False
 
-        if (self.color == BLACK) and (pos[1] < _PALACE_Y_MIN_BLACK):
+        if (self.color == BLACK) and (pos[1] < 7):
             return False
 
         return True
@@ -281,9 +267,9 @@ class Bishop(Piece):
         if self.board.get_fench(middle_p((self.x, self.y), pos_to)) is not None:
             return False
 
-        if (self.color == RED) and (pos_to[1] > _RIVER_RED_MAX):
+        if (self.color == RED) and (pos_to[1] > 4):
             return False
-        if (self.color == BLACK) and (pos_to[1] < _RIVER_BLACK_MIN):
+        if (self.color == BLACK) and (pos_to[1] < 5):
             return False
 
         return True
@@ -468,10 +454,10 @@ class Pawn(Piece):
         if not super().is_valid_pos(pos):
             return False
 
-        if (self.color == RED) and pos[1] < _PAWN_Y_MIN_RED:
+        if (self.color == RED) and pos[1] < 3:
             return False
 
-        if (self.color == BLACK) and pos[1] > _PAWN_Y_MAX_BLACK:
+        if (self.color == BLACK) and pos[1] > 6:
             return False
 
         return True
@@ -495,10 +481,10 @@ class Pawn(Piece):
 
     def is_crossed_river(self):
         """判断兵/卒是否已经过河。"""
-        if (self.color == RED) and (self.y > _RIVER_RED_MAX):
+        if (self.color == RED) and (self.y > 4):
             return True
 
-        if (self.color == BLACK) and (self.y < _RIVER_BLACK_MIN):
+        if (self.color == BLACK) and (self.y < 5):
             return True
 
         return False

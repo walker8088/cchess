@@ -14,14 +14,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import datetime as dt
 import pathlib
 from collections import defaultdict
 
 from .board import ChessBoard
-from .common import FULL_INIT_FEN
+from .io_pgn import PGNWriter, read_from_pgn
+from .io_xqf import XQFWriter, read_from_xqf
+from .read_cbf import read_from_cbf
+from .read_cbr import read_from_cbl, read_from_cbr
+from .read_txt import read_from_ubb_dhtml
 
-# 比赛结果
+# -----------------------------------------------------#
+# # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
 result_str = ("未知", "红胜", "黑胜", "平局")
 
@@ -271,10 +275,6 @@ class Game:  # pylint: disable=too-many-public-methods
     @staticmethod
     def from_ubb_dhtml(txt):
         """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
-        from .read_txt import (
-            read_from_ubb_dhtml,  # pylint: disable=import-outside-toplevel
-        )
-
         return read_from_ubb_dhtml(txt, Game)
 
     @staticmethod
@@ -285,20 +285,12 @@ class Game:  # pylint: disable=too-many-public-methods
         """
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
-            from .io_xqf import read_from_xqf
-
             return read_from_xqf(file_name, Game)
         if ext == ".pgn":
-            from .io_pgn import read_from_pgn
-
             return read_from_pgn(file_name, Game)
         if ext == ".cbf":
-            from .read_cbf import read_from_cbf
-
             return read_from_cbf(file_name, Game)
         if ext == ".cbr":
-            from .read_cbr import read_from_cbr
-
             return read_from_cbr(file_name, Game)
         raise ValueError(f"Unknown file format:{file_name}")
 
@@ -307,88 +299,14 @@ class Game:  # pylint: disable=too-many-public-methods
         """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".cbl":
-            from .read_cbr import (
-                read_from_cbl,  # pylint: disable=import-outside-toplevel
-            )
-
             return read_from_cbl(file_name, Game)
         raise ValueError(f"Unknown lib file format:{file_name}")
-
-    def _format_move_text(self, move):
-        """格式化单个走法的文本（包含注释）"""
-        if move.annote:
-            return f"{move.to_text()} {{ {move.annote} }}"
-        return move.to_text()
-
-    def _collect_move_pairs(self):
-        """收集走法对列表
-
-        Returns:
-            list: 走法对列表 [(move_num, red_text, black_text), ...]
-        """
-        moves = self.dump_moves()
-        if len(moves) == 0:
-            return []
-
-        move_line = moves[0]["moves"]
-        move_pairs = []
-
-        for i in range(0, len(move_line), 2):
-            red_move = move_line[i]
-            black_move = move_line[i + 1] if i + 1 < len(move_line) else None
-            move_num = i // 2 + 1
-
-            red_text = self._format_move_text(red_move)
-            black_text = self._format_move_text(black_move) if black_move else None
-
-            move_pairs.append((move_num, red_text, black_text))
-
-        return move_pairs
-
-    def _write_pgn_header(self, f, init_fen):
-        """写入 PGN 文件头"""
-        f.write('[Game "Chinese Chess"]\n')
-        f.write(f'[Date "{dt.date.today()}"]\n')
-        f.write('[Red ""]\n')
-        f.write('[Black ""]\n')
-        if init_fen != FULL_INIT_FEN:
-            f.write(f'[FEN "{self.init_board.to_full_fen()}"]\n')
-
-        if self.annote:
-            f.write(f"{{ {self.annote} }}\n")
-
-    def _write_move_pairs(self, f, move_pairs):
-        """写入走法对"""
-        for move_num, red_text, black_text in move_pairs:
-            if black_text:
-                f.write(f" {move_num}. {red_text} {black_text}\n")
-            else:
-                f.write(f" {move_num}. {red_text}\n")
-
-    def save_to_pgn(self, file_name):
-        """将棋局按简化 PGN 文本格式保存到文件。"""
-
-        # w = PGNWriter(self)
-        # w.write_file(file_name)
-
-        init_fen = self.init_board.to_fen()
-        with open(file_name, "w", encoding="utf-8") as f:
-            self._write_pgn_header(f, init_fen)
-
-            move_pairs = self._collect_move_pairs()
-            self._write_move_pairs(f, move_pairs)
-
-            f.write("   *\n")
-            f.write("  =========\n")
 
     def save_to(self, file_name):
         """根据文件扩展名写入对应格式的棋谱文件。
         参数:
             file_name (str): 输出文件路径
         """
-
-        from .io_pgn import PGNWriter  # pylint: disable=import-outside-toplevel
-        from .io_xqf import XQFWriter  # pylint: disable=import-outside-toplevel
 
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":

@@ -72,7 +72,7 @@ def convert_format(input_file, output_file):
         writer = XQFWriter(game)
         writer.save(output_file)
     elif out_ext == ".pgn":
-        game.save_to_pgn(output_file)
+        game.save_to(output_file)
 
     print(f"转换成功: {input_file} ({in_ext[1:]}) -> {output_file} ({out_ext[1:]})")
 
