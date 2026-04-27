@@ -222,8 +222,6 @@ def fen_move_color(fen):
     return RED if color == "w" else BLACK
 
 
-
-
 # -----------------------------------------------------#
 # 全角半角数字转换映射表
 _DIGIT_MAP_FULL_TO_HALF = str.maketrans("１２３４５６７８９", "123456789")

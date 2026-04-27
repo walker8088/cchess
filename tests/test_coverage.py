@@ -791,7 +791,7 @@ class TestReadCBR:
             f.write(data)
             tmp_path = f.name
         try:
-            results = list(read_from_cbl_progressing(tmp_path))
+            results = list(read_from_cbl_progressing(tmp_path, Game))
             assert len(results) >= 1
         finally:
             os.unlink(tmp_path)
@@ -804,7 +804,7 @@ class TestReadCBR:
             f.write(b"\x00" * 576)
             tmp_path = f.name
         try:
-            results = list(read_from_cbl_progressing(tmp_path))
+            results = list(read_from_cbl_progressing(tmp_path, Game))
             assert len(results) == 0  # returns without yielding
         finally:
             os.unlink(tmp_path)

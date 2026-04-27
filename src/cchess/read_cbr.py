@@ -412,9 +412,13 @@ def read_from_cbl(file_name, game_class, verify=True):  # pylint: disable=unused
     return lib_info
 
 
-def read_from_cbl_progressing(file_name):
-    """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。"""
-    from .game import Game
+def read_from_cbl_progressing(file_name, game_class):
+    """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。
+
+    Args:
+        file_name: 文件路径
+        game_class: Game类，用于创建游戏实例
+    """
 
     with open(file_name, "rb") as f:
         contents = f.read()
@@ -443,7 +447,7 @@ def read_from_cbl_progressing(file_name):
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
-            game = read_from_cbr_buffer(book_buffer, Game)
+            game = read_from_cbr_buffer(book_buffer, game_class)
             if game is not None:
                 game.info["index"] = game_index
                 lib_info["games"].append(game)
