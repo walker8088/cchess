@@ -48,7 +48,7 @@ class AsyncEngine:
 
         try:
             startupinfo = None
-            if subprocess.mswindows:
+            if subprocess._mswindows:
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
@@ -68,7 +68,7 @@ class AsyncEngine:
                 line = await self._read_line()
                 if line == "uciok":
                     break
-                elif line.startswith("option"):
+                if line.startswith("option"):
                     await self._parse_option(line)
                 elif line.startswith("id"):
                     await self._parse_id(line)
@@ -77,7 +77,7 @@ class AsyncEngine:
             logger.info("Engine initialized: %s", self._id.get("name", "Unknown"))
             return True
 
-        except Exception as e:
+        except (RuntimeError, OSError) as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to initialize engine: %s", e)
             return False
 
@@ -104,7 +104,7 @@ class AsyncEngine:
             return
 
         name_idx = parts.index("name") + 1 if "name" in parts else -1
-        if name_idx > 0 and name_idx < len(parts):
+        if 0 < name_idx < len(parts):
             name = parts[name_idx]
             self._options[name] = {
                 "type": parts[parts.index("type") + 1] if "type" in parts else None,
@@ -189,7 +189,7 @@ class AsyncEngine:
                 if len(parts) >= 4 and parts[2] == "ponder":
                     result["ponder"] = parts[3]
                 break
-            elif line.startswith("info") and "score" in line:
+            if line.startswith("info") and "score" in line:
                 info = self._parse_info(line)
                 if "score" in info:
                     result["score"] = info["score"]
@@ -242,7 +242,7 @@ class AsyncEngine:
             line = await self._read_line()
             if line.startswith("bestmove"):
                 break
-            elif line.startswith("info"):
+            if line.startswith("info"):
                 info = self._parse_info(line)
                 multipv_num = info.get("multipv", 1)
                 current_info[multipv_num] = info

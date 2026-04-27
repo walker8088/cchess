@@ -66,9 +66,11 @@ def _cbr_decode_pos(p):
 
 
 def cut_bytes_to_str(buff):
-    """将字节缓冲区截断到首个空字节并解码为字符串。"""
+    """将字节缓冲区截断到首个空字节并解码为字符串。
+
+    使用 errors="ignore" 处理 CBR 文件中可能存在的编码损坏数据。
+    """
     end_index = buff.find(b"\x00\x00")
-    # TODO 探查一下error原因
     if end_index >= 0:
         annote = buff[:end_index].decode(CODING_PAGE_CBR, errors="ignore")
     else:
