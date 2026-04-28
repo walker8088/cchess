@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 from .common import (
     BLACK,
@@ -30,12 +31,25 @@ from .common import (
     text_to_fench,
 )
 
-if TYPE_CHECKING:
-    from .board import MoveInfo
+# pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
-# pylint: disable=too-many-instance-attributes,too-many-public-methods
-# pylint: disable=too-many-return-statements,too-many-branches,too-many-statements
-# pylint: disable=too-many-locals,fixme
+
+# -----------------------------------------------------#
+@dataclass
+class MoveInfo:
+    """记录棋盘移动的增量状态信息，用于撤销操作"""
+
+    from_pos: Tuple[int, int]
+    to_pos: Tuple[int, int]
+    moving_fench: str  # 移动的棋子字符
+    captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
+    prev_move_side: int  # 移动前走子方 (RED/BLACK/ANY_COLOR)
+    next_move_side: int  # 移动后走子方 (RED/BLACK/ANY_COLOR)
+    board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
+    board_after: List[List[Optional[str]]]  # 移动后棋盘数组的深拷贝
+    prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志
+    next_attack_matrix_dirty: bool  # 移动后攻击矩阵脏标志
+
 
 # -----------------------------------------------------#
 # 数字映射字典常量
@@ -309,7 +323,7 @@ class MoveNotation:
             count = 0
             positions = []
             for y in range(10):
-                if board._board[y][move.pos_from[0]] == fench:  # pylint: disable=protected-access
+                if board._board[y][move.pos_from[0]] == fench:
                     positions.append((move.pos_from[0], y))
                     count += 1
 
@@ -986,7 +1000,14 @@ def _king_rook_cannon_pawn_move(pos_from, move_str):
 class Move:
     """表示一步棋及其在走子树中的关系（含变招、注释等）。"""
 
-    def __init__(self, move_info: MoveInfo, is_checking=False, is_checkmate=False):
+    def __init__(
+        self,
+        move_info: "MoveInfo",
+        board_before,
+        board_after,
+        is_checking=False,
+        is_checkmate=False,
+    ):
         """初始化一个走子对象。
 
         基于 MoveInfo 创建走子记录，包含移动前后棋盘状态。
@@ -1008,38 +1029,19 @@ class Move:
         self.move_list_for_engine = []
         self.fen_for_engine = None
 
-        # 延迟计算的棋盘快照
-        self._board_cache = None  # 移动前的棋盘
-        self._board_done_cache = None  # 移动后的棋盘
+        # 直接使用传入的棋盘实例
+        self._board_cache = board_before  # 移动前的棋盘
+        self._board_done_cache = board_after  # 移动后的棋盘
 
         # 设置被吃棋子
         self.captured = move_info.captured_fench
 
     def board_before(self):
-        """移动前的棋盘状态（延迟生成的快照）"""
-        if self._board_cache is None:
-            from .board import ChessBoard
-
-            # 创建新棋盘实例，复制移动前状态
-            b = ChessBoard()
-            b._board = [row[:] for row in self.move_info.board_before]
-            b.set_move_side(self.move_info.prev_move_side)
-            b._attack_matrix_dirty = self.move_info.prev_attack_matrix_dirty
-            # 攻击矩阵缓存保持默认（脏标志为 True 时会被重新计算）
-            self._board_cache = b
+        """移动前的棋盘状态"""
         return self._board_cache
 
     def board_after(self):
-        """移动后的棋盘状态（延迟生成的快照）"""
-        if self._board_done_cache is None:
-            from .board import ChessBoard
-
-            # 创建新棋盘实例，复制移动后状态
-            b = ChessBoard()
-            b._board = [row[:] for row in self.move_info.board_after]
-            b.set_move_side(self.move_info.next_move_side)
-            b._attack_matrix_dirty = self.move_info.next_attack_matrix_dirty
-            self._board_done_cache = b
+        """移动后的棋盘状态"""
         return self._board_done_cache
 
     # move_side 是数据属性，在构造函数中已赋值
@@ -1060,11 +1062,8 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        from .board import ChessBoard
-
-        temp_board = ChessBoard()
-        temp_board._board = self.move_info.board_before
-        mirrored_board = temp_board.mirror()
+        # 直接使用 board_before() 获取实例，避免延迟导入
+        mirrored_board = self.board_before().mirror()
         self.move_info.board_before = mirrored_board._board
 
         self.pos_from = (8 - self.pos_from[0], self.pos_from[1])
@@ -1085,11 +1084,8 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        from .board import ChessBoard
-
-        temp_board = ChessBoard()
-        temp_board._board = self.move_info.board_before
-        flipped_board = temp_board.flip()
+        # 直接使用 board_before() 获取实例，避免延迟导入
+        flipped_board = self.board_before().flip()
         self.move_info.board_before = flipped_board._board
 
         self.pos_from = (self.pos_from[0], 9 - self.pos_from[1])
@@ -1109,11 +1105,8 @@ class Move:
         对当前走子、`board_done` 及所有分支和 `next_move` 做视角
         交换，使之从另一方视角表示。
         """
-        from .board import ChessBoard
-
-        temp_board = ChessBoard()
-        temp_board._board = self.move_info.board_before
-        swapped_board = temp_board.swap()
+        # 直接使用 board_before() 获取实例，避免延迟导入
+        swapped_board = self.board_before().swap()
         self.move_info.board_before = swapped_board._board
 
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
@@ -1414,12 +1407,8 @@ class Move:
         根据历史拼接 moves 列表以便向引擎发送完整走子序列。
         """
         if self.captured:
-            # 吃子移动：临时生成走子后的 FEN，不缓存棋盘对象
-            from .board import ChessBoard
-
-            temp_board = ChessBoard()
-            temp_board._board = [row[:] for row in self.move_info.board_before]
-            temp_board.set_move_side(self.move_info.prev_move_side)
+            # 吃子移动：使用 board_before() 的副本生成走子后的 FEN
+            temp_board = self.board_before().copy()
 
             # 应用移动
             moving_fench = temp_board._board[self.pos_from[1]][self.pos_from[0]]
@@ -1513,7 +1502,7 @@ class Move:
         return _MoveTextParser(board, move_str).parse()
 
 
-class _MoveTextParser:  # pylint: disable=too-few-public-methods
+class _MoveTextParser:
     """中文走法文本解析器，使用规范局面（红方视角）处理所有走法"""
 
     def __init__(self, board, move_str):

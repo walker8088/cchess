@@ -21,6 +21,7 @@ import sys
 from .game import Game
 
 
+# -----------------------------------------------------#
 def print_game(game):
     """将棋局信息、初始盘面和走子文本打印到标准输出。"""
 
@@ -38,6 +39,7 @@ def print_game(game):
     game.print_text_moves(steps_per_line=5, show_annote=True)
 
 
+# -----------------------------------------------------#
 def convert_format(input_file, output_file):
     """读取一种格式的棋谱文件并转换为另一种格式。
 
@@ -67,7 +69,7 @@ def convert_format(input_file, output_file):
         sys.exit(-1)
 
     if out_ext == ".xqf":
-        from .io_xqf import XQFWriter  # pylint: disable=import-outside-toplevel
+        from .io_xqf import XQFWriter
 
         writer = XQFWriter(game)
         writer.save(output_file)
@@ -77,6 +79,7 @@ def convert_format(input_file, output_file):
     print(f"转换成功: {input_file} ({in_ext[1:]}) -> {output_file} ({out_ext[1:]})")
 
 
+# -----------------------------------------------------#
 def main():
     """命令行入口：读取棋谱并打印内容，或进行格式转换。"""
     parser = argparse.ArgumentParser(prog="python -m cchess")
@@ -106,5 +109,6 @@ def main():
             print_game(game)
 
 
+# -----------------------------------------------------#
 if __name__ == "__main__":
     main()

@@ -14,7 +14,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from dataclasses import dataclass
 from typing import Iterator, List, Optional, Tuple
 
 from .common import (
@@ -25,13 +24,11 @@ from .common import (
     next_color,
     swap_fench,
 )
-from .constants import ANY_COLOR, BLACK, RED
+from .constants import ANY_COLOR, BLACK, FEN_CHAR_SET, FEN_NUM_SET, RED
 from .exception import CChessError
-from .move import Move
+from .move import Move, MoveInfo
 from .piece import Piece
-from .zhash_data import Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY, z_c90
-
-# pylint: disable=protected-access,attribute-defined-outside-init,too-many-public-methods
+from .zhash_data import Z_HASH_C90, Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY
 
 # -----------------------------------------------------#
 _text_board = [
@@ -62,9 +59,6 @@ _text_board = [
     #'',
 ]
 
-_g_fen_num_set = set(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
-_g_fen_ch_set = set(("k", "a", "b", "n", "r", "c", "p"))
-
 
 # -----------------------------------------------------#
 def _pos_to_text_board_pos(pos):
@@ -77,23 +71,6 @@ def _pos_to_text_board_pos(pos):
         tuple: 文本画板中的 (col, row) 索引，可用于字符串替换绘制棋子。
     """
     return (4 * pos[0] + 2, (9 - pos[1]) * 2)
-
-
-# -----------------------------------------------------#
-@dataclass
-class MoveInfo:
-    """记录棋盘移动的增量状态信息，用于撤销操作"""
-
-    from_pos: Tuple[int, int]
-    to_pos: Tuple[int, int]
-    moving_fench: str  # 移动的棋子字符
-    captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
-    prev_move_side: int  # 移动前走子方 (RED/BLACK/ANY_COLOR)
-    next_move_side: int  # 移动后走子方 (RED/BLACK/ANY_COLOR)
-    board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
-    board_after: List[List[Optional[str]]]  # 移动后棋盘数组的深拷贝
-    prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志
-    next_attack_matrix_dirty: bool  # 移动后攻击矩阵脏标志
 
 
 # -----------------------------------------------------#
@@ -491,27 +468,57 @@ class ChessBoard:
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True
     ) -> Optional[Move]:
         """尝试执行走子：若合法则修改棋盘并返回 `Move` 对象，否则返回 None。
-        返回的 `Move` 包含移动前的棋盘（用于回退或记录）。"""
+        返回的 `Move` 包含移动前后的棋盘快照（独立副本）。"""
         if not self.is_valid_move(pos_from, pos_to):
             return None
 
-        # 执行移动并记录状态
-        move_info = self.make_move(pos_from, pos_to)
+        # 1. 创建移动前的棋盘快照
+        board_before = self.copy()
+
+        # 记录移动前状态
+        prev_attack_matrix_dirty = self._attack_matrix_dirty
+        prev_move_side = self._move_side
+        moving_fench = self._board[pos_from[1]][pos_from[0]]
+        captured_fench = self._board[pos_to[1]][pos_to[0]]
+
+        # 2. 执行移动
+        self._move_piece(pos_from, pos_to)
+
+        # 记录移动后状态
+        next_attack_matrix_dirty = self._attack_matrix_dirty
+        next_move_side = self._move_side
+
+        # 3. 创建移动后的棋盘快照
+        board_after = self.copy()
+
+        # 创建 MoveInfo（仍然需要，因为 Move 类需要它）
+        move_info = MoveInfo(
+            from_pos=pos_from,
+            to_pos=pos_to,
+            moving_fench=moving_fench,
+            captured_fench=captured_fench,
+            prev_attack_matrix_dirty=prev_attack_matrix_dirty,
+            next_attack_matrix_dirty=next_attack_matrix_dirty,
+            prev_move_side=prev_move_side,
+            next_move_side=next_move_side,
+            board_before=board_before._board,  # 仍然需要数组用于撤销
+            board_after=board_after._board,  # 仍然需要数组用于撤销
+        )
 
         # 切换走子方（除非吃掉将帅）
-        if move_info.captured_fench not in ("k", "K"):
+        if captured_fench not in ("k", "K"):
             self._move_side = next_color(self._move_side)
 
-        move = Move(move_info)
+        # 创建 Move 对象，传入棋盘实例
+        move = Move(move_info, board_before, board_after)
+
         if check:
-            # 检查刚走完棋的一方是否对对方将军
-            # 需要临时切换回上一步的走子方
+            # 检查将军/将死
             original_move_side = self._move_side
-            self._move_side = move_info.prev_move_side
+            self._move_side = prev_move_side
             is_checking = self.is_checking()
             move.is_checking = is_checking
             move.is_checkmate = is_checking and self.is_checkmate()
-            # 恢复走子方
             self._move_side = original_move_side
 
         return move
@@ -608,8 +615,40 @@ class ChessBoard:
             return None
 
         # 执行移动并记录状态
-        move_info = self.make_move(pos_from, pos_to)
-        move = Move(move_info)
+        # 创建移动前的棋盘快照
+        board_before = self.copy()
+
+        # 记录移动前状态
+        prev_attack_matrix_dirty = self._attack_matrix_dirty
+        prev_move_side = self._move_side
+        moving_fench = self._board[pos_from[1]][pos_from[0]]
+        captured_fench = self._board[pos_to[1]][pos_to[0]]
+
+        # 执行移动
+        self._move_piece(pos_from, pos_to)
+
+        # 记录移动后状态
+        next_attack_matrix_dirty = self._attack_matrix_dirty
+        next_move_side = self._move_side
+
+        # 创建移动后的棋盘快照
+        board_after = self.copy()
+
+        # 创建 MoveInfo
+        move_info = MoveInfo(
+            from_pos=pos_from,
+            to_pos=pos_to,
+            moving_fench=moving_fench,
+            captured_fench=captured_fench,
+            prev_attack_matrix_dirty=prev_attack_matrix_dirty,
+            next_attack_matrix_dirty=next_attack_matrix_dirty,
+            prev_move_side=prev_move_side,
+            next_move_side=next_move_side,
+            board_before=board_before._board,
+            board_after=board_after._board,
+        )
+
+        move = Move(move_info, board_before, board_after)
 
         # 如果不切换走子方，恢复原来的走子方
         if not switch_turn:
@@ -830,9 +869,9 @@ class ChessBoard:
             if ch == "/":
                 x = 0
                 y -= 1
-            elif ch in _g_fen_num_set:
+            elif ch in FEN_NUM_SET:
                 x += int(ch)
-            elif ch.lower() in _g_fen_ch_set:
+            elif ch.lower() in FEN_CHAR_SET:
                 b.put_fench(ch, (x, y))
                 x += 1
             else:
@@ -895,7 +934,7 @@ class ChessBoard:
         key = 0
         for y in range(10):
             for x in range(9):
-                square = z_c90[x + (9 - y) * 9]
+                square = Z_HASH_C90[x + (9 - y) * 9]
                 letter = self.get_fench((x, y))
                 if letter in Z_MAP_PIECES:
                     chess = Z_MAP_PIECES[letter]

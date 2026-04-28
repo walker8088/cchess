@@ -23,3 +23,6 @@ FULL_INIT_BOARD = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR"
 
 EMPTY_FEN = f"{EMPTY_BOARD} w"
 FULL_INIT_FEN = f"{FULL_INIT_BOARD} w"
+
+FEN_NUM_SET = frozenset(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+FEN_CHAR_SET = frozenset(("k", "a", "b", "n", "r", "c", "p"))

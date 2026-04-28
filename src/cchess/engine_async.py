@@ -77,7 +77,7 @@ class AsyncEngine:
             logger.info("Engine initialized: %s", self._id.get("name", "Unknown"))
             return True
 
-        except (RuntimeError, OSError) as e:  # pylint: disable=broad-exception-caught
+        except (RuntimeError, OSError) as e:
             logger.error("Failed to initialize engine: %s", e)
             return False
 

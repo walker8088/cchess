@@ -14,9 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-# pylint: disable=invalid-name
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-# pylint: disable=too-many-arguments,too-few-public-methods
 
 # import os
 import struct
@@ -30,15 +28,16 @@ from .common import RED, append_move_to_game, fench_to_species
 result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
 # XQF 协议常量
+_XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
 _XQF_MOVE_FROM_OFFSET = 0x18  # 起始位置偏移量
 _XQF_MOVE_TO_OFFSET = 0x20  # 目标位置偏移量
 _XQF_STEP_FLAG_MASK = 0xE0  # 走子标志掩码
 _XQF_STEP_HAS_ANNO = 0x20  # 有注释标志
 _XQF_STEP_HAS_NEXT = 0x80  # 有下一步标志
 _XQF_STEP_HAS_VAR = 0x40  # 有变招标志
-_XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
 
 
+# -----------------------------------------------------#
 def _xqf_decode_pos(man_pos):
     """将单个压缩的棋子位置整数解码为 (x, y) 坐标。
 
@@ -554,7 +553,7 @@ def _build_xqf_board(chess_mans):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, game_class, read_annotation=True):  # pylint: disable=unused-argument
+def read_from_xqf(full_file_name, game_class, read_annotation=True):
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，

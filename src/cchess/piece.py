@@ -16,9 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .common import BLACK, RED, fench_to_species, next_color
 
-# pylint: disable=too-many-return-statements
-
-
 # -----------------------------------------------------#
 # 士象固定位置枚举
 _advisor_pos = (
@@ -90,7 +87,7 @@ class Piece:
         """判断给定坐标是否在棋盘范围内。"""
         return (0 <= pos[0] < 9) and (0 <= pos[1] <= 9)
 
-    def is_valid_move(self, pos_to):  # pylint: disable=unused-argument
+    def is_valid_move(self, pos_to):
         """判断移动到目标位置是否合法（基类默认返回 True）。"""
         return True
 

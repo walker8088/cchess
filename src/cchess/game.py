@@ -35,7 +35,7 @@ book_type_str = ("未知", "全局", "开局", "中局", "残局")
 
 
 # -----------------------------------------------------#
-class Game:  # pylint: disable=too-many-public-methods
+class Game:
     """棋局对象，维护初始棋盘、走子树及元信息。"""
 
     def __init__(self, board=None, annote=None):

@@ -27,7 +27,7 @@ from .common import FULL_INIT_FEN
 
 # -----------------------------------------------------#
 # 内部数据结构
-class PGNMove:  # pylint: disable=too-few-public-methods
+class PGNMove:
     """PGN 棋步"""
 
     def __init__(self, notation: str):
@@ -204,7 +204,7 @@ class PGNParser:
         return PGNGame(headers=headers, moves=moves, result=result)
 
 
-class PGNTokenizer:  # pylint: disable=too-few-public-methods
+class PGNTokenizer:
     """PGN分词器，使用状态机模式降低复杂度"""
 
     def __init__(self, text: str):
@@ -545,7 +545,7 @@ def _process_pgn_moves(node, board, game, parent_move=None):
                 # 递归处理变招
                 _process_pgn_moves(variation, saved_board, game, parent_move)
 
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:
             # 走法解析或应用出错，继续处理下一个走法
             node = node.next_node
             continue
@@ -578,7 +578,7 @@ def read_from_pgn(file_name, game_class):
         # board.move_text() 内部已经使用规范局面处理
         _process_pgn_moves(pgn_game.moves, current_board, game)
 
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         print(f"解析PGN文件时出错: {e}")
 
     return game

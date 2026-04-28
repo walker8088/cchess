@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
 import re
 from collections import OrderedDict
+from pathlib import Path
 
-# pylint: disable=missing-function-docstring,import-outside-toplevel
 # -----------------------------------------------------#
 # 从 constants 导入并重新导出，方便其他模块使用
 from .constants import (
@@ -403,7 +403,6 @@ def load_json(filepath: str):
     返回:
         解析后的 JSON 数据，如果文件不存在返回 None
     """
-    from pathlib import Path
 
     if not Path(filepath).is_file():
         return None
@@ -421,7 +420,6 @@ def save_json(data, filepath: str) -> bool:
     返回:
         bool: 保存是否成功
     """
-    from pathlib import Path
 
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:

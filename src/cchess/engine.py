@@ -23,8 +23,7 @@ from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
 
-from .board import ChessBoard
-from .board import fen_mirror
+from .board import ChessBoard, fen_mirror
 from .common import (
     RED,
     fen_move_color,
@@ -111,7 +110,7 @@ class EngineStatus(enum.IntEnum):
 
 
 # ------------------------------------------------------------------------------
-class Engine(Thread):  # pylint: disable=too-many-instance-attributes
+class Engine(Thread):
     """棋力引擎线程封装，负责进程通信与消息解析。"""
 
     def __init__(self, exec_path=""):
@@ -174,7 +173,7 @@ class Engine(Thread):  # pylint: disable=too-many-instance-attributes
             if os.name == "nt":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            self.process = subprocess.Popen(  # pylint: disable=consider-using-with
+            self.process = subprocess.Popen(
                 self.engine_exec_path,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
