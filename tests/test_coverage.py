@@ -258,7 +258,7 @@ class TestMovePrepareForEngine:
 
 
 class TestMoveFromTextMultiPiece:
-    """Tests for Move.from_text() multi-piece selection (lines 472-500)."""
+    """Tests for board.move_text() multi-piece selection (lines 472-500)."""
 
     def test_from_text_a_b_piece_ping_returns_none(self):
         # Advisor and Bishop cannot do 平 (horizontal move)
@@ -288,20 +288,20 @@ class TestMoveFromTextMultiPiece:
         board = ChessBoard(
             "r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w"
         )
-        result = Move.from_text(board, "前炮退二")
+        result = board.copy().move_text("前炮退二")
         assert result is not None
 
     def test_from_text_multi_pieces_returns_none_when_no_valid(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 前兵 - no pawns in multi positions on initial board
-        Move.from_text(board, "前兵进一")
+        board.copy().move_text("前兵进一")
         # May return a valid move or None depending on board state
 
     def test_from_text_chinese_digit_black_reversed(self):
         board = ChessBoard(FULL_INIT_FEN)
         board.next_turn()
         # Black pawn selection
-        Move.from_text(board, "一卒进1")
+        board.copy().move_text("一卒进1")
         # May be None if no valid move, but should go through the black reversed path
         # Just ensure no exception is raised
 
@@ -312,29 +312,29 @@ class TestMoveTextParsingChineseNumerals:
     def test_chinese_digit_target_x_none(self):
         board = ChessBoard(FULL_INIT_FEN)
         # Invalid chinese digit
-        result = Move.from_text(board, "十车进一")
+        result = board.copy().move_text("十车进一")
         assert result is None
 
     def test_chinese_digit_pawn_same_column_sort_red(self):
         # Red pawns on same column, should pick the most advanced one
         board = ChessBoard("4k4/9/9/9/4P4/4P4/9/9/9/4K4 w")
-        result = Move.from_text(board, "一兵进一")
+        result = board.copy().move_text("一兵进一")
         assert result is not None
 
     def test_chinese_digit_pawn_same_column_sort_black(self):
         board = ChessBoard("4k4/9/9/9/4p4/4p4/9/9/9/4K4 b")
-        Move.from_text(board, "一卒进1")
+        board.copy().move_text("一卒进1")
         # Should not raise, goes through black pawn sorting path
 
     def test_chinese_digit_no_poss_returns_none(self):
         board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
-        result = Move.from_text(board, "一车进一")
+        result = board.copy().move_text("一车进一")
         assert result is None
 
     def test_chinese_digit_fallback_to_all_pieces(self):
         board = ChessBoard(FULL_INIT_FEN)
         # If no piece on target column, falls back to all pieces
-        Move.from_text(board, "一车进一")
+        board.copy().move_text("一车进一")
         # Should find the rook on column 0 (一 for red maps to x=8)
         # If no valid move found, may return None
 
@@ -345,14 +345,14 @@ class TestMoveTreeOperations:
     def test_multi_pieces_select_returns_none(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 前/中/后 with no matching pieces - no knights in multi positions
-        Move.from_text(board, "前象进一")
+        board.copy().move_text("前象进一")
         # May return None or a valid move
 
     def test_multi_pieces_select_middle(self):
         board = ChessBoard(
             "r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w"
         )
-        Move.from_text(board, "中炮平五")
+        board.copy().move_text("中炮平五")
         # Should go through the middle piece selection path
 
 
@@ -1949,3 +1949,81 @@ class TestMain:
             )
         finally:
             os.unlink(tmp_path)
+
+
+class TestMoveAny:
+    """Tests for ChessBoard.move_any() - public API for arbitrary moves."""
+
+    def test_move_any_basic(self):
+        """Test move_any with valid move."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.move_any((0, 0), (0, 2))  # Red rook forward
+        assert move is not None
+        assert move.pos_from == (0, 0)
+        assert move.pos_to == (0, 2)
+
+    def test_move_any_out_of_bounds(self):
+        """Test move_any with out of bounds target."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.move_any((0, 0), (-1, 0))
+        assert move is None
+
+    def test_move_any_no_piece_at_source(self):
+        """Test move_any with empty source position."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.move_any((4, 4), (4, 5))  # Empty position
+        assert move is None
+
+    def test_move_any_wrong_turn_ignored(self):
+        """Test move_any ignores move_side (can move any piece)."""
+        board = ChessBoard(FULL_INIT_FEN)
+        board.set_move_side(BLACK)  # Black's turn
+        move = board.move_any((0, 0), (0, 2))  # Move red piece anyway
+        assert move is not None
+
+    def test_move_any_capture(self):
+        """Test move_any with capture."""
+        board = ChessBoard()
+        board.clear()
+        board.set_move_side(RED)
+        board.put_fench("R", (0, 0))
+        board.put_fench("p", (0, 2))
+        move = board.move_any((0, 0), (0, 2))
+        assert move is not None
+        assert move.captured == "p"
+
+    def test_move_any_with_check(self):
+        """Test move_any with check detection.
+
+        is_checking() checks if self._move_side is attacking the opponent's king.
+        get_king() only searches within the palace (x=3,4,5).
+        """
+        board = ChessBoard()
+        board.clear()
+        board.set_move_side(RED)  # is_checking: is RED attacking BLACK king?
+        board.put_fench("k", (4, 9))  # Black king in palace
+        board.put_fench("R", (4, 7))  # Red rook
+        # Move rook to (4,8) - now rook at (4,8) attacks king at (4,9)
+        move = board.move_any((4, 7), (4, 8), check=True)
+        assert move is not None
+        assert move.is_checking is True
+
+    def test_move_any_no_switch_turn(self):
+        """Test move_any without switching turn (default)."""
+        board = ChessBoard(FULL_INIT_FEN)
+        original_side = board.move_side()
+        board.move_any((0, 0), (0, 2))
+        assert board.move_side() == original_side  # Turn not switched
+
+    def test_move_any_switch_turn_flag(self):
+        """Test move_any switch_turn flag preserves board state after move.
+
+        Note: switch_turn=True means the turn is NOT restored to previous.
+        The _move_piece method doesn't change move_side, so with switch_turn=True
+        the move_side stays the same as before the call.
+        """
+        board = ChessBoard(FULL_INIT_FEN)
+        original_side = board.move_side()
+        board.move_any((0, 0), (0, 2), switch_turn=True)
+        # move_side stays the same since _move_piece doesn't change it
+        assert board.move_side() == original_side
