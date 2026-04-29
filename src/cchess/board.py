@@ -373,6 +373,13 @@ class ChessBoard:
     def is_valid_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
         """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。"""
 
+        # Check pos_from bounds
+        if not 0 <= pos_from[0] <= 8:
+            return False
+        if not 0 <= pos_from[1] <= 9:
+            return False
+
+        # Check pos_to bounds
         if not 0 <= pos_to[0] <= 8:
             return False
         if not 0 <= pos_to[1] <= 9:
@@ -531,9 +538,17 @@ class ChessBoard:
     def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。
 
-        根据走法文本中的数字类型自动检测走子方：
-        - 中文数字（一二三...）→ 红方格式
-        - 阿拉伯/全角数字（123...或１２３...）→ 黑方格式
+        解析流程：
+        1. 检测红黑：通过数字字符类型检测走法文本格式
+           - 中文数字（一二三...）→ 红方格式
+           - 阿拉伯/全角数字（123...或１２３...）→ 黑方格式
+        2. 如果是黑方则规范化棋盘：将棋盘转换为红方视角
+        3. 红黑走法都转化为红方走的中间方式：
+           - 黑方走法进行数字字符转换（如"炮２平５"→"炮二平五"）
+           - 在规范局面（红方视角）上解析走法
+           - 所有走法都视为红方走法进行解析
+        4. 将解析结果反规范化回原局面坐标
+        5. 执行走子
 
         对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
         """
@@ -556,7 +571,7 @@ class ChessBoard:
 
         # 根据文本格式规范化走法字符串
         if text_side == BLACK:
-            normalized_move_str = _normalize_move_str(move_str, BLACK, RED)
+            normalized_move_str = _normalize_move_str(move_str, BLACK)
         else:
             normalized_move_str = move_str
 
@@ -858,7 +873,9 @@ class ChessBoard:
             self.clear()
             return True
 
-        fen0, fen1 = fen.split(" ")[:2]  # 只取前两个元素
+        parts = fen.split(" ")
+        fen0 = parts[0]
+        fen1 = parts[1] if len(parts) > 1 else "w"  # 默认为红方走子
 
         b = ChessBoard()
         x = 0

@@ -117,7 +117,21 @@ _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "�
 
 # -----------------------------------------------------#
 class MoveNotation:
-    """走法中间表示，支持多种输出格式"""
+    """走法中间表示，支持多种输出格式
+
+    作用：将中文走法文本转换为统一的中间表示，便于解析和处理。
+
+    中间表示包含：
+    - piece_type: 棋子类型（K/A/B/N/R/C/P，大写红方，小写黑方）
+    - column: 列索引（0-8，红方视角）
+    - direction: 方向（+进/-退/=平）
+    - distance: 距离/目标列
+    - qualifier: 限定词（前/中/后/数字）
+    - piece_color: 棋子颜色（RED/BLACK）
+
+    支持红方和黑方格式的走法文本解析，统一转换为中间表示后，
+    可以方便地输出为不同格式（中文、ICCS、FEN等）。
+    """
 
     # 棋子类型映射（简体，繁体）
     PIECE_MAP = {
@@ -815,43 +829,38 @@ def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
     return digit_char
 
 
-def _normalize_move_str(move_str, original_side, normalized_side=RED):
-    """将走法字符串中的数字字符转换为规范局面下的格式。
+def _normalize_move_str(move_str, original_side):
+    """将走法字符串中的数字字符转换为规范局面（红方视角）下的格式。
 
-    例如："炮２平５"（黑方格式）转换为"炮二平五"（红方格式）
+    作用：将黑方格式的走法字符串转换为红方视角格式，用于统一解析。
+    - 黑方使用全角/阿拉伯数字（如"炮２平５"、"车1平5"）
+    - 红方使用中文数字（如"炮二平五"）
+    - 规范局面（红方视角）下统一使用中文数字
+
+    例如：
+    - "炮２平５"（黑方格式）→ "炮二平五"（红方格式）
+    - "车1平5"（黑方格式）→ "车一平五"（红方格式）
+    - "炮二平五"（红方格式）→ 直接返回（无需转换）
 
     参数:
         move_str: 原始走法字符串
         original_side: 原始走子方 (RED/BLACK)
-        normalized_side: 规范局面走子方 (默认为RED)
 
     返回:
-        str: 转换后的走法字符串
+        str: 转换后的走法字符串（规范局面红方视角格式）
     """
-    if original_side == normalized_side:
+    # 规范局面总是红方视角
+    if original_side == RED:
         return move_str
 
     # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
-    if original_side == BLACK and normalized_side == RED:
-        result = []
-        for char in move_str:
-            if char in _FULLWIDTH_TO_CHINESE:
-                result.append(_FULLWIDTH_TO_CHINESE[char])
-            else:
-                result.append(char)
-        return "".join(result)
-
-    # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
-    if original_side == RED and normalized_side == BLACK:
-        result = []
-        for char in move_str:
-            if char in _CHINESE_TO_FULLWIDTH:
-                result.append(_CHINESE_TO_FULLWIDTH[char])
-            else:
-                result.append(char)
-        return "".join(result)
-
-    return move_str
+    result = []
+    for char in move_str:
+        if char in _FULLWIDTH_TO_CHINESE:
+            result.append(_FULLWIDTH_TO_CHINESE[char])
+        else:
+            result.append(char)
+    return "".join(result)
 
 
 def _get_target_x(digit_char):
@@ -1520,7 +1529,21 @@ class _MoveTextParser:
         self.needs_denormalization = board.move_side() == BLACK
 
     def parse(self):
-        """执行解析，返回原局面中的走法坐标"""
+        """执行解析，返回原局面中的走法坐标
+
+        解析流程：
+        1. 首先尝试使用 MoveNotation 中间表示解析
+           - 调用 MoveNotation.from_text() 将走法文本转为中间表示
+           - 如果成功，使用中间表示解析走法坐标
+        2. 如果中间表示解析失败，回退到原始解析方法
+           - 解析棋子基本信息（棋子名称、FEN字符）
+           - 在规范局面中根据走法类型选择解析策略
+           - 计算走法坐标
+        3. 如果需要，将规范局面坐标反规范化回原局面坐标
+
+        返回:
+            list: 走法坐标列表，每个元素为 (from_pos, to_pos)
+        """
         # 首先尝试使用 MoveNotation 中间表示解析
         self.notation = MoveNotation.from_text(self.move_str, self.original_board)
         if self.notation:

@@ -32,16 +32,14 @@ print(move.to_text())
 
 ##产生某个棋子的合法走子
 ```
-moves = list(board.create_piece_moves((0,0)))  # 返回生成器，需 list() 转换
-for mv in moves:
+for mv in board.create_piece_moves((0,0)):
     move = board.copy().move(*mv)
     print(move.to_text())
 ```
 
 ##产生所有合法走子
 ```
-moves = list(board.create_moves())  # 返回生成器，需 list() 转换
-for mv in moves:
+for mv in board.create_moves():
     move = board.copy().move(*mv)
     print(move.to_text())
 ```
