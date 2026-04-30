@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re
 
 from .board import ChessBoard
-from .common import FULL_INIT_FEN, fench_to_species
+from .common import FULL_INIT_FEN, get_fench_color
 from .exception import CChessError
 
 
@@ -53,7 +53,7 @@ def read_from_txt(moves_txt, game_class, pos_txt=None):  # pylint: disable=too-m
 
         if board.is_valid_move(move_from, move_to):
             if not last_move:
-                _, piece_color = fench_to_species(board.get_fench(move_from))
+                piece_color = get_fench_color(board.get_fench(move_from))
                 board.set_move_side(piece_color)
                 game = game_class(board)
                 last_move = game
@@ -133,7 +133,7 @@ def txt_to_moves(board, moves_txt):
 
         if board.is_valid_move(move_from, move_to):
             if len(moves) == 0:
-                _, piece_color = fench_to_species(board.get_fench(move_from))
+                piece_color = get_fench_color(board.get_fench(move_from))
                 board.set_move_side(piece_color)
 
             new_move = board.move(move_from, move_to)

@@ -51,7 +51,7 @@ class CoverageAnalyzer:
 
         return coverage_data
 
-    def get_missing_lines(self, module_path: str, missing_ranges: str) -> List[int]:
+    def get_missing_lines(self, _module_path: str, missing_ranges: str) -> List[int]:
         """将缺失范围字符串转换为具体的行号列表"""
         missing_lines = []
 

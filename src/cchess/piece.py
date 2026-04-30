@@ -21,7 +21,7 @@ from .common import (
     RED,
     _get_target_x,
     _get_v_index,
-    fench_to_species,
+    get_fench_color,
     next_color,
 )
 
@@ -112,15 +112,15 @@ def _linear_piece_move(pos_from, move_str):
 class Piece:
     """棋子基类，封装棋子在棋盘上的位置、类型与颜色等通用属性。"""
 
-    __slots__ = ["board", "fench", "species", "color", "x", "y"]
+    __slots__ = ["board", "fench", "color", "x", "y"]
 
     # pylint: disable=attribute-defined-outside-init
 
     def __init__(self, board, fench, pos):
-        """初始化棋子，记录所属棋盘、FEN 字符、种类与颜色及坐标。"""
+        """初始化棋子，记录所属棋盘、FEN 字符、颜色及坐标。"""
         self.board = board
         self.fench = fench
-        self.species, self.color = fench_to_species(fench)
+        self.color = get_fench_color(fench)
         self.x, self.y = pos
 
     def is_valid_pos(self, pos):

@@ -19,7 +19,7 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 
-from .constants import (
+from .constants import (  # noqa: F401 (re-exported for other modules)
     ANY_COLOR,
     BLACK,
     EMPTY_BOARD,
@@ -266,44 +266,6 @@ def _get_target_x(digit_char):
     return digit_index
 
 
-# 明确导出列表，避免 Ruff F401 警告
-__all__ = [
-    "ANY_COLOR",
-    "BLACK",
-    "EMPTY_BOARD",
-    "EMPTY_FEN",
-    "FULL_INIT_BOARD",
-    "FULL_INIT_FEN",
-    "RED",
-    "_FULLWIDTH_TO_CHINESE",
-    "_CHINESE_TO_FULLWIDTH",
-    "_H_LEVEL_INDEX",
-    "_V_CHANGE_INDEX",
-    "_ZH_TO_HALF",
-    "_HALF_TO_ZH",
-    "append_move_to_game",
-    "next_color",
-    "fench_to_txt_name",
-    "fench_to_text",
-    "text_to_fench",
-    "swap_fench",
-    "fench_to_species",
-    "pos2iccs",
-    "iccs2pos",
-    "iccs_mirror",
-    "iccs_flip",
-    "iccs_swap",
-    "iccs_list_mirror",
-    "half2full",
-    "full2half",
-    "fen_move_color",
-    "get_fen_type",
-    "get_fen_type_detail",
-    "get_fen_pieces",
-    "parse_dhtmlxq",
-]
-
-
 def next_color(color: int) -> int:
     """切换到下一个走子方，对应 ChessPlayer.next() 的逻辑。"""
     return (3 - color) % 3
@@ -447,14 +409,28 @@ def swap_fench(fench: str) -> str:
     return fench.upper() if fench.islower() else fench.lower()
 
 
-# 缓存 fench 到 (species, color) 的映射，避免重复计算
-_SPECIES_CACHE = {}
-
-
 def fench_to_species(fen_ch):
-    if fen_ch not in _SPECIES_CACHE:
-        _SPECIES_CACHE[fen_ch] = (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
-    return _SPECIES_CACHE[fen_ch]
+    """从 FEN 字符返回 (species, color) 元组。
+
+    参数:
+        fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
+
+    返回:
+        tuple: (species, color)，其中 species 是小写棋子类型，color 是 RED 或 BLACK
+    """
+    return (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
+
+
+def get_fench_color(fen_ch):
+    """从 FEN 字符返回棋子颜色。
+
+    参数:
+        fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
+
+    返回:
+        int: RED 或 BLACK
+    """
+    return BLACK if fen_ch.islower() else RED
 
 
 # -----------------------------------------------------#
@@ -466,7 +442,7 @@ def fen_move_color(fen):
 # -----------------------------------------------------#
 # 全角半角数字转换映射表
 _DIGIT_MAP_FULL_TO_HALF = str.maketrans("１２３４５６７８９", "123456789")
-_DIGIT_MAP_HALF_TO_FULL = str.maketrans("123456789", "１２３４５６７８９")
+# _DIGIT_MAP_HALF_TO_FULL = str.maketrans("123456789", "１２３４５６７８９")
 
 
 def full2half(text):
@@ -474,9 +450,9 @@ def full2half(text):
     return text.translate(_DIGIT_MAP_FULL_TO_HALF)
 
 
-def half2full(text):
-    """将半角数字转换为全角数字。"""
-    return text.translate(_DIGIT_MAP_HALF_TO_FULL)
+# def half2full(text):
+#    """将半角数字转换为全角数字。"""
+#    return text.translate(_DIGIT_MAP_HALF_TO_FULL)
 
 
 # -----------------------------------------------------#

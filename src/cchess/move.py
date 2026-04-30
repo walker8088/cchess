@@ -176,15 +176,7 @@ class MoveNotation:
 
     # 反向查找：中文数字 -> 整数 (O(1) 查找)
     _CHINESE_NUM_TO_INT: dict[str, int] = {
-        "一": 1,
-        "二": 2,
-        "三": 3,
-        "四": 4,
-        "五": 5,
-        "六": 6,
-        "七": 7,
-        "八": 8,
-        "九": 9,
+        **_ZH_TO_HALF,
         "１": 1,
         "２": 2,
         "３": 3,
@@ -226,8 +218,8 @@ class MoveNotation:
         self.is_checkmate = is_checkmate
         self.piece_color = piece_color  # RED/BLACK
 
-    @classmethod
-    def from_move(cls, move):
+    @staticmethod
+    def from_move(move):
         """从Move对象创建中间表示"""
         # 获取棋子信息
         board = move.board_before()
@@ -333,7 +325,7 @@ class MoveNotation:
                     else:
                         qualifier = str(idx + 1)  # 数字限定词
 
-        return cls(
+        return MoveNotation(
             piece_type,
             column,
             direction,
@@ -345,8 +337,8 @@ class MoveNotation:
             piece_color=color,
         )
 
-    @classmethod
-    def from_text(cls, text, board):
+    @staticmethod
+    def from_text(text, board):
         """从中文走法文本解析中间表示
 
         参数:
@@ -367,8 +359,8 @@ class MoveNotation:
         qualifier = ""
         offset = 0
         first_char = text[0]
-        if first_char in cls.CHINESE_QUALIFIER_MAP:
-            qualifier = cls.CHINESE_QUALIFIER_MAP[first_char]
+        if first_char in MoveNotation.CHINESE_QUALIFIER_MAP:
+            qualifier = MoveNotation.CHINESE_QUALIFIER_MAP[first_char]
             offset = 1
 
         # 2. 解析棋子类型
@@ -376,7 +368,7 @@ class MoveNotation:
             return None
 
         piece_char = text[offset]
-        piece_type = cls.REVERSE_PIECE_MAP.get(piece_char)
+        piece_type = MoveNotation.REVERSE_PIECE_MAP.get(piece_char)
         if piece_type is None:
             return None
         offset += 1
@@ -387,9 +379,9 @@ class MoveNotation:
 
         # 判断是否有列信息（有限定词时无列，否则需要检查是否是方向字符）
         column = None
-        if text[offset] not in cls._DIRECTION_CHAR_TO_SYMBOL:
+        if text[offset] not in MoveNotation._DIRECTION_CHAR_TO_SYMBOL:
             # 存在列信息
-            column = cls._COLUMN_CHAR_TO_IDX.get(text[offset])
+            column = MoveNotation._COLUMN_CHAR_TO_IDX.get(text[offset])
             if column is None:
                 return None
             offset += 1
@@ -397,20 +389,22 @@ class MoveNotation:
                 return None
 
         # 解析方向
-        direction = cls._DIRECTION_CHAR_TO_SYMBOL.get(text[offset])
+        direction = MoveNotation._DIRECTION_CHAR_TO_SYMBOL.get(text[offset])
         if direction is None:
             return None
 
         # 解析距离（O(1) 查找）
         distance_char = text[offset + 1 :]
-        distance = cls._parse_distance_char(distance_char, direction, piece_type)
+        distance = MoveNotation._parse_distance_char(
+            distance_char, direction, piece_type
+        )
         if distance is None:
             return None
 
         # 4. 确定棋子颜色
         piece_color = RED if piece_type.isupper() else BLACK
 
-        return cls(
+        return MoveNotation(
             piece_type=piece_type,
             column=column,
             direction=direction,
@@ -419,9 +413,9 @@ class MoveNotation:
             piece_color=piece_color,
         )
 
-    @classmethod
+    @staticmethod
     def _parse_distance_char(
-        cls, distance_char: str, direction: str, piece_type: str
+        distance_char: str, direction: str, piece_type: str
     ) -> int | None:
         """解析距离字符，根据方向和棋子类型返回对应的数字。
 
@@ -435,9 +429,9 @@ class MoveNotation:
         """
         # 平移或士/象/马：距离表示目标列
         if direction == "=" or piece_type.lower() in ("a", "b", "n"):
-            return cls._COLUMN_CHAR_TO_IDX.get(distance_char)
+            return MoveNotation._COLUMN_CHAR_TO_IDX.get(distance_char)
         # 王/车/炮/兵：距离表示步数
-        return cls._CHINESE_NUM_TO_INT.get(distance_char)
+        return MoveNotation._CHINESE_NUM_TO_INT.get(distance_char)
 
     def to_compact(self):
         """转换为紧凑格式"""
@@ -473,8 +467,7 @@ class MoveNotation:
         # 根据棋子颜色选择不同的处理逻辑
         if self.piece_color == BLACK:
             return self._to_chinese_black(piece_name, traditional)
-        else:
-            return self._to_chinese_red(piece_name, traditional)
+        return self._to_chinese_red(piece_name, traditional)
 
     def _to_chinese_black(self, piece_name, traditional):
         """转换为黑方格式的中文走法（使用全角数字）"""
@@ -497,7 +490,7 @@ class MoveNotation:
             )
 
         # 王、车、炮、兵
-        distance_name = self._get_distance_name_black()
+        distance_name = self._get_distance_name(BLACK)
         return self._build_move_str(
             piece_name, direction_name, distance_name, qualifier_name, True
         )
@@ -523,7 +516,7 @@ class MoveNotation:
             )
 
         # 王、车、炮、兵
-        distance_name = self._get_distance_name_red()
+        distance_name = self._get_distance_name(RED)
         return self._build_move_str(
             piece_name, direction_name, distance_name, qualifier_name, False
         )
@@ -555,18 +548,7 @@ class MoveNotation:
 
         if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
             # 数字限定词转换为中文数字
-            num_map = {
-                "1": "一",
-                "2": "二",
-                "3": "三",
-                "4": "四",
-                "5": "五",
-                "6": "六",
-                "7": "七",
-                "8": "八",
-                "9": "九",
-            }
-            return num_map.get(self.qualifier, self.qualifier)
+            return _HALF_TO_ZH[int(self.qualifier)]
 
         return self.QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
 
@@ -582,33 +564,14 @@ class MoveNotation:
             return self.COLUMN_MAP[self.distance][0]
         return str(self.distance)
 
-    def _get_distance_name_black(self):
-        """获取黑方距离名称（全角数字）"""
+    def _get_distance_name(self, color):
+        """获取距离名称，红方用中文数字，黑方用全角数字"""
         if 1 <= self.distance <= 9:
-            # 将步数转换为全角数字
-            distance_name = str(self.distance)
-            fullwidth_digits = {
-                "1": "１",
-                "2": "２",
-                "3": "３",
-                "4": "４",
-                "5": "５",
-                "6": "６",
-                "7": "７",
-                "8": "８",
-                "9": "９",
-            }
-            return "".join(fullwidth_digits.get(c, c) for c in distance_name)
-        return str(self.distance)
-
-    def _get_distance_name_red(self):
-        """获取红方距离名称（中文数字）"""
-        if 1 <= self.distance <= 9:
-            return (
-                _HALF_TO_ZH[self.distance]
-                if self.distance < len(_HALF_TO_ZH)
-                else str(self.distance)
-            )
+            if color == RED:
+                return _HALF_TO_ZH[self.distance]
+            else:
+                # 黑方：转换为全角数字
+                return chr(0xFF10 + self.distance)  # ０=0xFF10, １=0xFF11, ...
         return str(self.distance)
 
     def _build_move_str(

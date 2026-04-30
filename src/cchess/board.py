@@ -38,8 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from typing import Iterator, List, Optional, Tuple
 
 from .common import (
-    fench_to_species,
     fench_to_txt_name,
+    get_fench_color,
     iccs2pos,
     load_json,
     next_color,
@@ -379,7 +379,7 @@ class ChessBoard:
                 if color is None:
                     yield Piece.create(self, fench, (x, y))
                 else:
-                    _, p_color = fench_to_species(fench)
+                    p_color = get_fench_color(fench)
                     if color == p_color:
                         yield Piece.create(self, fench, (x, y))
 
@@ -428,14 +428,14 @@ class ChessBoard:
         if not fench_from:
             return False
 
-        _, from_color = fench_to_species(fench_from)
+        from_color = get_fench_color(fench_from)
 
         if self._move_side not in (ANY_COLOR, from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
         if fench_to:
-            _, to_color = fench_to_species(fench_to)
+            to_color = get_fench_color(fench_to)
             if from_color == to_color:
                 return False
 
@@ -446,48 +446,15 @@ class ChessBoard:
 
     def _move_piece(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
-    ) -> Optional[str]:
-        """在内部执行棋子移动（不做合法性检查），并返回被移动的 fench。"""
-        fench = self._board[pos_from[1]][pos_from[0]]
-        self._board[pos_to[1]][pos_to[0]] = fench
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """在内部执行棋子移动（不做合法性检查），并返回（被移动的fench，被吃子的fench) 。"""
+        moving_fench = self._board[pos_from[1]][pos_from[0]]
+        captured_fench = self._board[pos_to[1]][pos_to[0]]
+        self._board[pos_to[1]][pos_to[0]] = moving_fench
         self._board[pos_from[1]][pos_from[0]] = None
         self._attack_matrix_dirty = True
 
-        return fench
-
-    def make_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> MoveInfo:
-        """执行移动并返回状态记录，不进行合法性检查。
-
-        注意：此函数不切换走子方，走子方由外部程序控制。
-        """
-        # 记录移动前状态
-        prev_attack_matrix_dirty = self._attack_matrix_dirty
-        prev_move_side = self._move_side
-        moving_fench = self._board[pos_from[1]][pos_from[0]]
-        captured_fench = self._board[pos_to[1]][pos_to[0]]
-        board_before = [row[:] for row in self._board]  # 深拷贝棋盘数组
-
-        # 执行移动
-        self._move_piece(pos_from, pos_to)
-
-        # 记录移动后状态（不切换走子方）
-        next_attack_matrix_dirty = self._attack_matrix_dirty
-        next_move_side = self._move_side
-        board_after = [row[:] for row in self._board]  # 深拷贝棋盘数组
-
-        # 返回状态记录
-        return MoveInfo(
-            from_pos=pos_from,
-            to_pos=pos_to,
-            moving_fench=moving_fench,
-            captured_fench=captured_fench,
-            prev_attack_matrix_dirty=prev_attack_matrix_dirty,
-            next_attack_matrix_dirty=next_attack_matrix_dirty,
-            prev_move_side=prev_move_side,
-            next_move_side=next_move_side,
-            board_before=board_before,
-            board_after=board_after,
-        )
+        return (moving_fench, captured_fench)
 
     def move(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True
@@ -607,7 +574,7 @@ class ChessBoard:
         if not piece:
             return
 
-        _, piece_color = fench_to_species(piece.fench)
+        piece_color = get_fench_color(piece.fench)
         if piece_color != self._move_side:
             return
 
@@ -642,23 +609,28 @@ class ChessBoard:
         返回:
             bool: 是否处于将军状态
         """
-        move_info = self.make_move(pos_from, pos_to)
+        # 保存状态
+        prev_attack = self._attack_matrix_dirty
+        prev_side = self._move_side
+        board_before = [row[:] for row in self._board]
 
+        # 执行移动
+        self._move_piece(pos_from, pos_to)
+
+        # 检查将军
         if check_after_move:
-            # 检查移动后己方是否被将军
-            # make_move 不切换走子方，需要手动切换
             self._move_side = next_color(self._move_side)
             checking = self.is_checking()
-            self._move_side = move_info.prev_move_side
+            self._move_side = prev_side
         else:
-            # 检查移动后是否将军对方
-            original_player = self._move_side
-            self._move_side = move_info.prev_move_side
+            orig = self._move_side
+            self._move_side = prev_side
             checking = self.is_checking()
-            self._move_side = original_player
+            self._move_side = orig
 
-        self._board = [row[:] for row in move_info.board_before]
-        self._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
+        # 恢复状态
+        self._board = board_before
+        self._attack_matrix_dirty = prev_attack
         return checking
 
     def is_checked_move(

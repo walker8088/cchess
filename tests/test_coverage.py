@@ -32,7 +32,6 @@ from cchess.board import ChessBoardOneHot
 from cchess.common import (
     full2half,
     get_fen_type_detail,
-    half2full,
 )
 from cchess.engine import (
     EngineStatus,
@@ -1260,11 +1259,6 @@ class TestCommon:
         """Test full2half conversion."""
         result = full2half("１２３")
         assert result == "123"
-
-    def test_half2full(self):
-        """Test half2full conversion."""
-        result = half2full("123")
-        assert result == "１２３"
 
 
 # ============================================================

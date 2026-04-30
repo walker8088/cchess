@@ -21,7 +21,7 @@ import struct
 from typing import Tuple
 
 from .board import ChessBoard
-from .common import RED, append_move_to_game, fench_to_species
+from .common import RED, append_move_to_game, get_fench_color
 
 # -----------------------------------------------------#
 # result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
@@ -58,6 +58,8 @@ def _xqf_decode_pos2(man_pos):
 class XQFKey:
     """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
 
+    # pylint: disable=invalid-name
+
     def __init__(self):
         """初始化密钥容器。"""
         self.KeyXY = None
@@ -77,12 +79,11 @@ class XQFBuffDecoder:
     """
 
     def __init__(self, buffer):
-        """__init__ 方法。"""
         self.buffer = buffer
         self.index = 0
         self.length = len(buffer)
 
-    def __read(self, size):
+    def _read(self, size):
         """内部方法：从当前索引读 `size` 字节并推进索引。"""
         start = self.index
         stop = min(self.index + size, self.length)
@@ -93,7 +94,7 @@ class XQFBuffDecoder:
     def read_str(self, size, coding="GB18030"):
         """读取指定字节并按给定编码尝试解码为字符串，失败返回 None。"""
 
-        buff = self.__read(size)
+        buff = self._read(size)
 
         try:
             ret = buff.decode(coding)
@@ -104,7 +105,7 @@ class XQFBuffDecoder:
 
     def read_bytes(self, size):
         """读取指定字节并返回 bytearray。"""
-        return bytearray(self.__read(size))
+        return bytearray(self._read(size))
 
     def read_int(self):
         """读取 4 字节并按小端序返回一个整数。"""
@@ -126,7 +127,7 @@ class XQFBuffDecoder:
 # KeyXYt    : dTByte;                         // 棋谱终点钥匙
 
 
-def __init_decrypt_key(buff_str):
+def _init_decrypt_key(buff_str):
     """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。"""
 
     keys = XQFKey()
@@ -178,7 +179,7 @@ def __init_decrypt_key(buff_str):
 
 
 # -----------------------------------------------------#
-def __init_chess_board(man_str, version, keys=None):
+def _init_chess_board(man_str, version, keys=None):
     """根据文件中存放的棋子布局字节串构造内部的 32 长度数组。
 
     如果 `keys` 提供了解密因子则按版本和密钥做位置解密与字节变换，
@@ -208,7 +209,7 @@ def __init_chess_board(man_str, version, keys=None):
 
 
 # -----------------------------------------------------#
-def __decode_buff(keys, buff):
+def _decode_xqf_buff(keys, buff):
     """使用 `keys` 中的 F32Keys 对缓冲区做逐字节的解密变换并返回解密后的 bytes。"""
     nPos = 0x400
     de_buff = bytearray(buff)
@@ -221,7 +222,7 @@ def __decode_buff(keys, buff):
 
 
 # -----------------------------------------------------#
-def __read_init_info(buff_decoder, version, keys):
+def _read_init_info(buff_decoder, version, keys):
     """读取并返回记录区的注释信息（若存在）。
 
     对应 XQF 中走子前的初始化注释，低版本和高版本通过不同方式
@@ -290,7 +291,7 @@ def _parse_step_info_high_version(step_info, buff_decoder, keys):
     return has_next_step, has_var_step, annote_len
 
 
-def __read_steps(buff_decoder, version, keys, game, parent_move, board):
+def _read_steps(buff_decoder, version, keys, game, parent_move, board):
     """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
 
     解析单个走子记录，根据版本与 keys 解码起点/终点、注释和分支标志，
@@ -321,7 +322,7 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
     fench = board.get_fench(move_from)
     if fench:
         # pylint: disable=duplicate-code
-        _, piece_color = fench_to_species(fench)
+        piece_color = get_fench_color(fench)
         board.set_move_side(piece_color)
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
@@ -329,10 +330,10 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
             good_move = append_move_to_game(game, curr_move, parent_move)
 
     if has_next_step:
-        __read_steps(buff_decoder, version, keys, game, good_move, board)
+        _read_steps(buff_decoder, version, keys, game, good_move, board)
 
     if has_var_step:
-        __read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
+        _read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
         game.info["branchs"] += 1
 
 
@@ -406,13 +407,13 @@ def _parse_xqf_header(contents):
     # 解析密钥和棋盘数据
     if version <= 0x0A:
         keys = None
-        chess_mans = __init_chess_board(ucBoard, version)
+        chess_mans = _init_chess_board(ucBoard, version)
         step_base_buff = XQFBuffDecoder(contents[_XQF_HEADER_SIZE:])
     else:
-        keys = __init_decrypt_key(crypt_keys)
-        chess_mans = __init_chess_board(ucBoard, version, keys)
+        keys = _init_decrypt_key(crypt_keys)
+        chess_mans = _init_chess_board(ucBoard, version, keys)
         step_base_buff = XQFBuffDecoder(
-            __decode_buff(keys, contents[_XQF_HEADER_SIZE:])
+            _decode_xqf_buff(keys, contents[_XQF_HEADER_SIZE:])
         )
 
     return {
@@ -507,26 +508,7 @@ def _build_xqf_board(chess_mans):
         ChessBoard: 构造好的棋盘
     """
     board = ChessBoard()
-
-    chessman_kinds = (
-        "R",
-        "N",
-        "B",
-        "A",
-        "K",
-        "A",
-        "B",
-        "N",
-        "R",
-        "C",
-        "C",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-    )
-
+    chessman_kinds = "RNBAKABNRCCPPPPP"
     for side in range(2):
         for man_index in range(16):
             man_pos = chess_mans[side * 16 + man_index]
@@ -540,7 +522,7 @@ def _build_xqf_board(chess_mans):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, game_class, read_annotation=True):
+def read_from_xqf(full_file_name, game_class, _read_annotation=True):
     """从 `.xqf` 文件读取并解析为 `Game` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
@@ -563,7 +545,7 @@ def read_from_xqf(full_file_name, game_class, read_annotation=True):
         return None
 
     board = _build_xqf_board(header["chess_mans"])
-    game_annotation = __read_init_info(
+    game_annotation = _read_init_info(
         header["step_base_buff"], header["version"], header["keys"]
     )
 
@@ -571,7 +553,7 @@ def read_from_xqf(full_file_name, game_class, read_annotation=True):
 
     game.info.update(header["game_info"])
 
-    __read_steps(
+    _read_steps(
         header["step_base_buff"],
         header["version"],
         header["keys"],
@@ -591,8 +573,7 @@ def read_from_xqf(full_file_name, game_class, read_annotation=True):
 
 
 # -----------------------------------------------------#
-def _encode_pos(pos):
-    """_encode_pos 函数。"""
+def _encode_xqf_pos(pos):
     return pos[0] * 10 + pos[1]
 
 
@@ -607,7 +588,6 @@ class XQMove:
         annote: str = "",
         has_variation=False,
     ):
-        """__init__ 方法。"""
         self.start_pos = start_pos  # (x, y) 元组
         self.end_pos = end_pos  # (x, y) 元组
         self.annote = annote
@@ -619,7 +599,6 @@ class XQFWriter:
     """从 `Game` 对象写入 XQF 格式文件的写入器。"""
 
     def __init__(self, game):
-        """__init__ 方法。"""
         self.game = game
         self.header = bytearray(b"\x00" * 1024)  # 头部固定1024字节
 
@@ -693,7 +672,7 @@ class XQFWriter:
                     position[pos_index] = 0xFF
                 else:
                     pos = pos_list.pop(0)
-                    position[pos_index] = _encode_pos(pos)
+                    position[pos_index] = _encode_xqf_pos(pos)
 
         self._set_bytes(0x0010, bytes(position))
 
@@ -755,8 +734,8 @@ class XQFWriter:
 
     def _encode_move(self, move: XQMove, is_last) -> Tuple[bytes, bytes]:
         """编码一步棋为XQF格式"""
-        start_pos_value = _encode_pos(move.start_pos)
-        end_pos_value = _encode_pos(move.end_pos)
+        start_pos_value = _encode_xqf_pos(move.start_pos)
+        end_pos_value = _encode_xqf_pos(move.end_pos)
 
         # 构建移动记录
         move_record = bytearray(8)

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 
 from .board import ChessBoard
-from .common import BLACK, RED, append_move_to_game, fench_to_species
+from .common import BLACK, RED, append_move_to_game, get_fench_color
 from .exception import CChessError
 
 # pylint: disable=too-many-locals,too-many-branches
@@ -283,7 +283,7 @@ def _cbr_read_steps(buff_decoder, game, parent_move, board):
     if not fench:
         return
     # pylint: disable=duplicate-code
-    _, piece_color = fench_to_species(fench)
+    piece_color = get_fench_color(fench)
     board.set_move_side(piece_color)
 
     if board.is_valid_move(move_from, move_to):
