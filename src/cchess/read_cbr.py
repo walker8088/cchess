@@ -18,12 +18,12 @@ import struct
 
 from .board import ChessBoard
 from .common import BLACK, RED, append_move_to_game, get_fench_color
+from .constants import GAME_RESULT_MAP
 from .exception import CChessError
 
 # pylint: disable=too-many-locals,too-many-branches
 # -----------------------------------------------------#
 CODING_PAGE_CBR = "utf-16-le"
-_cbr_result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 _cbr_piece_dict = {
     # 红方
     0x11: "R",  # 车
@@ -340,7 +340,7 @@ def read_from_cbr_buffer(contents, game_class):
     game_info["event"] = cut_bytes_to_str(event)
     game_info["red"] = cut_bytes_to_str(red)
     game_info["black"] = cut_bytes_to_str(black)
-    game_info["result"] = _cbr_result_dict[game_result]
+    game_info["result"] = GAME_RESULT_MAP[game_result]
     board = ChessBoard()
     if move_side == 1:
         board.set_move_side(RED)
@@ -387,29 +387,10 @@ def read_from_cbl(file_name, game_class, verify=True):  # pylint: disable=unused
         game_class: Game类，用于创建游戏实例
         verify: 验证标志
     """
-    with open(file_name, "rb") as f:
-        contents = f.read()
-
-    lib_name, _book_count, _valid = _parse_cbl_header(contents)
-
+    # 复用 read_from_cbl_progressing 获取最终结果
     lib_info = {}
-    lib_info["name"] = lib_name
-    lib_info["games"] = []
-
-    buff_start = _get_cbl_data_offset(_book_count)
-    game_buffer, game_buffer_len, game_buffer_index = _find_and_validate_cbl_records(
-        contents, buff_start
-    )
-
-    if game_buffer_index < 0:
-        return lib_info
-
-    for game, game_index in _parse_cbl_games(
-        contents, buff_start, game_buffer_index, game_buffer_len, game_class
-    ):
-        game.info["index"] = game_index
-        lib_info["games"].append(game)
-
+    for result in read_from_cbl_progressing(file_name, game_class):
+        lib_info = result
     return lib_info
 
 

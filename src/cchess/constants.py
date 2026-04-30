@@ -26,3 +26,6 @@ FULL_INIT_FEN = f"{FULL_INIT_BOARD} w"
 
 FEN_NUM_SET = frozenset(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
 FEN_CHAR_SET = frozenset(("k", "a", "b", "n", "r", "c", "p"))
+
+# 比赛结果映射
+GAME_RESULT_MAP = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}

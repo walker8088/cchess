@@ -28,7 +28,7 @@ def decode_txt_pos(pos):
 
 
 # -----------------------------------------------------#
-def read_from_txt(moves_txt, game_class, pos_txt=None):  # pylint: disable=too-many-locals
+def read_from_txt(moves_txt, game_class, pos_txt=None):
     """从文本棋谱字符串读取并返回 `Game` 对象。
 
     Args:
@@ -36,36 +36,13 @@ def read_from_txt(moves_txt, game_class, pos_txt=None):  # pylint: disable=too-m
         game_class: Game类，用于创建游戏实例
         pos_txt: 位置文本
     """
-
-    # 复用 txt_to_board 构造棋盘
     board = txt_to_board(pos_txt)
+    game = game_class(board)
 
-    last_move = None
-    if not moves_txt:
-        return game_class(board)
-
-    step_no = 0
-    while step_no * 4 < len(moves_txt):
-        # steps = moves_txt[step_no * 4:step_no * 4 + 4]
-
-        move_from = decode_txt_pos(moves_txt[step_no * 4 : step_no * 4 + 2])
-        move_to = decode_txt_pos(moves_txt[step_no * 4 + 2 : step_no * 4 + 4])
-
-        if board.is_valid_move(move_from, move_to):
-            if not last_move:
-                piece_color = get_fench_color(board.get_fench(move_from))
-                board.set_move_side(piece_color)
-                game = game_class(board)
-                last_move = game
-
-            new_move = board.move(move_from, move_to)
-            last_move.append_next_move(new_move)
-            last_move = new_move
-        else:
-            raise CChessError(f"bad move at {step_no} {move_from} {move_to}")
-        step_no += 1
-    if step_no == 0:
-        game = game_class(board)
+    if moves_txt:
+        moves = txt_to_moves(board, moves_txt)
+        for move in moves:
+            game.append_next_move(move)
 
     return game
 

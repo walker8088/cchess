@@ -16,16 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 
-# import os
 import struct
 from typing import Tuple
 
 from .board import ChessBoard
 from .common import RED, append_move_to_game, get_fench_color
-
-# -----------------------------------------------------#
-# result_dict = {0: UNKNOWN, 1: RED_WIN, 2: BLACK_WIN, 3: PEACE, 4: PEACE}
-result_dict = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
+from .constants import GAME_RESULT_MAP
 
 # XQF 协议常量
 _XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
@@ -462,7 +458,7 @@ def _build_xqf_game_info(
     game_info["type"] = ucType + 1
 
     if ucRes <= 4:  # It's really some file has value 4
-        game_info["result"] = result_dict[ucRes]
+        game_info["result"] = GAME_RESULT_MAP[ucRes]
     else:
         print("Bad Result  ", ucRes)
         game_info["result"] = "*"
