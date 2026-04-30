@@ -35,14 +35,12 @@ from .common import (
     QUALIFIER_MAP,
     RED,
     REVERSE_PIECE_MAP,
-    _get_digit_index,
     fench_to_species,
     fench_to_text,
     full2half,
     next_color,
     pos2iccs,
     swap_fench,
-    text_to_fench,
 )
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -949,7 +947,6 @@ class _MoveTextParser:
         self.work_side = None
         self.fench = None
         self.piece_fench = None
-        self.piece_name = None
         # 中间表示
         self.notation = None
         # 记录是否需要坐标转换
@@ -1007,157 +1004,25 @@ class _MoveTextParser:
         """执行解析，返回原局面中的走法坐标
 
         解析流程：
-        1. 首先尝试使用 MoveNotation 中间表示解析
-           - 调用 MoveNotation.from_text() 将走法文本转为中间表示
-           - 如果成功，使用中间表示解析走法坐标
-        2. 如果中间表示解析失败，回退到原始解析方法
-           - 解析棋子基本信息（棋子名称、FEN字符）
-           - 在规范局面中根据走法类型选择解析策略
-           - 计算走法坐标
-        3. 如果需要，将规范局面坐标反规范化回原局面坐标
+        1. 使用 MoveNotation 中间表示解析走法文本
+        2. 从中间表示计算走法坐标
+        3. 反规范化坐标回原局面
 
         返回:
             list: 走法坐标列表，每个元素为 (from_pos, to_pos)
         """
-        # 首先尝试使用 MoveNotation 中间表示解析
+        # 使用 MoveNotation 中间表示解析
         self.notation = MoveNotation.from_text(self.move_str, self.original_board)
-        if self.notation:
-            # 使用中间表示解析
-            result = self._parse_from_notation()
-            if result:
-                return result
-
-        # 回退到原始解析方法
-        if not self._parse_basic_info():
+        if not self.notation:
             return None
 
-        # 在规范局面中解析走法
-        normalized_moves = self._parse_in_normalized_board()
-        if not normalized_moves:
+        # 从中间表示解析走法坐标
+        result = self._parse_from_notation()
+        if not result:
             return None
 
-        # 将规范局面中的坐标转换回原局面
-        return self._denormalize_moves(normalized_moves)
-
-    def _parse_in_normalized_board(self):
-        """在规范局面中解析走法"""
-        # 根据首字符选择解析策略
-        first_char = self.move_str[0]
-        if first_char in ["一", "二", "三", "四", "五"]:
-            return self._parse_multi_lines()
-        if first_char in ["前", "中", "后"]:
-            return self._parse_multi_pieces()
-        return self._parse_simple()
-
-    def _parse_basic_info(self):
-        """解析基本信息：棋子名称、FEN字符"""
-        # 如果有中间表示，从中获取信息
-        if self.notation:
-            # 从中间表示获取棋子信息
-            piece_type = self.notation.piece_type.upper()  # 规范局面使用大写
-
-            # 棋子类型到 FEN 字符的映射
-            piece_type_to_fench = {
-                "K": "K",
-                "A": "A",
-                "B": "B",
-                "N": "N",
-                "R": "R",
-                "C": "C",
-                "P": "P",
-            }
-
-            if piece_type in piece_type_to_fench:
-                self.fench = piece_type_to_fench[piece_type]
-                self.piece_fench = self.fench.lower()
-                self.work_side = RED
-                return True
-
-        # 回退到原始解析方法
-        # 确定棋子名称
-        if self.move_str[0] in ["前", "中", "后", "一", "二", "三", "四", "五"]:
-            self.piece_name = self.move_str[1]
-        else:
-            self.piece_name = self.move_str[0]
-
-        # 在规范局面中，所有走子方都视为红方
-        self.work_side = RED
-
-        # 转换为FEN字符（在规范局面中，所有棋子都是红方视角）
-        self.fench = text_to_fench(self.piece_name, RED)
-        if not self.fench:
-            return False
-
-        self.piece_fench = self.fench.lower()
-        return True
-
-    def _parse_simple(self):
-        """解析简单走法（如"炮二平五"）"""
-        digit_char = self.move_str[1]
-        x = _get_digit_index(digit_char)
-        if x is None:
-            return None
-
-        positions = self.normalized_board.get_fench_positions_x(self.fench, x)
-        if len(positions) == 0:
-            return None
-
-        # 除了士/象，同一列不能有多个相同棋子
-        if (len(positions) > 1) and (self.piece_fench not in ["a", "b"]):
-            return None
-
-        moves = []
-        for pos in positions:
-            move = Move.text_move_to_std_move(self.piece_fench, pos, self.move_str[2:])
-            if move:
-                moves.append((pos, move))
-
-        return moves
-
-    def _parse_multi_pieces(self):
-        """解析多棋子情况（如"前炮平五"、"中兵平五"、"后炮平五"）"""
-        positions = self.normalized_board.get_fench_positions(self.fench)
-        if not positions:
-            return None
-
-        # 规范局面下（红方视角）：前=y 大（靠近对方），后=y 小（靠近己方）
-        positions.sort(key=lambda p: p[1], reverse=True)  # y 降序：前->后
-
-        move_idx = {"前": 0, "中": 1, "后": -1}  # 前=第一个，后=最后一个
-        pos = positions[move_idx[self.move_str[0]]]
-
-        move = Move.text_move_to_std_move(self.piece_fench, pos, self.move_str[2:])
-        if move:
-            return [(pos, move)]
-        return None
-
-    def _parse_multi_lines(self):
-        """解析多线情况（如"一炮平五"、"二炮平五"等）"""
-        digit_char = self.move_str[0]
-        target_x = _get_digit_index(digit_char)
-
-        positions = []
-        if target_x is not None:
-            positions = self.normalized_board.get_fench_positions_x(
-                self.fench, target_x
-            )
-
-        if not positions:
-            positions = self.normalized_board.get_fench_positions(self.fench)
-
-        if self.piece_fench == "p" and len(positions) > 1:
-            # 规范局面下（红方视角）：兵从后往前排序
-            positions.sort(key=lambda p: p[1], reverse=True)
-
-        if len(positions) == 0:
-            return None
-
-        for pos in positions:
-            move = Move.text_move_to_std_move(self.piece_fench, pos, self.move_str[2:])
-            if move:
-                return [(pos, move)]
-
-        return None
+        # 反规范化坐标回原局面
+        return self._denormalize_moves(result)
 
     def _denormalize_moves(self, normalized_moves):
         """将规范局面中的走法坐标转换回原局面"""
@@ -1288,5 +1153,4 @@ class _MoveTextParser:
         if not moves:
             return None
 
-        # 将规范局面中的坐标转换回原局面
-        return self._denormalize_moves(moves)
+        return moves
