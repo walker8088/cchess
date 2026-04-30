@@ -14,6 +14,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import annotations
+
 import json
 import re
 from collections import OrderedDict
@@ -73,21 +75,123 @@ _CHINESE_TO_FULLWIDTH = {
 _H_LEVEL_INDEX = ("九", "八", "七", "六", "五", "四", "三", "二", "一")
 _V_CHANGE_INDEX = ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九")
 
-# 中文数字到半角数字映射
-_ZH_TO_HALF = {
-    "一": 1,
-    "二": 2,
-    "三": 3,
-    "四": 4,
-    "五": 5,
-    "六": 6,
-    "七": 7,
-    "八": 8,
-    "九": 9,
+# 半角数字到中文数字映射（索引即数字值）
+_HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
+
+# 中文数字到半角数字映射（反向自动生成）
+_ZH_TO_HALF = {zh: i for i, zh in enumerate(_HALF_TO_ZH) if zh}
+
+# -----------------------------------------------------#
+# 走法记谱常量（被 move.py 共用）
+
+# 棋子类型映射（简体，繁体）
+PIECE_MAP = {
+    "K": ("帅", "將"),
+    "k": ("将", "將"),
+    "A": ("仕", "士"),
+    "a": ("士", "士"),
+    "B": ("相", "象"),
+    "b": ("象", "象"),
+    "N": ("马", "馬"),
+    "n": ("马", "馬"),
+    "R": ("车", "車"),
+    "r": ("车", "車"),
+    "C": ("炮", "砲"),
+    "c": ("炮", "砲"),
+    "P": ("兵", "兵"),
+    "p": ("卒", "卒"),
 }
 
-# 半角数字到中文数字映射
-_HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
+# 反向棋子类型映射（从中文到FEN字符）
+REVERSE_PIECE_MAP: dict[str, str] = {}
+for _fen, (_simp, _trad) in PIECE_MAP.items():
+    REVERSE_PIECE_MAP[_simp] = _fen
+    if _trad != _simp:
+        REVERSE_PIECE_MAP[_trad] = _fen
+
+
+# 列数字映射（红方视角，从右到左）
+COLUMN_MAP = {
+    0: ("九", "９"),
+    1: ("八", "８"),
+    2: ("七", "７"),
+    3: ("六", "６"),
+    4: ("五", "５"),
+    5: ("四", "４"),
+    6: ("三", "３"),
+    7: ("二", "２"),
+    8: ("一", "１"),
+}
+
+# 全角数字映射（黑方使用）
+FULLWIDTH_NUM_MAP = {
+    0: "９",
+    1: "８",
+    2: "７",
+    3: "６",
+    4: "５",
+    5: "４",
+    6: "３",
+    7: "２",
+    8: "１",
+}
+
+# 方向映射
+DIRECTION_MAP = {
+    "+": ("进", "進"),
+    "-": ("退", "退"),
+    "=": ("平", "平"),
+}
+
+# 限定词映射
+QUALIFIER_MAP = {
+    "f": ("前", "前"),
+    "m": ("中", "中"),
+    "b": ("后", "後"),
+    "1": ("一", "一"),
+    "2": ("二", "二"),
+    "3": ("三", "三"),
+    "4": ("四", "四"),
+    "5": ("五", "五"),
+    "6": ("六", "六"),
+    "7": ("七", "七"),
+    "8": ("八", "八"),
+    "9": ("九", "九"),
+}
+
+# 限定词数字映射（红方中文数字，黑方全角数字）
+_QUALIFIER_DIGIT_MAP = {
+    RED: ("一", "二", "三", "四", "五", "六", "七", "八", "九"),
+    BLACK: ("１", "２", "３", "４", "５", "６", "７", "８", "９"),
+}
+
+# 反向查找：列号字符 -> 列索引
+_COLUMN_CHAR_TO_IDX: dict[str, int] = {}
+for _idx, (_c, _f) in COLUMN_MAP.items():
+    _COLUMN_CHAR_TO_IDX[_c] = _idx
+    _COLUMN_CHAR_TO_IDX[_f] = _idx
+
+# 反向查找：中文数字/全角数字 -> 整数
+_CHINESE_NUM_TO_INT: dict[str, int] = {
+    **_ZH_TO_HALF,
+    "１": 1,
+    "２": 2,
+    "３": 3,
+    "４": 4,
+    "５": 5,
+    "６": 6,
+    "７": 7,
+    "８": 8,
+    "９": 9,
+}
+
+# 方向字符 -> 符号映射
+_DIRECTION_CHAR_TO_SYMBOL: dict[str, str] = {
+    "进": "+",
+    "進": "+",
+    "退": "-",
+    "平": "=",
+}
 
 # -----------------------------------------------------#
 # 走法文本解析辅助函数（被 move.py 和 piece.py 共用）
@@ -272,30 +376,16 @@ def next_color(color: int) -> int:
 
 
 # -----------------------------------------------------#
-_h_dict = {
-    "a": "i",
-    "b": "h",
-    "c": "g",
-    "d": "f",
-    "e": "e",
-    "f": "d",
-    "g": "c",
-    "h": "b",
-    "i": "a",
-}
 
-_v_dict = {
-    "0": "9",
-    "1": "8",
-    "2": "7",
-    "3": "6",
-    "4": "5",
-    "5": "4",
-    "6": "3",
-    "7": "2",
-    "8": "1",
-    "9": "0",
-}
+
+def _h_mirror(c: str) -> str:
+    """水平镜像列字母（a↔i, b↔h, ...）"""
+    return chr(ord("a") + ord("i") - ord(c))
+
+
+def _v_mirror(c: str) -> str:
+    """垂直翻转行数字（0↔9, 1↔8, ...）"""
+    return str(9 - int(c))
 
 
 # -----------------------------------------------------#
@@ -311,15 +401,15 @@ def iccs2pos(iccs):
 
 
 def iccs_mirror(iccs):
-    return f"{_h_dict[iccs[0]]}{iccs[1]}{_h_dict[iccs[2]]}{iccs[3]}"
+    return f"{_h_mirror(iccs[0])}{iccs[1]}{_h_mirror(iccs[2])}{iccs[3]}"
 
 
 def iccs_flip(iccs):
-    return f"{iccs[0]}{_v_dict[iccs[1]]}{iccs[2]}{_v_dict[iccs[3]]}"
+    return f"{iccs[0]}{_v_mirror(iccs[1])}{iccs[2]}{_v_mirror(iccs[3])}"
 
 
 def iccs_swap(iccs):
-    return f"{_h_dict[iccs[0]]}{_v_dict[iccs[1]]}{_h_dict[iccs[2]]}{_v_dict[iccs[3]]}"
+    return f"{_h_mirror(iccs[0])}{_v_mirror(iccs[1])}{_h_mirror(iccs[2])}{_v_mirror(iccs[3])}"
 
 
 def iccs_list_mirror(iccs_list):

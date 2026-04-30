@@ -20,12 +20,21 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from .common import (
+    _CHINESE_NUM_TO_INT,
+    _COLUMN_CHAR_TO_IDX,
+    _DIRECTION_CHAR_TO_SYMBOL,
     _H_LEVEL_INDEX,
-    _HALF_TO_ZH,
+    _QUALIFIER_DIGIT_MAP,
     _V_CHANGE_INDEX,
     _ZH_TO_HALF,
     BLACK,
+    COLUMN_MAP,
+    DIRECTION_MAP,
+    FULLWIDTH_NUM_MAP,
+    PIECE_MAP,
+    QUALIFIER_MAP,
     RED,
+    REVERSE_PIECE_MAP,
     _get_digit_index,
     fench_to_species,
     fench_to_text,
@@ -37,6 +46,19 @@ from .common import (
 )
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+
+# 限定词前缀
+PRE_NUM_MAP = {
+    "前": "f",
+    "中": "m",
+    "后": "b",
+    "後": "b",
+    "一": "1",
+    "二": "2",
+    "三": "3",
+    "四": "4",
+    "五": "5",
+}
 
 
 # -----------------------------------------------------#
@@ -67,7 +89,7 @@ class MoveNotation:
 
     中间表示包含：
     - piece_type: 棋子类型（K/A/B/N/R/C/P，大写红方，小写黑方）
-    - column: 列索引（0-8，红方视角）
+    - column: 列索引（0-8，走子方视角）
     - direction: 方向（+进/-退/=平）
     - distance: 距离/目标列
     - qualifier: 限定词（前/中/后/数字）
@@ -76,125 +98,6 @@ class MoveNotation:
     支持红方和黑方格式的走法文本解析，统一转换为中间表示后，
     可以方便地输出为不同格式（中文等）。
     """
-
-    # 棋子类型映射（简体，繁体）
-    PIECE_MAP = {
-        "K": ("帅", "將"),
-        "k": ("将", "將"),
-        "A": ("仕", "士"),
-        "a": ("士", "士"),
-        "B": ("相", "象"),
-        "b": ("象", "象"),
-        "N": ("马", "馬"),
-        "n": ("马", "馬"),
-        "R": ("车", "車"),
-        "r": ("车", "車"),
-        "C": ("炮", "砲"),
-        "c": ("炮", "砲"),
-        "P": ("兵", "兵"),
-        "p": ("卒", "卒"),
-    }
-
-    # 反向棋子类型映射（从中文到FEN字符）
-    REVERSE_PIECE_MAP = {}
-    for fen_char, (simp, trad) in PIECE_MAP.items():
-        REVERSE_PIECE_MAP[simp] = fen_char
-        if trad != simp:  # 繁体不同时添加
-            REVERSE_PIECE_MAP[trad] = fen_char
-
-    # 中文限定词映射
-    CHINESE_QUALIFIER_MAP = {
-        "前": "f",
-        "中": "m",
-        "后": "b",
-        "一": "1",
-        "二": "2",
-        "三": "3",
-        "四": "4",
-        "五": "5",
-        "六": "6",
-        "七": "7",
-        "八": "8",
-        "九": "9",
-    }
-
-    # 列数字映射（红方视角，从右到左）
-    # 红方视角：最右边是第一路（一），最左边是第九路（九）
-    COLUMN_MAP = {
-        0: ("九", "９"),  # 最左边
-        1: ("八", "８"),
-        2: ("七", "７"),
-        3: ("六", "６"),
-        4: ("五", "５"),
-        5: ("四", "４"),
-        6: ("三", "３"),
-        7: ("二", "２"),
-        8: ("一", "１"),  # 最右边
-    }
-
-    # 全角数字映射（黑方使用）
-    FULLWIDTH_NUM_MAP = {
-        0: "９",
-        1: "８",
-        2: "７",
-        3: "６",
-        4: "５",
-        5: "４",
-        6: "３",
-        7: "２",
-        8: "１",
-    }
-
-    # 方向映射
-    DIRECTION_MAP = {
-        "+": ("进", "進"),
-        "-": ("退", "退"),
-        "=": ("平", "平"),
-    }
-
-    # 限定词映射
-    QUALIFIER_MAP = {
-        "f": ("前", "前"),
-        "m": ("中", "中"),
-        "b": ("后", "後"),
-        "1": ("一", "一"),
-        "2": ("二", "二"),
-        "3": ("三", "三"),
-        "4": ("四", "四"),
-        "5": ("五", "五"),
-        "6": ("六", "六"),
-        "7": ("七", "七"),
-        "8": ("八", "八"),
-        "9": ("九", "九"),
-    }
-
-    # 反向查找：列号字符 -> 列索引 (O(1) 查找)
-    _COLUMN_CHAR_TO_IDX: dict[str, int] = {}
-    for idx, (chinese, fullwidth) in COLUMN_MAP.items():
-        _COLUMN_CHAR_TO_IDX[chinese] = idx
-        _COLUMN_CHAR_TO_IDX[fullwidth] = idx
-
-    # 反向查找：中文数字 -> 整数 (O(1) 查找)
-    _CHINESE_NUM_TO_INT: dict[str, int] = {
-        **_ZH_TO_HALF,
-        "１": 1,
-        "２": 2,
-        "３": 3,
-        "４": 4,
-        "５": 5,
-        "６": 6,
-        "７": 7,
-        "８": 8,
-        "９": 9,
-    }
-
-    # 方向字符 -> 符号映射 (O(1) 查找)
-    _DIRECTION_CHAR_TO_SYMBOL: dict[str, str] = {
-        "进": "+",
-        "進": "+",
-        "退": "-",
-        "平": "=",
-    }
 
     def __init__(
         self,
@@ -354,34 +257,30 @@ class MoveNotation:
         text = text.replace(" ", "")
         if not text:
             return None
+        if len(text) != 4:
+            raise ValueError(f"走法字符串长度应为4: {text!r}")
 
         # 1. 解析限定词
         qualifier = ""
         offset = 0
         first_char = text[0]
-        if first_char in MoveNotation.CHINESE_QUALIFIER_MAP:
-            qualifier = MoveNotation.CHINESE_QUALIFIER_MAP[first_char]
+        if first_char in PRE_NUM_MAP:
+            qualifier = PRE_NUM_MAP[first_char]
             offset = 1
 
         # 2. 解析棋子类型
-        if len(text) <= offset:
-            return None
-
         piece_char = text[offset]
-        piece_type = MoveNotation.REVERSE_PIECE_MAP.get(piece_char)
+        piece_type = REVERSE_PIECE_MAP.get(piece_char)
         if piece_type is None:
-            return None
+            raise ValueError(f"无法识别棋子: {piece_char!r}")
         offset += 1
 
         # 3. 解析列、方向和距离
-        if len(text) < offset + 2:
-            return None
-
         # 判断是否有列信息（有限定词时无列，否则需要检查是否是方向字符）
         column = None
-        if text[offset] not in MoveNotation._DIRECTION_CHAR_TO_SYMBOL:
+        if text[offset] not in _DIRECTION_CHAR_TO_SYMBOL:
             # 存在列信息
-            column = MoveNotation._COLUMN_CHAR_TO_IDX.get(text[offset])
+            column = _COLUMN_CHAR_TO_IDX.get(text[offset])
             if column is None:
                 return None
             offset += 1
@@ -389,7 +288,7 @@ class MoveNotation:
                 return None
 
         # 解析方向
-        direction = MoveNotation._DIRECTION_CHAR_TO_SYMBOL.get(text[offset])
+        direction = _DIRECTION_CHAR_TO_SYMBOL.get(text[offset])
         if direction is None:
             return None
 
@@ -429,9 +328,9 @@ class MoveNotation:
         """
         # 平移或士/象/马：距离表示目标列
         if direction == "=" or piece_type.lower() in ("a", "b", "n"):
-            return MoveNotation._COLUMN_CHAR_TO_IDX.get(distance_char)
+            return _COLUMN_CHAR_TO_IDX.get(distance_char)
         # 王/车/炮/兵：距离表示步数
-        return MoveNotation._CHINESE_NUM_TO_INT.get(distance_char)
+        return _CHINESE_NUM_TO_INT.get(distance_char)
 
     def to_compact(self):
         """转换为紧凑格式"""
@@ -462,117 +361,44 @@ class MoveNotation:
         返回:
             str: 中文走法字符串
         """
-        piece_name = self.PIECE_MAP[self.piece_type][1 if traditional else 0]
+        piece_name = PIECE_MAP[self.piece_type][1 if traditional else 0]
+        color = self.piece_color
+        direction_name = DIRECTION_MAP[self.direction][1 if traditional else 0]
+        qualifier_name = self._get_qualifier_name(color, traditional)
+        is_black = color == BLACK
 
-        # 根据棋子颜色选择不同的处理逻辑
-        if self.piece_color == BLACK:
-            return self._to_chinese_black(piece_name, traditional)
-        return self._to_chinese_red(piece_name, traditional)
+        if self.direction == "=" or self.piece_type.lower() in ("a", "b", "n"):
+            # 平移动，或士/相/马的进退移动：显示目标列
+            target = self._get_target_column(color)
+        else:
+            # 王/车/炮/兵的进退移动：显示步数
+            target = self._get_distance_name(color)
 
-    def _to_chinese_black(self, piece_name, traditional):
-        """转换为黑方格式的中文走法（使用全角数字）"""
-        direction_name = self.DIRECTION_MAP[self.direction][1 if traditional else 0]
-        qualifier_name = self._get_qualifier_name_black(traditional)
-
-        # 构建走法字符串
-        if self.direction == "=":
-            # 平移动
-            target_column = self._get_target_column_black()
-            return self._build_move_str(
-                piece_name, direction_name, target_column, qualifier_name, True
-            )
-
-        # 进退移动
-        if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
-            target_column = self._get_target_column_black()
-            return self._build_move_str(
-                piece_name, direction_name, target_column, qualifier_name, True
-            )
-
-        # 王、车、炮、兵
-        distance_name = self._get_distance_name(BLACK)
         return self._build_move_str(
-            piece_name, direction_name, distance_name, qualifier_name, True
+            piece_name, direction_name, target, qualifier_name, is_black
         )
 
-    def _to_chinese_red(self, piece_name, traditional):
-        """转换为红方格式的中文走法（使用中文数字）"""
-        direction_name = self.DIRECTION_MAP[self.direction][1 if traditional else 0]
-        qualifier_name = self._get_qualifier_name_red(traditional)
-
-        # 构建走法字符串
-        if self.direction == "=":
-            # 平移动
-            target_column = self._get_target_column_red()
-            return self._build_move_str(
-                piece_name, direction_name, target_column, qualifier_name, False
-            )
-
-        # 进退移动
-        if self.piece_type.lower() in ("a", "b", "n"):  # 士、相、马
-            target_column = self._get_target_column_red()
-            return self._build_move_str(
-                piece_name, direction_name, target_column, qualifier_name, False
-            )
-
-        # 王、车、炮、兵
-        distance_name = self._get_distance_name(RED)
-        return self._build_move_str(
-            piece_name, direction_name, distance_name, qualifier_name, False
-        )
-
-    def _get_qualifier_name_black(self, traditional):
-        """获取黑方限定词名称"""
+    def _get_qualifier_name(self, color, traditional):
+        """获取限定词名称"""
         if not self.qualifier:
             return ""
 
         if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
-            # 数字限定词转换为全角
-            if self.qualifier in ("1", "2", "3", "4"):
-                # 对于"前四三二后"的情况
-                fullwidth_map = {
-                    "1": "１",
-                    "2": "２",
-                    "3": "３",
-                    "4": "４",
-                }
-                return fullwidth_map.get(self.qualifier, self.qualifier)
-            return str(self.qualifier)
+            # 数字限定词：红方中文数字，黑方全角数字
+            return _QUALIFIER_DIGIT_MAP[color][int(self.qualifier) - 1]
 
-        return self.QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
+        # 字母限定词（f/m/b）：红黑一致，仅简繁有别
+        return QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
 
-    def _get_qualifier_name_red(self, traditional):
-        """获取红方限定词名称"""
-        if not self.qualifier:
-            return ""
-
-        if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
-            # 数字限定词转换为中文数字
-            return _HALF_TO_ZH[int(self.qualifier)]
-
-        return self.QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
-
-    def _get_target_column_black(self):
-        """获取黑方目标列（全角数字）"""
-        if 0 <= self.distance <= 8:
-            return self.FULLWIDTH_NUM_MAP.get(self.distance, str(self.distance))
-        return str(self.distance)
-
-    def _get_target_column_red(self):
-        """获取红方目标列（中文数字）"""
-        if 0 <= self.distance <= 8:
-            return self.COLUMN_MAP[self.distance][0]
-        return str(self.distance)
+    def _get_target_column(self, color):
+        """获取目标列，红方用中文数字，黑方用全角数字"""
+        if color == RED:
+            return COLUMN_MAP[self.distance][0]
+        return FULLWIDTH_NUM_MAP.get(self.distance, str(self.distance))
 
     def _get_distance_name(self, color):
-        """获取距离名称，红方用中文数字，黑方用全角数字"""
-        if 1 <= self.distance <= 9:
-            if color == RED:
-                return _HALF_TO_ZH[self.distance]
-            else:
-                # 黑方：转换为全角数字
-                return chr(0xFF10 + self.distance)  # ０=0xFF10, １=0xFF11, ...
-        return str(self.distance)
+        """获取距离名称"""
+        return _QUALIFIER_DIGIT_MAP[color][self.distance - 1]
 
     def _build_move_str(
         self, piece_name, direction_name, target_name, qualifier_name, is_black
@@ -583,9 +409,9 @@ class MoveNotation:
 
         # 获取列标识
         if is_black:
-            column_name = self.FULLWIDTH_NUM_MAP[self.column]
+            column_name = FULLWIDTH_NUM_MAP[self.column]
         else:
-            column_name = self.COLUMN_MAP[self.column][0]
+            column_name = COLUMN_MAP[self.column][0]
 
         return f"{piece_name}{column_name}{direction_name}{target_name}"
 
@@ -599,12 +425,14 @@ def _detect_move_side_from_text(move_str):
 
     - 含中文数字（一二三...）→ RED
     - 含阿拉伯数字（123...或 123...）→ BLACK
+    - 混合中文和阿拉伯数字 → 抛 ValueError
+    - 不含任何数字 → 抛 ValueError
 
     参数:
         move_str: 走法字符串（已去除空格）
 
     返回:
-        int: RED(1) 或 BLACK(2)，无法判断返回 None
+        int: RED(1) 或 BLACK(2)，其余情况抛异常
     """
     # 检查是否包含中文数字
     has_chinese = any(ch in _ZH_TO_HALF for ch in move_str)
@@ -613,12 +441,14 @@ def _detect_move_side_from_text(move_str):
     move_str_half = full2half(move_str)
     has_arabic = any(ch.isdigit() for ch in move_str_half)
 
+    if has_chinese and has_arabic:
+        raise ValueError(f"走法字符串数字格式混合: {move_str!r}")
     if has_chinese and not has_arabic:
         return RED
     if has_arabic and not has_chinese:
         return BLACK
-    # 混合或都无法判断
-    return None
+    # 不含任何数字，属于异常走法
+    raise ValueError(f"走法字符串不含数字: {move_str!r}")
 
 
 # -----------------------------------------------------#
@@ -1150,8 +980,6 @@ class _MoveTextParser:
 
         # 检测走法方格式
         text_side = _detect_move_side_from_text(move_str)
-        if text_side is None:
-            text_side = board._move_side
 
         # 规范化局面（统一为红方视角解析）
         normalized_board = board.normalized()
@@ -1433,13 +1261,13 @@ class _MoveTextParser:
             # 平移动：距离表示目标列索引（0-8）
             # 使用 COLUMN_MAP 将列索引转换为中文数字
             if 0 <= distance <= 8:
-                distance_char = self.notation.COLUMN_MAP[distance][0]
+                distance_char = COLUMN_MAP[distance][0]
             else:
                 distance_char = ""
         elif self.piece_fench in ["a", "b", "n"]:
             # 士、象、马：距离表示目标列索引（0-8）
             if 0 <= distance <= 8:
-                distance_char = self.notation.COLUMN_MAP[distance][0]
+                distance_char = COLUMN_MAP[distance][0]
             else:
                 distance_char = ""
         else:

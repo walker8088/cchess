@@ -299,10 +299,8 @@ class TestMoveFromTextMultiPiece:
     def test_from_text_chinese_digit_black_reversed(self):
         board = ChessBoard(FULL_INIT_FEN)
         board.next_turn()
-        # Black pawn selection
-        board.copy().move_text("一卒进1")
-        # May be None if no valid move, but should go through the black reversed path
-        # Just ensure no exception is raised
+        # Black pawn selection (consistent Arabic digits for black)
+        board.copy().move_text("1卒进1")
 
 
 class TestMoveTextParsingChineseNumerals:
@@ -310,8 +308,8 @@ class TestMoveTextParsingChineseNumerals:
 
     def test_chinese_digit_target_x_none(self):
         board = ChessBoard(FULL_INIT_FEN)
-        # Invalid chinese digit
-        result = board.copy().move_text("十车进一")
+        # Invalid chinese digit "十" is not a valid column (1-9 only)
+        result = board.copy().move_text("车十进一")
         assert result is None
 
     def test_chinese_digit_pawn_same_column_sort_red(self):
@@ -322,7 +320,7 @@ class TestMoveTextParsingChineseNumerals:
 
     def test_chinese_digit_pawn_same_column_sort_black(self):
         board = ChessBoard("4k4/9/9/9/4p4/4p4/9/9/9/4K4 b")
-        board.copy().move_text("一卒进1")
+        board.copy().move_text("1卒进1")
         # Should not raise, goes through black pawn sorting path
 
     def test_chinese_digit_no_poss_returns_none(self):
@@ -1477,10 +1475,10 @@ class TestBoard:
         assert move.to_iccs() == "a0a1"
 
     def test_board_move_text_no_result(self):
-        """Test ChessBoard.move_text returning None (lines 368-376)."""
+        """Test ChessBoard.move_text raising ValueError for invalid move text."""
         board = ChessBoard(FULL_INIT_FEN)
-        result = board.move_text("不存在的走法")
-        assert result is None
+        with pytest.raises(ValueError):
+            board.move_text("不存在的走法")
 
     def test_board_create_piece_moves_no_piece(self):
         """Test ChessBoard.create_piece_moves with no piece (line 390)."""
