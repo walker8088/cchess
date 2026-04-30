@@ -12,9 +12,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
-"""中国象棋棋盘模块
+
+中国象棋棋盘模块
 
 提供棋盘数据结构、走法生成、局面检测等核心功能。
 
@@ -107,11 +107,7 @@ class ChessBoard:
         参数:
             fen: 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
         """
-        self.clear()
-        self.from_fen(fen)
-
-    def clear(self) -> "ChessBoard":
-        """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
+        # 初始化所有实例属性
         self._board: List[List[Optional[str]]] = [
             [None for _ in range(9)] for _ in range(10)
         ]
@@ -123,6 +119,28 @@ class ChessBoard:
         self._black_attacks: List[List[bool]] = [
             [False for _ in range(9)] for _ in range(10)
         ]
+        self._attack_matrix_dirty = True
+
+        # 如果有 FEN，加载它
+        if fen:
+            self.from_fen(fen)
+
+    def clear(self) -> "ChessBoard":
+        """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
+        # 重置棋盘
+        for y in range(10):
+            for x in range(9):
+                self._board[y][x] = None
+
+        # 重置走子方
+        self._move_side = ANY_COLOR
+
+        # 重置攻击矩阵
+        for y in range(10):
+            for x in range(9):
+                self._red_attacks[y][x] = False
+                self._black_attacks[y][x] = False
+
         self._attack_matrix_dirty = True
 
         return self
@@ -538,56 +556,21 @@ class ChessBoard:
     def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。
 
-        解析流程：
+        解析流程已封装到 _MoveTextParser.parse_move_text() 中：
         1. 检测红黑：通过数字字符类型检测走法文本格式
-           - 中文数字（一二三...）→ 红方格式
-           - 阿拉伯/全角数字（123...或１２３...）→ 黑方格式
-        2. 如果是黑方则规范化棋盘：将棋盘转换为红方视角
-        3. 红黑走法都转化为红方走的中间方式：
-           - 黑方走法进行数字字符转换（如"炮２平５"→"炮二平五"）
-           - 在规范局面（红方视角）上解析走法
-           - 所有走法都视为红方走法进行解析
-        4. 将解析结果反规范化回原局面坐标
+        2. 规范化局面和走法字符串：统一为红方视角解析
+        3. 解析走法：使用 _MoveTextParser 解析
+        4. 反规范化坐标：转换回原局面坐标
         5. 执行走子
-
-        对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
         """
-        from .common import _normalize_move_str
-        from .move import (
-            _detect_move_side_from_text,
-            _MoveTextParser,
-        )
+        from .move import _MoveTextParser
 
-        move_str = move_str.replace(" ", "")
-
-        # 从文本检测走子方格式
-        text_side = _detect_move_side_from_text(move_str)
-        if text_side is None:
-            # 无法从文本判断，使用棋盘当前走子方
-            text_side = self._move_side
-
-        # 规范化局面（统一为红方视角解析）
-        normalized_board = self.normalized()
-
-        # 根据文本格式规范化走法字符串
-        if text_side == BLACK:
-            normalized_move_str = _normalize_move_str(move_str, BLACK)
-        else:
-            normalized_move_str = move_str
-
-        # 在规范局面上解析（此时 normalized_board.move_side() == RED，
-        # 所以 _MoveTextParser.needs_denormalization == False，
-        # 返回的坐标是规范局面坐标）
-        parser = _MoveTextParser(normalized_board, normalized_move_str)
-        ret = parser.parse()
-        if not ret:
+        moves = _MoveTextParser.parse_move_text(move_str, self)
+        if not moves:
             return None
 
-        # 将规范局面坐标反规范化回原局面坐标
-        for norm_from, norm_to in ret:
-            orig_from = self.denormalize_pos(norm_from)
-            orig_to = self.denormalize_pos(norm_to)
-            move = self.move(orig_from, orig_to, check)
+        for from_pos, to_pos in moves:
+            move = self.move(from_pos, to_pos, check)
             if move is not None:
                 return move
 

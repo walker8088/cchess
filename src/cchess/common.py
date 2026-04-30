@@ -19,6 +19,16 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 
+from .constants import (
+    ANY_COLOR,
+    BLACK,
+    EMPTY_BOARD,
+    EMPTY_FEN,
+    FULL_INIT_BOARD,
+    FULL_INIT_FEN,
+    RED,
+)
+
 # -----------------------------------------------------#
 # 中文数字映射常量（用于走法文本解析）
 _FULLWIDTH_TO_CHINESE = {
@@ -78,18 +88,6 @@ _ZH_TO_HALF = {
 
 # 半角数字到中文数字映射
 _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "九")
-
-# -----------------------------------------------------#
-# 从 constants 导入并重新导出，方便其他模块使用
-from .constants import (
-    ANY_COLOR,
-    BLACK,
-    EMPTY_BOARD,
-    EMPTY_FEN,
-    FULL_INIT_BOARD,
-    FULL_INIT_FEN,
-    RED,
-)
 
 # -----------------------------------------------------#
 # 走法文本解析辅助函数（被 move.py 和 piece.py 共用）

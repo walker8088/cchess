@@ -38,6 +38,14 @@ class PGNMove:
     def __str__(self) -> str:
         return self.notation
 
+    def add_variation(self, variation: "MoveNode") -> None:
+        """添加变招"""
+        self.variations.append(variation)
+
+    def has_variations(self) -> bool:
+        """检查是否有变招"""
+        return len(self.variations) > 0
+
 
 class MoveNode:
     """PGN 棋步节点"""
@@ -243,6 +251,15 @@ class PGNTokenizer:
                 self.index += 1
 
         return self.tokens
+
+    def reset(self) -> None:
+        """重置分词器状态"""
+        self.tokens.clear()
+        self.index = 0
+
+    def get_token_count(self) -> int:
+        """获取已识别的标记数量"""
+        return len(self.tokens)
 
     def _skip_whitespace(self) -> None:
         """跳过空白字符"""
@@ -545,7 +562,7 @@ def _process_pgn_moves(node, board, game, parent_move=None):
                 # 递归处理变招
                 _process_pgn_moves(variation, saved_board, game, parent_move)
 
-        except Exception:
+        except (ValueError, TypeError, AttributeError, KeyError, IndexError):
             # 走法解析或应用出错，继续处理下一个走法
             node = node.next_node
             continue
@@ -578,7 +595,15 @@ def read_from_pgn(file_name, game_class):
         # board.move_text() 内部已经使用规范局面处理
         _process_pgn_moves(pgn_game.moves, current_board, game)
 
-    except Exception as e:
+    except (
+        FileNotFoundError,
+        IOError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        KeyError,
+        IndexError,
+    ) as e:
         print(f"解析PGN文件时出错: {e}")
 
     return game

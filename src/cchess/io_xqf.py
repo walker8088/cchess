@@ -337,19 +337,6 @@ def __read_steps(buff_decoder, version, keys, game, parent_move, board):
 
 
 # -----------------------------------------------------#
-def _read_xqf_file(full_file_name):
-    """读取 XQF 文件
-
-    Args:
-        full_file_name: 文件路径
-
-    Returns:
-        bytes: 文件内容
-    """
-    with open(full_file_name, "rb") as f:
-        return f.read()
-
-
 def _parse_xqf_header(contents):
     """解析 XQF 文件头
 
@@ -567,7 +554,9 @@ def read_from_xqf(full_file_name, game_class, read_annotation=True):
     返回:
         Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
     """
-    contents = _read_xqf_file(full_file_name)
+    with open(full_file_name, "rb") as f:
+        contents = f.read()
+
     header = _parse_xqf_header(contents)
 
     if header is None:
@@ -798,7 +787,7 @@ class XQFWriter:
         return bytes(move_record + annote_data)
 
     def save(self, file_name):
-        """将游戏数据序列化并保存到指定 XQF 文件。"""
+        """将Game数据序列化并保存到指定 XQF 文件。"""
         with open(file_name, "wb") as f:
             move_lines = []
             lines = self.game.dump_moves(is_tree_mode=True)

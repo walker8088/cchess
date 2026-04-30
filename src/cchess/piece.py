@@ -14,21 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-"""中国象棋棋子模块
-
-定义所有棋子类型及其走法规则。
-
-模块结构：
-- 常量定义：士/象固定位置、马的偏移量和蹩腿位置
-- 辅助函数：坐标差值计算、中点计算
-- Piece 基类：通用棋子属性与走法生成方法
-- 具体棋子类：King, Advisor, Bishop, Knight, Rook, Cannon, Pawn
-
-走法生成设计：
-- 每个棋子类实现 create_moves() 生成所有合法走子
-- is_valid_move() 判断单个走法是否合法
-- 使用规范局面（normalized board）减少颜色分支判断
-"""
+from __future__ import annotations
 
 from .common import (
     BLACK,
@@ -72,6 +58,28 @@ _PAWN_RIVER_Y = {RED: 5, BLACK: 4}  # 过河界限
 _PAWN_Y_RANGE = {RED: (3, 9), BLACK: (0, 6)}  # 合法活动 y 范围
 
 
+# 滑走棋子方向常量（车、炮）
+_SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
+
+# 马棋子走法偏移量（目标偏移, 蹩腿偏移）
+_KNIGHT_MOVES = (
+    ((1, 2), (0, 1)),  # 右跳上：纵向2格，蹩腿在上方
+    ((1, -2), (0, -1)),  # 右跳下：纵向2格，蹩腿在下方
+    ((-1, 2), (0, 1)),  # 左跳上：纵向2格，蹩腿在上方
+    ((-1, -2), (0, -1)),  # 左跳下：纵向2格，蹩腿在下方
+    ((2, 1), (1, 0)),  # 上跳右：横向2格，蹩腿在右方
+    ((2, -1), (1, 0)),  # 下跳右：横向2格，蹩腿在右方
+    ((-2, 1), (-1, 0)),  # 上跳左：横向2格，蹩腿在左方
+    ((-2, -1), (-1, 0)),  # 下跳左：横向2格，蹩腿在左方
+)
+
+
+# -----------------------------------------------------#
+def abs_diff(x, y):
+    """返回两点坐标在各维度上的绝对差值元组。"""
+    return (abs(x[0] - y[0]), abs(x[1] - y[1]))
+
+
 def _linear_piece_move(pos_from, move_str):
     """解析王、车、炮、兵的走法（直线移动）。
 
@@ -100,33 +108,13 @@ def _linear_piece_move(pos_from, move_str):
     return (pos_from[0], pos_from[1] + diff)
 
 
-# 滑走棋子方向常量（车、炮）
-_SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
-
-# 马棋子走法偏移量（目标偏移, 蹩腿偏移）
-_KNIGHT_MOVES = (
-    ((1, 2), (0, 1)),  # 右跳上：纵向2格，蹩腿在上方
-    ((1, -2), (0, -1)),  # 右跳下：纵向2格，蹩腿在下方
-    ((-1, 2), (0, 1)),  # 左跳上：纵向2格，蹩腿在上方
-    ((-1, -2), (0, -1)),  # 左跳下：纵向2格，蹩腿在下方
-    ((2, 1), (1, 0)),  # 上跳右：横向2格，蹩腿在右方
-    ((2, -1), (1, 0)),  # 下跳右：横向2格，蹩腿在右方
-    ((-2, 1), (-1, 0)),  # 上跳左：横向2格，蹩腿在左方
-    ((-2, -1), (-1, 0)),  # 下跳左：横向2格，蹩腿在左方
-)
-
-
-# -----------------------------------------------------#
-def abs_diff(x, y):
-    """返回两点坐标在各维度上的绝对差值元组。"""
-    return (abs(x[0] - y[0]), abs(x[1] - y[1]))
-
-
 # -----------------------------------------------------#
 class Piece:
     """棋子基类，封装棋子在棋盘上的位置、类型与颜色等通用属性。"""
 
     __slots__ = ["board", "fench", "species", "color", "x", "y"]
+
+    # pylint: disable=attribute-defined-outside-init
 
     def __init__(self, board, fench, pos):
         """初始化棋子，记录所属棋盘、FEN 字符、种类与颜色及坐标。"""
@@ -139,7 +127,7 @@ class Piece:
         """判断给定坐标是否在棋盘范围内。"""
         return (0 <= pos[0] < 9) and (0 <= pos[1] <= 9)
 
-    def is_valid_move(self, pos_to):
+    def is_valid_move(self, _pos_to):
         """判断移动到目标位置是否合法（基类默认返回 True）。"""
         return True
 

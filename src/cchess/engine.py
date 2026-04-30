@@ -173,6 +173,7 @@ class Engine(Thread):
             if os.name == "nt":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            # pylint: disable=R1732
             self.process = subprocess.Popen(
                 self.engine_exec_path,
                 stdin=subprocess.PIPE,

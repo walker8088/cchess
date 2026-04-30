@@ -124,8 +124,7 @@ def to_text(
     self,
     detailed: bool = False,
     format: str = "chinese",
-    traditional: bool = False,
-    use_fullwidth_for_black: bool = True
+    traditional: bool = False
 ) -> str:
     """返回走法的文本表示。
 
@@ -137,7 +136,6 @@ def to_text(
             - "english": 英文
             - "iccs": ICCS坐标格式
         traditional: 当format为"chinese"时，是否使用繁体中文
-        use_fullwidth_for_black: 当format为"chinese"时，
             黑方是否使用全角数字（１２３...）
 
     返回:
@@ -188,13 +186,11 @@ def to_compact(self) -> str:
 def to_chinese(
     self,
     traditional: bool = False,
-    use_fullwidth_for_black: bool = True
 ) -> str:
     """转换为中文。
 
     参数:
         traditional: 是否使用繁体中文
-        use_fullwidth_for_black: 黑方是否使用全角数字
     """
 
 def to_english(self) -> str:
@@ -272,8 +268,7 @@ board.next_turn()  # 切换到黑方
 
 # 黑方车9进1
 move = board.copy().move((0, 9), (0, 8))
-print(move.to_text())                      # 车１进１ (全角数字)
-print(move.to_text(use_fullwidth_for_black=False))  # 车一进一
+print(move.to_text())                      
 print(move.to_text(format="compact"))      # r9+1 (小写表示黑方)
 ```
 

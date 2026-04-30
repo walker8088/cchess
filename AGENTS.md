@@ -146,7 +146,7 @@ print(f'get_pieces x10000: {elapsed:.3f}s')
 ### 高优先级
 - [x] 修复 `test_main_entry` CBF 解析问题 (已验证稳定通过)
 - [ ] 添加类型提示到 board.py 和 piece.py
-- [x] 优化 `Move.from_text()` 复杂度 (已降低至可接受范围)
+- [x] 移除 `Move.from_text()` 测试专用方法 (已改用 board.copy().move_text())
 
 ### 中优先级
 - [x] 优化马的走法生成算法 (预计算偏移量 + 内联边界检查)

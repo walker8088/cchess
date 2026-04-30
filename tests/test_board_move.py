@@ -468,7 +468,6 @@ class TestBoard:
         assert iccs_swap("a0a1") == "i9i8"
 
         assert move.to_text() == "车九进一"
-        # assert move.from_text(board, '车九进一') == ((0,0), (0,1))
 
     def test_qianhou_move(self):
         board = ChessBoard(

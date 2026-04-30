@@ -95,7 +95,7 @@ feat: add normalized board position support
 - Add ChessBoard.normalized() method
 - Add ChessBoard.denormalize_pos() method
 - Modify board.create_moves() to use normalized board
-- Modify Move.from_text() to use normalized board
+- Remove Move.from_text() test-only method (use board.copy().move_text() instead)
 
 This reduces color branching in piece logic and makes
 the code more maintainable.
