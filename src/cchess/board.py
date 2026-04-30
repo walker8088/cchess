@@ -14,6 +14,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+"""中国象棋棋盘模块
+
+提供棋盘数据结构、走法生成、局面检测等核心功能。
+
+主要类：
+- ChessBoard: 棋盘核心类，存储棋子分布并提供走子/检测规则
+- ChessBoardOneHot: 棋盘独热编码表示（用于机器学习）
+
+核心功能：
+- FEN 局面解析与序列化（from_fen / to_fen）
+- 走法生成与验证（create_moves / is_valid_move）
+- 将军/将死检测（is_checking / is_checkmate）
+- 规范局面转换（normalized / denormalize_pos）
+- Zobrist 哈希计算（zhash）
+
+设计模式：
+- 使用规范局面（normalized board）统一红黑方走法处理
+- 攻击矩阵缓存减少重复计算
+- 增量更新与完整快照结合的状态管理
+"""
+
 from typing import Iterator, List, Optional, Tuple
 
 from .common import (
@@ -450,7 +471,6 @@ class ChessBoard:
             board_after=board_after,
         )
 
-
     def move(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True
     ) -> Optional[Move]:
@@ -532,10 +552,10 @@ class ChessBoard:
 
         对黑方格式走法，先规范化局面为红方视角，解析后再反规范化坐标。
         """
+        from .common import _normalize_move_str
         from .move import (
             _detect_move_side_from_text,
             _MoveTextParser,
-            _normalize_move_str,
         )
 
         move_str = move_str.replace(" ", "")
@@ -572,7 +592,6 @@ class ChessBoard:
                 return move
 
         return None
-
 
     def next_turn(self):
         """切换到下一个走子方并返回新的颜色值（工具方法）。"""

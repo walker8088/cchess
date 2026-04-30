@@ -20,8 +20,13 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from .common import (
+    _H_LEVEL_INDEX,
+    _V_CHANGE_INDEX,
     BLACK,
     RED,
+    _get_digit_index,
+    _get_target_x,
+    _get_v_index,
     fench_to_species,
     fench_to_text,
     full2half,
@@ -52,52 +57,6 @@ class MoveInfo:
 
 
 # -----------------------------------------------------#
-# 数字映射字典常量
-_FULLWIDTH_TO_CHINESE = {
-    "０": "零",
-    "１": "一",
-    "２": "二",
-    "３": "三",
-    "４": "四",
-    "５": "五",
-    "６": "六",
-    "７": "七",
-    "８": "八",
-    "９": "九",
-    "0": "零",
-    "1": "一",
-    "2": "二",
-    "3": "三",
-    "4": "四",
-    "5": "五",
-    "6": "六",
-    "7": "七",
-    "8": "八",
-    "9": "九",
-}
-_CHINESE_TO_FULLWIDTH = {
-    "零": "０",
-    "一": "１",
-    "二": "２",
-    "三": "３",
-    "四": "４",
-    "五": "５",
-    "六": "６",
-    "七": "７",
-    "八": "８",
-    "九": "九",
-    "前": "前",
-    "中": "中",
-    "后": "后",
-}
-
-# -----------------------------------------------------#
-# 列索引数组：规范局面下使用红方索引（中文数字，从右到左）
-# 黑方走法会先转换为规范局面（红方视角）再解析
-_h_level_index = ("九", "八", "七", "六", "五", "四", "三", "二", "一")
-
-_v_change_index = ("错", "一", "二", "三", "四", "五", "六", "七", "八", "九")
-
 # 中文数字到半角数字映射
 _ZH_TO_HALF = {
     "一": 1,
@@ -707,179 +666,6 @@ def _detect_move_side_from_text(move_str):
     return None
 
 
-def _convert_digit_format(digit_char, move_side):
-    """将数字字符转换为指定走子方的索引数组格式。
-
-    参数:
-        digit_char: 数字字符（中文、半角或全角）
-        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
-
-    返回:
-        str: 转换后的数字字符，无法转换返回 None
-    """
-    # 已经是目标格式
-    try:
-        _h_level_index[move_side].index(digit_char)
-        return digit_char
-    except ValueError:
-        pass
-
-    # 半角数字
-    if digit_char.isdigit():
-        half_digit = int(digit_char)
-        if half_digit == 0 or half_digit > 9:
-            return None
-        if move_side == 1:  # RED: 半角转中文
-            return _HALF_TO_ZH[half_digit]
-        return chr(0xFF10 + half_digit)
-
-    # 中文数字（仅用于红方）
-    if digit_char in _ZH_TO_HALF:
-        if move_side == 1:  # RED: 保持中文
-            return _HALF_TO_ZH[_ZH_TO_HALF[digit_char]]
-        # BLACK 不接受中文数字，返回 None
-        return None
-
-    return None
-
-
-def _get_index(digit_char, use_v_index=False):
-    """获取数字字符在索引数组中的位置。
-
-    参数:
-        digit_char: 数字字符（中文、半角或全角）
-        use_v_index: True 使用_v_change_index，False 使用_h_level_index
-
-    返回:
-        int: 索引位置 (0-9)，找不到返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析，因此只使用红方索引
-    """
-    index_array = _v_change_index if use_v_index else _h_level_index
-
-    try:
-        return index_array.index(digit_char)
-    except ValueError:
-        pass
-
-    # 尝试转换格式后查找
-    converted = _convert_digit_format(digit_char, RED)  # 规范局面下使用红方格式
-    if converted:
-        try:
-            return index_array.index(converted)
-        except ValueError:
-            pass
-
-    return None
-
-
-def _get_digit_index(digit_char):
-    """获取数字字符在列索引数组中的位置。
-
-    参数:
-        digit_char: 数字字符（中文、半角或全角）
-
-    返回:
-        int: 列索引 (0-8)，找不到返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析
-    """
-    return _get_index(digit_char, use_v_index=False)
-
-
-def _get_v_index(step_digit):
-    """获取步数数字在垂直方向索引数组中的位置。
-
-    参数:
-        step_digit: 步数数字字符
-
-    返回:
-        int: v_index 位置 (0-9)，找不到返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析
-    """
-    return _get_index(step_digit, use_v_index=True)
-
-
-def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
-    """将数字字符转换为规范局面下的格式。
-
-    当原始局面是黑方走子时，走法字符串中的数字是全角格式（如"２"）。
-    在规范局面上，我们需要将其转换为红方格式（中文数字"二"）。
-
-    参数:
-        digit_char: 原始数字字符
-        original_side: 原始走子方 (RED/BLACK)
-        normalized_side: 规范局面走子方 (默认为RED)
-
-    返回:
-        str: 转换后的数字字符
-    """
-    if original_side == normalized_side:
-        return digit_char
-
-    # 如果原始是黑方，规范局面是红方，需要将全角数字转换为中文数字
-    if original_side == BLACK and normalized_side == RED:
-        return _FULLWIDTH_TO_CHINESE.get(digit_char, digit_char)
-
-    # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
-    if original_side == RED and normalized_side == BLACK:
-        return _CHINESE_TO_FULLWIDTH.get(digit_char, digit_char)
-
-    return digit_char
-
-
-def _normalize_move_str(move_str, original_side):
-    """将走法字符串中的数字字符转换为规范局面（红方视角）下的格式。
-
-    作用：将黑方格式的走法字符串转换为红方视角格式，用于统一解析。
-    - 黑方使用全角/阿拉伯数字（如"炮２平５"、"车1平5"）
-    - 红方使用中文数字（如"炮二平五"）
-    - 规范局面（红方视角）下统一使用中文数字
-
-    例如：
-    - "炮２平５"（黑方格式）→ "炮二平五"（红方格式）
-    - "车1平5"（黑方格式）→ "车一平五"（红方格式）
-    - "炮二平五"（红方格式）→ 直接返回（无需转换）
-
-    参数:
-        move_str: 原始走法字符串
-        original_side: 原始走子方 (RED/BLACK)
-
-    返回:
-        str: 转换后的走法字符串（规范局面红方视角格式）
-    """
-    # 规范局面总是红方视角
-    if original_side == RED:
-        return move_str
-
-    # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
-    result = []
-    for char in move_str:
-        if char in _FULLWIDTH_TO_CHINESE:
-            result.append(_FULLWIDTH_TO_CHINESE[char])
-        else:
-            result.append(char)
-    return "".join(result)
-
-
-def _get_target_x(digit_char):
-    """获取目标列索引。
-
-    参数:
-        digit_char: 数字字符
-
-    返回:
-        int: 目标列索引 (0-8)，无法解析返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析
-    """
-    digit_index = _get_digit_index(digit_char)
-    if digit_index is None:
-        return None
-    return digit_index
-
-
 def _advisor_move(pos_from, move_str):
     """解析士/仕的走法。
 
@@ -990,9 +776,9 @@ def _king_rook_cannon_pawn_move(pos_from, move_str):
     # 前进/后退 - 使用 _get_digit_index 获取步数
     step_digit = move_str[1:].strip()
 
-    # 使用 _v_change_index 获取步数差值
+    # 使用 _V_CHANGE_INDEX 获取步数差值
     try:
-        diff = _v_change_index.index(step_digit)
+        diff = _V_CHANGE_INDEX.index(step_digit)
     except ValueError:
         # 尝试转换格式
         diff = _get_v_index(step_digit)
@@ -1328,8 +1114,8 @@ class Move:
         # 根据走子方确定使用哪个索引
         # 红方使用中文数字，黑方使用全角数字
         if piece_color == RED:
-            h_index = _h_level_index
-            v_index = _v_change_index
+            h_index = _H_LEVEL_INDEX
+            v_index = _V_CHANGE_INDEX
         else:
             # 黑方使用全角数字，需要将坐标转换为黑方视角
             # 黑方视角：x坐标从右到左，y坐标从上到下
