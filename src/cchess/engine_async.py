@@ -15,18 +15,21 @@ logger = logging.getLogger(__name__)
 class AsyncEngine:
     """异步引擎封装，基于 asyncio 实现非阻塞调用。
 
+    支持 UCI 和 UCCI 两种协议，自动检测引擎类型。
+
     使用示例:
         async with AsyncEngine("path/to/engine") as engine:
             result = await engine.play(board, depth=10)
             print(result)
     """
 
-    def __init__(self, exec_path: str = ""):
+    def __init__(self, exec_path: str = "", protocol: str = "auto"):
         self.engine_exec_path = exec_path
         self.process: Optional[asyncio.subprocess.Process] = None
         self._initialized = False
         self._options: Dict[str, Any] = {}
         self._id: Dict[str, str] = {}
+        self._protocol = protocol  # "auto", "uci", or "ucci"
 
     async def __aenter__(self) -> AsyncEngine:
         """异步上下文管理器入口"""
@@ -60,18 +63,73 @@ class AsyncEngine:
                 startupinfo=startupinfo,
             )
 
-            # 发送初始化命令
-            await self._send_line("uci")
-
-            # 等待 uciok
-            while True:
-                line = await self._read_line()
-                if line == "uciok":
-                    break
-                if line.startswith("option"):
-                    await self._parse_option(line)
-                elif line.startswith("id"):
-                    await self._parse_id(line)
+            # 自动检测协议类型或发送指定协议初始化命令
+            if self._protocol == "auto":
+                # 先尝试 UCCI
+                await self._send_line("ucci")
+                try:
+                    line = await asyncio.wait_for(self._read_line(), timeout=3.0)
+                    if line == "ucciok":
+                        self._protocol = "ucci"
+                    elif line.startswith("option"):
+                        # 继续读取直到找到 ucciok 或 uciok
+                        while True:
+                            line = await asyncio.wait_for(
+                                self._read_line(), timeout=3.0
+                            )
+                            if line == "ucciok":
+                                self._protocol = "ucci"
+                                break
+                            elif line == "uciok":
+                                self._protocol = "uci"
+                                break
+                            elif line.startswith("id"):
+                                await self._parse_id(line)
+                    elif line == "uciok":
+                        self._protocol = "uci"
+                    else:
+                        # 默认当作 UCCI 处理
+                        self._protocol = "ucci"
+                        while True:
+                            line = await asyncio.wait_for(
+                                self._read_line(), timeout=3.0
+                            )
+                            if line == "ucciok":
+                                break
+                            elif line.startswith("id"):
+                                await self._parse_id(line)
+                except asyncio.TimeoutError:
+                    # UCCI 超时，尝试 UCI
+                    await self._send_line("uci")
+                    while True:
+                        line = await asyncio.wait_for(self._read_line(), timeout=3.0)
+                        if line == "uciok":
+                            self._protocol = "uci"
+                            break
+                        elif line.startswith("option"):
+                            await self._parse_option(line)
+                        elif line.startswith("id"):
+                            await self._parse_id(line)
+            elif self._protocol == "uci":
+                await self._send_line("uci")
+                while True:
+                    line = await self._read_line()
+                    if line == "uciok":
+                        break
+                    if line.startswith("option"):
+                        await self._parse_option(line)
+                    elif line.startswith("id"):
+                        await self._parse_id(line)
+            else:  # ucci
+                await self._send_line("ucci")
+                while True:
+                    line = await self._read_line()
+                    if line == "ucciok":
+                        break
+                    if line.startswith("option"):
+                        await self._parse_option(line)
+                    elif line.startswith("id"):
+                        await self._parse_id(line)
 
             self._initialized = True
             logger.info("Engine initialized: %s", self._id.get("name", "Unknown"))

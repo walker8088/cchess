@@ -32,6 +32,14 @@ dependencies = [
 Homepage = "https://github.com/walker8088/cchess"
 Source = "https://github.com/walker8088/cchess"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov",
+    "ruff",
+]
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -53,3 +61,4 @@ explicit = true
 
 [tool.pytest.ini_options]
 addopts = "--tb=short"
+asyncio_mode = "auto"
