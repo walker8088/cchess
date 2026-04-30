@@ -450,26 +450,6 @@ class ChessBoard:
             board_after=board_after,
         )
 
-    def unmake_move(self, move_info: MoveInfo) -> None:
-        """根据 MoveInfo 撤销移动，恢复棋盘状态"""
-        # 恢复被吃棋子（如果有）
-        if move_info.captured_fench is not None:
-            self._board[move_info.to_pos[1]][move_info.to_pos[0]] = (
-                move_info.captured_fench
-            )
-        else:
-            self._board[move_info.to_pos[1]][move_info.to_pos[0]] = None
-
-        # 将移动棋子移回原位置
-        self._board[move_info.from_pos[1]][move_info.from_pos[0]] = (
-            move_info.moving_fench
-        )
-
-        # 恢复攻击矩阵脏标志
-        self._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
-
-        # 恢复走子方
-        self._move_side = move_info.prev_move_side
 
     def move(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int], check: bool = True
@@ -593,88 +573,6 @@ class ChessBoard:
 
         return None
 
-    def move_any(
-        self,
-        pos_from: Tuple[int, int],
-        pos_to: Tuple[int, int],
-        check: bool = False,
-        switch_turn: bool = False,
-    ) -> Optional[Move]:
-        """执行任意走子，不检查颜色限制（用于摆棋/分析）。
-
-        参数:
-            pos_from: 起点坐标
-            pos_to: 终点坐标
-            check: 是否检查将军/将死（默认 False，提高摆棋速度）
-            switch_turn: 是否切换走子方（默认 False，摆棋时通常不切换）
-
-        返回:
-            Move 对象，如果走子非法（如起点无棋子）则返回 None
-
-        注意:
-            - 可以移动任意方的棋子
-            - 可以吃己方棋子
-            - 不检查 move_side 颜色
-        """
-        # 最基本的检查：起点必须有棋子，目标位置在棋盘内
-        if not (0 <= pos_to[0] <= 8 and 0 <= pos_to[1] <= 9):
-            return None
-
-        fench_from = self._board[pos_from[1]][pos_from[0]]
-        if not fench_from:
-            return None
-
-        # 检查棋子走法是否合法（不检查颜色）
-        piece = self.get_piece(pos_from)
-        if not piece or not piece.is_valid_move(pos_to):
-            return None
-
-        # 执行移动并记录状态
-        # 创建移动前的棋盘快照
-        board_before = self.copy()
-
-        # 记录移动前状态
-        prev_attack_matrix_dirty = self._attack_matrix_dirty
-        prev_move_side = self._move_side
-        moving_fench = self._board[pos_from[1]][pos_from[0]]
-        captured_fench = self._board[pos_to[1]][pos_to[0]]
-
-        # 执行移动
-        self._move_piece(pos_from, pos_to)
-
-        # 记录移动后状态
-        next_attack_matrix_dirty = self._attack_matrix_dirty
-        next_move_side = self._move_side
-
-        # 创建移动后的棋盘快照
-        board_after = self.copy()
-
-        # 创建 MoveInfo
-        move_info = MoveInfo(
-            from_pos=pos_from,
-            to_pos=pos_to,
-            moving_fench=moving_fench,
-            captured_fench=captured_fench,
-            prev_attack_matrix_dirty=prev_attack_matrix_dirty,
-            next_attack_matrix_dirty=next_attack_matrix_dirty,
-            prev_move_side=prev_move_side,
-            next_move_side=next_move_side,
-            board_before=board_before._board,
-            board_after=board_after._board,
-        )
-
-        move = Move(move_info, board_before, board_after)
-
-        # 如果不切换走子方，恢复原来的走子方
-        if not switch_turn:
-            self._move_side = move_info.prev_move_side
-
-        if check:
-            is_checking = self.is_checking()
-            move.is_checking = is_checking
-            move.is_checkmate = is_checking and self.is_checkmate()
-
-        return move
 
     def next_turn(self):
         """切换到下一个走子方并返回新的颜色值（工具方法）。"""
@@ -757,7 +655,8 @@ class ChessBoard:
             checking = self.is_checking()
             self._move_side = original_player
 
-        self.unmake_move(move_info)
+        self._board = [row[:] for row in move_info.board_before]
+        self._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
         return checking
 
     def is_checked_move(

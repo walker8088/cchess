@@ -49,7 +49,9 @@ class TestMakeUnmake:
         # 执行移动
         move_info = board.make_move((4, 0), (4, 1))
         # 撤销
-        board.unmake_move(move_info)
+        board._board = [row[:] for row in move_info.board_before]
+        board._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
+        board._move_side = move_info.prev_move_side
         # 检查恢复
         assert board._board == initial_board
         assert board.move_side() == RED
@@ -70,7 +72,9 @@ class TestMakeUnmake:
         board = ChessBoard("4k4/9/9/9/9/9/9/9/4r4/4K4 w")
         initial_board = [row[:] for row in board._board]
         move_info = board.make_move((4, 0), (4, 1))
-        board.unmake_move(move_info)
+        board._board = [row[:] for row in move_info.board_before]
+        board._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
+        board._move_side = move_info.prev_move_side
         # 棋盘应完全恢复
         assert board._board == initial_board
         assert board.get_fench((4, 1)) == "r"
@@ -88,7 +92,9 @@ class TestMakeUnmake:
         # 移动后脏标志应为 True
         assert board._attack_matrix_dirty == True
         # 撤销移动
-        board.unmake_move(move_info)
+        board._board = [row[:] for row in move_info.board_before]
+        board._attack_matrix_dirty = move_info.prev_attack_matrix_dirty
+        board._move_side = move_info.prev_move_side
         # 脏标志应恢复为 False
         assert board._attack_matrix_dirty == False
 
@@ -99,7 +105,9 @@ class TestMakeUnmake:
         move = board.move((4, 0), (4, 1))
         if move:
             assert board.move_side() != initial_player
-            board.unmake_move(move.move_info)
+            board._board = [row[:] for row in move.move_info.board_before]
+            board._attack_matrix_dirty = move.move_info.prev_attack_matrix_dirty
+            board._move_side = move.move_info.prev_move_side
             assert board.move_side() == initial_player
 
     def test_multiple_moves_unmake(self):
@@ -117,11 +125,15 @@ class TestMakeUnmake:
         assert board.get_fench((4, 9)) is None
         assert board.get_fench((4, 8)) == "k"
         # 撤销第二次移动
-        board.unmake_move(move2)
+        board._board = [row[:] for row in move2.board_before]
+        board._attack_matrix_dirty = move2.prev_attack_matrix_dirty
+        board._move_side = move2.prev_move_side
         assert board.get_fench((4, 9)) == "k"
         assert board.get_fench((4, 8)) is None
         # 撤销第一次移动
-        board.unmake_move(move1)
+        board._board = [row[:] for row in move1.board_before]
+        board._attack_matrix_dirty = move1.prev_attack_matrix_dirty
+        board._move_side = move1.prev_move_side
         assert board._board == initial_board
 
     def test_move_info_fields(self):
