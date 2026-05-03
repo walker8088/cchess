@@ -520,19 +520,129 @@ class ChessBoard:
         move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to, check)
 
-    def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
-        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。
+    def _parse_move_text(self, move_str: str) -> Optional[list]:
+        """解析中文走法文本，返回坐标列表 [(from_pos, to_pos), ...]
 
-        解析流程已封装到 _MoveTextParser.parse_move_text() 中：
-        1. 检测红黑：通过数字字符类型检测走法文本格式
-        2. 规范化局面和走法字符串：统一为红方视角解析
-        3. 解析走法：使用 _MoveTextParser 解析
-        4. 反规范化坐标：转换回原局面坐标
-        5. 执行走子
+        内部实现，直接在 board 上操作，避免额外类实例化。
         """
-        from .move import _MoveTextParser
+        from .common import COLUMN_MAP, _normalize_move_str
+        from .move import _detect_move_side_from_text, _parse_notation
+        from .piece import (
+            Advisor,
+            Bishop,
+            Cannon,
+            King,
+            Knight,
+            Pawn,
+            Rook,
+        )
 
-        moves = _MoveTextParser.parse_move_text(move_str, self)
+        move_str = move_str.replace(" ", "")
+        text_side = _detect_move_side_from_text(move_str)
+        norm = self.normalized()
+
+        norm_move_str = (
+            _normalize_move_str(move_str, BLACK) if text_side == BLACK else move_str
+        )
+
+        # 词法解析：从中文走法文本解析中间表示
+        notation = _parse_notation(norm_move_str)
+        if not notation:
+            return None
+
+        piece_type, column, direction, distance, qualifier = notation
+        fench = piece_type.upper()
+        piece_fench = fench.lower()
+
+        if fench not in {"K", "A", "B", "N", "R", "C", "P"}:
+            return None
+
+        # 查找候选棋子
+        positions = self._find_piece_positions(
+            norm, fench, piece_fench, column, qualifier
+        )
+        if not positions:
+            return None
+
+        # 构建走法字符串
+        direction_char = {"+": "进", "-": "退", "=": "平"}.get(direction, "")
+        if direction == "=" or piece_fench in {"a", "b", "n"}:
+            distance_char = COLUMN_MAP[distance][0] if 0 <= distance <= 8 else ""
+        else:
+            distance_char = {
+                1: "一",
+                2: "二",
+                3: "三",
+                4: "四",
+                5: "五",
+                6: "六",
+                7: "七",
+                8: "八",
+                9: "九",
+            }.get(distance, "")
+        move_str_part = direction_char + distance_char
+
+        # 计算目标坐标
+        piece_dispatch = {
+            "k": King.text_move_to_pos,
+            "a": Advisor.text_move_to_pos,
+            "b": Bishop.text_move_to_pos,
+            "n": Knight.text_move_to_pos,
+            "r": Rook.text_move_to_pos,
+            "c": Cannon.text_move_to_pos,
+            "p": Pawn.text_move_to_pos,
+        }
+        handler = piece_dispatch.get(piece_fench)
+        if not handler:
+            return None
+
+        moves = []
+        for pos in positions:
+            pos_to = handler(pos, move_str_part)
+            if pos_to:
+                moves.append((pos, pos_to))
+
+        if not moves:
+            return None
+
+        # 反规范化
+        if self.move_side() == BLACK:
+            return [
+                (self.denormalize_pos(f), self.denormalize_pos(t)) for f, t in moves
+            ]
+        return moves
+
+    def _find_piece_positions(self, norm, fench, piece_fench, column, qualifier):
+        """根据限定词和列查找候选棋子位置"""
+        if qualifier:
+            all_positions = norm.get_fench_positions(fench)
+            if not all_positions:
+                return []
+
+            if piece_fench in {"r", "c", "n", "p"}:
+                all_positions.sort(key=lambda p: p[1], reverse=True)
+
+                if qualifier == "f":
+                    return [all_positions[0]] if all_positions else []
+                elif qualifier == "m":
+                    return [all_positions[1]] if len(all_positions) > 1 else []
+                elif qualifier == "b":
+                    return [all_positions[-1]] if all_positions else []
+                elif qualifier.isdigit():
+                    idx = int(qualifier) - 1
+                    return [all_positions[idx]] if 0 <= idx < len(all_positions) else []
+            return []
+        else:
+            positions = norm.get_fench_positions_x(fench, column)
+            if not positions:
+                return []
+            if len(positions) > 1 and piece_fench not in {"a", "b"}:
+                return []
+            return positions
+
+    def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
+        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
+        moves = self._parse_move_text(move_str)
         if not moves:
             return None
 
