@@ -1,7 +1,7 @@
 
 [project]
 name = "cchess"
-version = "1.26.1"
+version = "1.26.2"
 description = "ChineseChess (AKA XiangQi) library"
 readme = "README.md"
 authors = [
@@ -26,6 +26,7 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "chardet>=5.0",
+    "pygame>=2.6.1",
 ]
 
 [project.urls]
