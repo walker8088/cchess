@@ -62,3 +62,4 @@ explicit = true
 [tool.pytest.ini_options]
 addopts = "--tb=short"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
