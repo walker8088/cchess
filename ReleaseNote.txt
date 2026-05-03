@@ -1,4 +1,45 @@
 
+release v1.26.2 (2026年第2次发布)
+
+【API不兼容变化】
+  * 移除 Move.from_text() 静态方法 → 使用 board.move_text() 实例方法
+  * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_pieces()
+  * 移除 ChessPlayer 类 → 使用整数常量 RED=1, BLACK=2, ANY_COLOR=0
+  * 重命名 NO_COLOR → ANY_COLOR（语义更清晰）
+
+【性能优化】
+  * 关键操作性能提升 3.5-5.1倍（走法生成、棋子遍历等）
+  * 马走法生成优化：内联边界检查，性能提升约35%
+  * 车/炮走法生成优化：直接访问棋盘数组，减少方法调用
+  * PGNTokenizer.tokenize() 优化：使用分发表 + 预计算字符集
+  * Piece类添加 __slots__：内存占用减少40%
+
+【架构改进】
+  * 引入 MoveNotation 中间表示：分离走法解析与渲染，支持多语言输出
+  * 使用规范局面（normalized board）：统一红黑方走法处理，减少颜色分支
+  * 新增 AsyncEngine 异步引擎：支持 asyncio 并发操作
+
+【测试与文档】
+  * 新增异步引擎测试套件：覆盖完整功能测试
+  * 新增性能基准测试套件（benchmark.py）和回归检测脚本
+  * 新增代码审查清单（CODE_REVIEW.md）和质量检查标准
+  * 新增详细架构分析文档（ARCHITECTURE_ANALYSIS.md）
+
+【错误修复】
+  * 修复中文走法'前/后'限定词逻辑错误
+  * 修复 PGN 解析器走子方切换问题
+  * 修复 move_player → move_side 命名不一致问题
+  * 统一数字格式处理：红方使用中文数字，黑方使用全角数字
+
+性能基准数据：
+  * get_all_pieces(): 0.024 ms/次 (42,259 ops/sec)
+  * create_moves(): 0.100 ms/次 (9,952 ops/sec)
+  * is_valid_move(): 0.003 ms/次 (389,469 ops/sec)
+  * 车走法: 0.034 ms/次 (29,398 ops/sec)
+  * 炮走法: 0.022 ms/次 (44,997 ops/sec)
+  * 马走法: 0.023 ms/次 (44,132 ops/sec)
+  * 兵走法: 0.023 ms/次 (42,708 ops/sec)
+
 release v1.26.1
   * 新增命令行格式转换功能：-i 输入文件 -o 输出文件，支持 pgn<->xqf、cbf->xqf
   * 修复 PGN 文件编码问题：优先尝试 UTF-8，再尝试 GBK，最后使用 chardet 兜底
@@ -13,11 +54,10 @@ release v1.26.1
   * 添加/完善类和函数 docstring
   * 修复异常处理：使用具体异常类型替代宽泛 Exception
 
-release v1.24.6 
+release v1.24.6
   * 读写带xqf格式棋谱，支持变招和注释
   * 读取东萍UBB dhtml格式棋谱（不支持变招和注释）
   * 读写pgn格式棋谱，支持变招和注释
-  
-release v1.24.4 
+
+release v1.24.4
   * 目前可以读入 XQF, CBR, CBL, PNG(iccs格式和文本格式) 的棋谱
-    

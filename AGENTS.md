@@ -4,6 +4,9 @@
 
 中国象棋（CChess）Python 实现，支持棋谱读写、走法生成、引擎接口等功能。
 
+## 架构文档
+详细代码架构分析请参考：[ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md)
+
 ## 开发环境
 
 ### 依赖安装
