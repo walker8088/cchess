@@ -960,8 +960,8 @@ class _MoveTextParser:
         """获取规范化后的棋盘"""
         return self.normalized_board
 
-    @classmethod
-    def parse_move_text(cls, move_str: str, board) -> Optional[list]:
+    @staticmethod
+    def parse_move_text(move_str: str, board) -> Optional[list]:
         """一站式解析走法文本，内部处理归一化和反归一化。
 
         参数:
@@ -987,8 +987,8 @@ class _MoveTextParser:
         else:
             normalized_move_str = move_str
 
-        # 创建解析器并解析（传入规范化棋盘，needs_denormalization = False）
-        parser = cls(normalized_board, normalized_move_str)
+        # 创建解析器并解析
+        parser = _MoveTextParser(normalized_board, normalized_move_str)
         normalized_moves = parser.parse()
 
         if not normalized_moves:
