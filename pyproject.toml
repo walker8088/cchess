@@ -63,3 +63,6 @@ explicit = true
 addopts = "--tb=short"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+data_file = ".coverage_tmp"
