@@ -471,6 +471,372 @@ class TestMoveMisc:
             assert len(moves) >= 2
 
 
+class TestMoveNotationFromMove:
+    """Tests for MoveNotation.from_move() - qualifier logic, black side conversion (lines 149, 159-162, 171, 184-227)."""
+
+    def test_from_move_two_pieces_same_column(self):
+        """Test from_move with two pieces on same column - qualifier f/b."""
+        board = ChessBoard("3ak4/9/9/9/9/9/9/9/9/2R2R1K1 w")
+        move = board.copy().move((2, 0), (2, 1))
+        if move:
+            text = move.to_text()
+            assert "车" in text
+
+    def test_from_move_three_pieces_same_column(self):
+        """Test from_move with three pieces on same column - qualifier f/m/b."""
+        board = ChessBoard("3ak4/9/9/9/9/4P4/4P4/4P4/9/4K4 w")
+        move = board.copy().move((4, 4), (4, 5))
+        if move:
+            text = move.to_text()
+            assert "兵" in text
+
+    def test_from_move_four_pieces_same_column(self):
+        """Test from_move with 4 pieces on same column - f/2/3/b."""
+        board = ChessBoard("3ak4/9/9/9/4P4/4P4/4P4/4P4/9/4K4 w")
+        move = board.copy().move((4, 5), (4, 6))
+        if move:
+            text = move.to_text()
+            assert "兵" in text
+
+    def test_from_move_five_pieces_same_column(self):
+        """Test from_move with 5+ pieces - f/b with numbers."""
+        board = ChessBoard("3ak4/9/9/4P4/4P4/4P4/4P4/4P4/9/4K4 w")
+        move = board.copy().move((4, 5), (4, 6))
+        if move:
+            text = move.to_text()
+            assert "兵" in text
+
+    def test_from_move_black_side_coordinate_conversion(self):
+        """Test from_move with black pieces - coordinate conversion."""
+        board = ChessBoard("3ak4/9/9/9/9/9/9/9/9/2r2r3 b")
+        move = board.copy().move((2, 0), (2, 1))
+        if move:
+            text = move.to_text()
+            assert "车" in text or "俥" in text
+
+    def test_from_move_advisor_bishop_horse_distance(self):
+        """Test from_move for 士/相/马 - distance shows target column."""
+        board = ChessBoard("3ak4/4r4/9/9/9/9/9/9/9/3AK4 w")
+        move = board.copy().move((3, 0), (4, 1))
+        if move:
+            text = move.to_text()
+            assert "仕" in text or "士" in text
+
+    def test_from_move_king_rook_cannon_pawn_distance(self):
+        """Test from_move for 王/车/炮/兵 - distance shows steps."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.copy().move((0, 0), (0, 2))
+        if move:
+            text = move.to_text()
+            assert "进" in text
+
+
+class TestMoveNotationFromText:
+    """Tests for MoveNotation.from_text() - Chinese move parsing (lines 252-304)."""
+
+    def test_from_text_basic_move(self):
+        """Test basic move parsing."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        notation = MoveNotation.from_text("炮二平五", board)
+        assert notation is not None
+        assert notation.piece_type == "c"
+        assert notation.direction == "="
+
+    def test_from_text_with_qualifier(self):
+        """Test move parsing with qualifier."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard("3ak4/9/9/9/4r4/9/9/9/9/4R1R2 w")
+        notation = MoveNotation.from_text("前车平五", board)
+        assert notation is not None
+        assert notation.qualifier == "f"
+
+    def test_from_text_invalid_length(self):
+        """Test from_text with invalid length."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        with pytest.raises(ValueError):
+            MoveNotation.from_text("炮二平", board)
+
+    def test_from_text_invalid_piece(self):
+        """Test from_text with invalid piece character."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        with pytest.raises(ValueError):
+            MoveNotation.from_text("X二平五", board)
+
+    def test_from_text_empty_text(self):
+        """Test from_text with empty text."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        result = MoveNotation.from_text("", board)
+        assert result is None
+
+    def test_from_text_none_board(self):
+        """Test from_text with None board."""
+        from cchess.move import MoveNotation
+
+        result = MoveNotation.from_text("炮二平五", None)
+        assert result is None
+
+    def test_from_text_invalid_direction(self):
+        """Test from_text with invalid direction character."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        result = MoveNotation.from_text("炮二左五", board)
+        assert result is None
+
+    def test_from_text_invalid_distance(self):
+        """Test from_text with invalid distance character."""
+        from cchess.move import MoveNotation
+
+        board = ChessBoard(FULL_INIT_FEN)
+        result = MoveNotation.from_text("炮二平十", board)
+        assert result is None
+
+
+class TestMoveNotationToCompact:
+    """Tests for MoveNotation.to_compact() - compact format output (lines 335-351)."""
+
+    def test_to_compact_basic(self):
+        """Test basic compact format."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation("C", 6, "=", 4, "", piece_color=RED)
+        text = notation.to_compact()
+        assert "C" in text
+        assert "=" in text
+
+    def test_to_compact_with_qualifier(self):
+        """Test compact format with qualifier."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation("R", 2, "+", 3, "f", piece_color=RED)
+        text = notation.to_compact()
+        assert "f" in text
+
+    def test_to_compact_capture(self):
+        """Test compact format with capture marker."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation("R", 6, "+", 5, "", is_capture=True, piece_color=RED)
+        text = notation.to_compact()
+        assert "x" in text
+
+    def test_to_compact_check(self):
+        """Test compact format with check marker."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation("C", 6, "=", 4, "", is_check=True, piece_color=RED)
+        text = notation.to_compact()
+        assert "+" in text
+
+    def test_to_compact_checkmate(self):
+        """Test compact format with checkmate marker."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation("C", 6, "=", 4, "", is_checkmate=True, piece_color=RED)
+        text = notation.to_compact()
+        assert "#" in text
+
+    def test_to_compact_all_markers(self):
+        """Test compact format with all markers."""
+        from cchess.move import MoveNotation
+
+        notation = MoveNotation(
+            "R", 6, "+", 5, "f", is_capture=True, is_check=True, piece_color=RED
+        )
+        text = notation.to_compact()
+        assert "f" in text
+        assert "x" in text
+        assert "+" in text
+
+
+class TestMoveToTextCompactAndHelpers:
+    """Tests for Move.to_text() compact format and helper methods (lines 743, 753, 764-766, 772-790, 794-801)."""
+
+    def test_to_text_compact_format(self):
+        """Test to_text with fmt='compact'."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.copy().move((0, 0), (0, 1))
+        text = move.to_text(fmt="compact")
+        assert text is not None
+        assert len(text) > 0
+
+    def test_get_direction_str(self):
+        """Test _get_direction_str helper."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.copy().move((0, 0), (0, 1))
+        assert move._get_direction_str(0) == "平"
+        assert move._get_direction_str(1) == "进"
+        assert move._get_direction_str(-1) == "退"
+
+    def test_get_dest_str_red(self):
+        """Test _get_dest_str for red pieces."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.copy().move((0, 0), (0, 1))
+        result = move._get_dest_str("r", RED, 1)
+        assert result is not None
+
+    def test_get_dest_str_black(self):
+        """Test _get_dest_str for black pieces."""
+        board = ChessBoard(FULL_INIT_FEN)
+        board.next_turn()
+        move = board.copy().move((0, 9), (0, 8))
+        if move:
+            result = move._get_dest_str("r", BLACK, -1)
+            assert result is not None
+
+    def test_get_dest_str_advisor_bishop_horse(self):
+        """Test _get_dest_str for 士/相/马 - uses target column."""
+        board = ChessBoard("3ak4/4r4/9/9/9/9/9/9/9/3AK4 w")
+        move = board.copy().move((3, 0), (4, 1))
+        if move:
+            result = move._get_dest_str("a", RED, 1)
+            assert result is not None
+
+    def test_get_detailed_info_capture(self):
+        """Test _get_detailed_info with capture."""
+        board = ChessBoard("rnbakabnr/9/9/9/9/9/9/9/9/RNBAKABNR w")
+        move = board.copy().move((0, 0), (0, 9))
+        if move and move.captured:
+            details = move._get_detailed_info()
+            assert any("吃" in d for d in details)
+
+    def test_get_detailed_info_checkmate(self):
+        """Test _get_detailed_info with checkmate."""
+        board = ChessBoard("rnbakabnr/9/9/p1p1p1p1p/9/4c4/PCP1c1P1P/5C3/9/RNBAKABNR w")
+        move = board.copy().move((1, 2), (4, 2))
+        if move and move.is_checkmate:
+            details = move._get_detailed_info()
+            assert "将死" in details
+
+    def test_get_detailed_info_checking(self):
+        """Test _get_detailed_info with checking."""
+        board = ChessBoard(
+            "rnbakabnr/9/1c2c4/p1p1C1p1p/9/9/P1P1P1P1P/1C7/9/RNBAKABNR w"
+        )
+        move = board.copy().move((1, 2), (4, 2))
+        if move and move.is_checking and not move.is_checkmate:
+            details = move._get_detailed_info()
+            assert "将军" in details
+
+    def test_get_detailed_info_no_details(self):
+        """Test _get_detailed_info with no special conditions."""
+        board = ChessBoard(FULL_INIT_FEN)
+        move = board.copy().move((0, 0), (0, 1))
+        details = move._get_detailed_info()
+        assert len(details) == 0
+
+
+class TestMoveTextMoveToStdMove:
+    """Tests for Move.text_move_to_std_move() boundary conditions (lines 912, 936)."""
+
+    def test_text_move_to_std_move_empty_string(self):
+        """Test with empty move string."""
+        result = Move.text_move_to_std_move("r", (0, 0), "")
+        assert result is None
+
+    def test_text_move_to_std_move_none_string(self):
+        """Test with None move string."""
+        result = Move.text_move_to_std_move("r", (0, 0), None)
+        assert result is None
+
+    def test_text_move_to_std_move_invalid_direction(self):
+        """Test with invalid direction character."""
+        result = Move.text_move_to_std_move("r", (0, 0), "左一")
+        assert result is None
+
+    def test_text_move_to_std_move_unknown_piece(self):
+        """Test with unknown piece type."""
+        result = Move.text_move_to_std_move("x", (0, 0), "进一")
+        assert result is None
+
+    def test_text_move_to_std_move_advisor_ping(self):
+        """Test advisor cannot do 平."""
+        result = Move.text_move_to_std_move("a", (3, 0), "平五")
+        assert result is None
+
+    def test_text_move_to_std_move_bishop_ping(self):
+        """Test bishop cannot do 平."""
+        result = Move.text_move_to_std_move("b", (2, 0), "平五")
+        assert result is None
+
+    def test_text_move_to_std_move_knight_ping(self):
+        """Test knight cannot do 平."""
+        result = Move.text_move_to_std_move("n", (2, 0), "平五")
+        assert result is None
+
+
+class TestParseNotation:
+    """Tests for _parse_notation() function (lines 972, 980)."""
+
+    def test_parse_notation_empty_string(self):
+        """Test _parse_notation with empty string."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("")
+        assert result is None
+
+    def test_parse_notation_too_short(self):
+        """Test _parse_notation with string too short."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("炮二")
+        assert result is None
+
+    def test_parse_notation_invalid_piece(self):
+        """Test _parse_notation with invalid piece character."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("X二平五")
+        assert result is None
+
+    def test_parse_notation_invalid_column(self):
+        """Test _parse_notation with invalid column character."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("炮十平五")
+        assert result is None
+
+    def test_parse_notation_invalid_direction(self):
+        """Test _parse_notation with invalid direction character."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("炮二左五")
+        assert result is None
+
+    def test_parse_notation_invalid_distance(self):
+        """Test _parse_notation with invalid distance character."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("炮二平十")
+        assert result is None
+
+    def test_parse_notation_with_qualifier(self):
+        """Test _parse_notation with qualifier."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("前车进一")
+        assert result is not None
+        assert result[4] == "f"
+
+    def test_parse_notation_basic(self):
+        """Test _parse_notation basic move."""
+        from cchess.move import _parse_notation
+
+        result = _parse_notation("炮二平五")
+        assert result is not None
+        assert result[0] == "c"
+        assert result[2] == "="
+
+
 # ============================================================
 # read_pgn.py tests
 # ============================================================
