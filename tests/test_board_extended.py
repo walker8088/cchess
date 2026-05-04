@@ -171,15 +171,15 @@ class TestBoardExtended:
         color = board.occupied((4, 4))
         assert color is None  # 空位置返回None
 
-    def test_get_fench_positions_x(self):
+    def test_get_fench_positions_v_line(self):
         board = ChessBoard(FULL_INIT_FEN)
         # 获取第0列的所有车
-        rooks = board.get_fench_positions_x("R", 0)
+        rooks = board.get_fench_positions_v_line("R", 0)
         assert len(rooks) == 1
         assert rooks[0] == (0, 0)
 
         # 获取不存在的棋子
-        empty = board.get_fench_positions_x("X", 4)
+        empty = board.get_fench_positions_v_line("X", 4)
         assert len(empty) == 0
 
     def test_get_fench_positions(self):

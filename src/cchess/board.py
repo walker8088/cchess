@@ -352,7 +352,7 @@ class ChessBoard:
                     positions.append((x, y))
         return positions
 
-    def get_fench_positions_x(self, fench, x):
+    def get_fench_positions_v_line(self, fench, x):
         """返回指定列 x 上匹配 fench 的所有坐标。"""
         positions = []
         for y in range(10):
@@ -633,7 +633,7 @@ class ChessBoard:
                     return [all_positions[idx]] if 0 <= idx < len(all_positions) else []
             return []
         else:
-            positions = norm.get_fench_positions_x(fench, column)
+            positions = norm.get_fench_positions_v_line(fench, column)
             if not positions:
                 return []
             if len(positions) > 1 and piece_fench not in {"a", "b"}:
