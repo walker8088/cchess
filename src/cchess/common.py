@@ -29,6 +29,7 @@ from .constants import (  # noqa: F401 (re-exported for other modules)
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
     RED,
+    SIDE_ANY,
     SIDE_BLACK,
     SIDE_RED,
 )

@@ -68,8 +68,8 @@ class MoveInfo:
     to_pos: Tuple[int, int]
     moving_fench: str  # 移动的棋子字符
     captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
-    prev_move_side: int  # 移动前走子方 (SIDE_RED/SIDE_BLACK/ANY_COLOR)
-    next_move_side: int  # 移动后走子方 (SIDE_RED/SIDE_BLACK/ANY_COLOR)
+    prev_move_side: int  # 移动前走子方 (SIDE_RED/SIDE_BLACK/SIDE_ANY)
+    next_move_side: int  # 移动后走子方 (SIDE_RED/SIDE_BLACK/SIDE_ANY)
     board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
     board_after: List[List[Optional[str]]]  # 移动后棋盘数组的深拷贝
     prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志

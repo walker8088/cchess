@@ -15,9 +15,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 # 颜色常量
-ANY_COLOR, SIDE_RED, SIDE_BLACK = (0, 1, 2)
+SIDE_ANY, SIDE_RED, SIDE_BLACK = (0, 1, 2)
 
 # 向后兼容别名
+ANY_COLOR = SIDE_ANY
 RED = SIDE_RED
 BLACK = SIDE_BLACK
 

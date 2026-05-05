@@ -45,7 +45,7 @@ from .common import (
     next_color,
     swap_fench,
 )
-from .constants import ANY_COLOR, SIDE_BLACK, FEN_CHAR_SET, FEN_NUM_SET, SIDE_RED
+from .constants import SIDE_ANY, SIDE_BLACK, FEN_CHAR_SET, FEN_NUM_SET, SIDE_RED
 from .exception import CChessError
 from .move import Move, MoveInfo
 from .piece import Piece
@@ -111,7 +111,7 @@ class ChessBoard:
         self._board: List[List[Optional[str]]] = [
             [None for _ in range(9)] for _ in range(10)
         ]
-        self._move_side = ANY_COLOR
+        self._move_side = SIDE_ANY
         # 攻击矩阵缓存
         self._red_attacks: List[List[bool]] = [
             [False for _ in range(9)] for _ in range(10)
@@ -126,14 +126,14 @@ class ChessBoard:
             self.from_fen(fen)
 
     def clear(self) -> "ChessBoard":
-        """清空棋盘并将走子方设为任意颜色（`ANY_COLOR`）。"""
+        """清空棋盘并将走子方设为任意颜色（`SIDE_ANY`）。"""
         # 重置棋盘
         for y in range(10):
             for x in range(9):
                 self._board[y][x] = None
 
         # 重置走子方
-        self._move_side = ANY_COLOR
+        self._move_side = SIDE_ANY
 
         # 重置攻击矩阵
         for y in range(10):
@@ -430,7 +430,7 @@ class ChessBoard:
 
         from_color = get_fench_color(fench_from)
 
-        if self._move_side not in (ANY_COLOR, from_color):
+        if self._move_side not in (SIDE_ANY, from_color):
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
@@ -877,7 +877,7 @@ class ChessBoard:
             else:
                 raise CChessError(f"fen:{fen} 不合法的fen字符串:{i},[{ch}]")
 
-        self._move_side = ANY_COLOR
+        self._move_side = SIDE_ANY
 
         if fen1 == "b":
             b.set_move_side(SIDE_BLACK)

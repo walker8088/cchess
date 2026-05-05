@@ -24,6 +24,7 @@ from .common import (
     FULL_INIT_FEN,
     # 向后兼容别名
     RED,
+    SIDE_ANY,
     SIDE_BLACK,
     SIDE_RED,
     fen_move_color,
@@ -67,6 +68,7 @@ __all__ = [
     "EngineError",
     # common
     "ANY_COLOR",
+    "SIDE_ANY",
     "SIDE_RED",
     "SIDE_BLACK",
     "fench_to_species",

@@ -16,16 +16,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ANY_COLOR, SIDE_BLACK, SIDE_RED
+from cchess import SIDE_ANY, SIDE_BLACK, SIDE_RED
 from cchess.common import next_color
 
 
 # -----------------------------------------------------#
 class TestPiece:
     def test_base(self):
-        # 测试 ANY_COLOR
-        assert next_color(ANY_COLOR) == ANY_COLOR
-        assert next_color(ANY_COLOR) == ANY_COLOR
+        # 测试 SIDE_ANY
+        assert next_color(SIDE_ANY) == SIDE_ANY
+        assert next_color(SIDE_ANY) == SIDE_ANY
 
         # 测试 SIDE_RED
         assert next_color(SIDE_RED) == SIDE_BLACK

@@ -1710,20 +1710,20 @@ class TestBoard:
         pass
 
     def test_chess_player_next_no_color(self):
-        """Test ChessPlayer.next with ANY_COLOR (line 97)."""
-        from cchess.common import ANY_COLOR, next_color
+        """Test ChessPlayer.next with SIDE_ANY (line 97)."""
+        from cchess.common import SIDE_ANY, next_color
 
         # 测试 next_color 函数
-        result = next_color(ANY_COLOR)
-        assert result == ANY_COLOR
+        result = next_color(SIDE_ANY)
+        assert result == SIDE_ANY
 
     def test_chess_player_opposite_no_color(self):
-        """Test ChessPlayer.opposite with ANY_COLOR (lines 106-107)."""
-        from cchess.common import ANY_COLOR, next_color
+        """Test ChessPlayer.opposite with SIDE_ANY (lines 106-107)."""
+        from cchess.common import SIDE_ANY, next_color
 
         # 测试 next_color 函数
-        result = next_color(ANY_COLOR)
-        assert result == ANY_COLOR
+        result = next_color(SIDE_ANY)
+        assert result == SIDE_ANY
 
     def test_board_eq_str(self):
         """Test ChessBoard.__eq__ with string (lines 628-629)."""
