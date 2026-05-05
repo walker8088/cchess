@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 
 from .board import ChessBoard
-from .common import BLACK, RED, append_move_to_game, get_fench_color
+from .common import SIDE_BLACK, SIDE_RED, append_move_to_game, get_fench_color
 from .constants import GAME_RESULT_MAP
 from .exception import CChessError
 
@@ -343,9 +343,9 @@ def read_from_cbr_buffer(contents, game_class):
     game_info["result"] = GAME_RESULT_MAP[game_result]
     board = ChessBoard()
     if move_side == 1:
-        board.set_move_side(RED)
+        board.set_move_side(SIDE_RED)
     else:
-        board.set_move_side(BLACK)
+        board.set_move_side(SIDE_BLACK)
 
     for x in range(9):
         for y in range(10):

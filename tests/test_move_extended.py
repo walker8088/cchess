@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import FULL_INIT_FEN, RED, ChessBoard
+from cchess import FULL_INIT_FEN, SIDE_RED, ChessBoard
 
 
 class TestMoveExtended:
@@ -113,6 +113,6 @@ class TestMoveExtended:
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
         history = []
-        move.prepare_for_engine(RED, history)
+        move.prepare_for_engine(SIDE_RED, history)
         # 检查是否设置了必要的属性
         assert hasattr(move, "board_after")

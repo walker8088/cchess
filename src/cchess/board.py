@@ -45,7 +45,7 @@ from .common import (
     next_color,
     swap_fench,
 )
-from .constants import ANY_COLOR, BLACK, FEN_CHAR_SET, FEN_NUM_SET, RED
+from .constants import ANY_COLOR, SIDE_BLACK, FEN_CHAR_SET, FEN_NUM_SET, SIDE_RED
 from .exception import CChessError
 from .move import Move, MoveInfo
 from .piece import Piece
@@ -258,13 +258,13 @@ class ChessBoard:
         返回:
             ChessBoard: 规范局面棋盘
         """
-        if self._move_side == BLACK:
+        if self._move_side == SIDE_BLACK:
             return self.swap().flip()
         return self.copy()
 
     def is_normalized(self):
         """判断当前是否为规范局面（红方走子）。"""
-        return self._move_side == RED
+        return self._move_side == SIDE_RED
 
     def denormalize_pos(self, pos):
         """将规范局面坐标转换回原局面。
@@ -326,14 +326,14 @@ class ChessBoard:
             pos: 坐标 (x, y)
 
         返回:
-            RED: 如果该位置有红方棋子
-            BLACK: 如果该位置有黑方棋子
+            SIDE_RED: 如果该位置有红方棋子
+            SIDE_BLACK: 如果该位置有黑方棋子
             None: 如果该位置为空
 
         示例:
-            if board.occupied((4, 4)) == RED:
+            if board.occupied((4, 4)) == SIDE_RED:
                 print("红方棋子")
-            elif board.occupied((4, 4)) == BLACK:
+            elif board.occupied((4, 4)) == SIDE_BLACK:
                 print("黑方棋子")
             else:
                 print("空位")
@@ -341,7 +341,7 @@ class ChessBoard:
         fench = self._board[pos[1]][pos[0]]
         if fench is None:
             return None
-        return RED if fench.isupper() else BLACK
+        return SIDE_RED if fench.isupper() else SIDE_BLACK
 
     def get_fench_positions(self, fench):
         """返回棋盘上所有与给定 fench 相同的坐标列表。"""
@@ -542,7 +542,7 @@ class ChessBoard:
         norm = self.normalized()
 
         norm_move_str = (
-            _normalize_move_str(move_str, BLACK) if text_side == BLACK else move_str
+            _normalize_move_str(move_str, SIDE_BLACK) if text_side == SIDE_BLACK else move_str
         )
 
         # 词法解析：从中文走法文本解析中间表示
@@ -606,7 +606,7 @@ class ChessBoard:
             return None
 
         # 反规范化
-        if self.move_side() == BLACK:
+        if self.move_side() == SIDE_BLACK:
             return [
                 (self.denormalize_pos(f), self.denormalize_pos(t)) for f, t in moves
             ]
@@ -666,7 +666,7 @@ class ChessBoard:
         is_flipped = not self.is_normalized()
         normalized_board = self.normalized()
 
-        for piece in normalized_board.get_all_pieces(RED):
+        for piece in normalized_board.get_all_pieces(SIDE_RED):
             for from_pos, to_pos in piece.create_moves():
                 if is_flipped:
                     from_pos = self.denormalize_pos(from_pos)
@@ -769,12 +769,12 @@ class ChessBoard:
         """根据颜色获取对应的攻击矩阵。
 
         参数:
-            color: 颜色值 (RED 或 BLACK)
+            color: 颜色值 (SIDE_RED 或 SIDE_BLACK)
 
         返回:
             List[List[bool]]: 对应的攻击矩阵
         """
-        return self._red_attacks if color == RED else self._black_attacks
+        return self._red_attacks if color == SIDE_RED else self._black_attacks
 
     def _recompute_attack_matrix(self) -> None:
         """重新计算红黑双方的攻击矩阵，并将脏标志设置为 False。"""
@@ -880,9 +880,9 @@ class ChessBoard:
         self._move_side = ANY_COLOR
 
         if fen1 == "b":
-            b.set_move_side(BLACK)
+            b.set_move_side(SIDE_BLACK)
         elif fen1 in ["w", "r"]:
-            b.set_move_side(RED)
+            b.set_move_side(SIDE_RED)
         else:
             raise CChessError(f"fen:{fen} 走子合理的值只包括[w,r,b] 当前值为:{fen1}")
 
@@ -913,7 +913,7 @@ class ChessBoard:
             if y > 0:
                 fen += "/"
 
-        if self._move_side == BLACK:
+        if self._move_side == SIDE_BLACK:
             fen += " b"
         else:
             fen += " w"
@@ -940,7 +940,7 @@ class ChessBoard:
                     chess = Z_MAP_PIECES[letter]
                     key ^= Z_HASH_TABLE[chess * 256 + square]
 
-        if self._move_side == RED:
+        if self._move_side == SIDE_RED:
             key ^= Z_RED_KEY
 
         return (key & ((1 << 63) - 1)) - (key & (1 << 63))

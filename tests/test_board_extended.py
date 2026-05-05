@@ -16,17 +16,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ANY_COLOR, BLACK, FULL_INIT_FEN, RED, ChessBoard
+from cchess import ANY_COLOR, SIDE_BLACK, FULL_INIT_FEN, SIDE_RED, ChessBoard
 
 
 class TestBoardExtended:
     def test_set_move_color(self):
         board = ChessBoard(FULL_INIT_FEN)
-        board.set_move_side(RED)
-        assert board.move_side() == RED
+        board.set_move_side(SIDE_RED)
+        assert board.move_side() == SIDE_RED
 
-        board.set_move_side(BLACK)
-        assert board.move_side() == BLACK
+        board.set_move_side(SIDE_BLACK)
+        assert board.move_side() == SIDE_BLACK
 
         board.set_move_side(ANY_COLOR)
         assert board.move_side() == ANY_COLOR
@@ -160,11 +160,11 @@ class TestBoardExtended:
         board = ChessBoard(FULL_INIT_FEN)
         # 红方棋子
         color = board.occupied((0, 0))
-        assert color == RED
+        assert color == SIDE_RED
 
         # 黑方棋子
         color = board.occupied((0, 9))
-        assert color == BLACK
+        assert color == SIDE_BLACK
 
         # 空位置
         board.clear()

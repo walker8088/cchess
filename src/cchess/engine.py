@@ -25,7 +25,7 @@ from threading import Thread
 
 from .board import ChessBoard, fen_mirror
 from .common import (
-    RED,
+    SIDE_RED,
     fen_move_color,
     iccs_list_mirror,
     iccs_mirror,
@@ -518,7 +518,7 @@ class FenCache:
 
         actions = list(sorted(info.values(), key=lambda item: item["score"]))
 
-        if move_color == RED:
+        if move_color == SIDE_RED:
             act = actions[0]
         else:
             act = actions[-1]

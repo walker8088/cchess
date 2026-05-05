@@ -14,7 +14,7 @@ def test_pawn_multiline_select_column():
     # place two red pawns at (1,6) and (1,4)
     # board.put_fench('P', (1,6))
     # board.put_fench('P', (1,4))
-    # board.set_move_color(1)  # RED
+    # board.set_move_color(1)  # SIDE_RED
 
     # Move string starts with Chinese numeral '二' (example), expecting select column b (x=1)
     # Example move: '二兵进一' (notation may vary). We'll use a minimal string to trigger parsing.
@@ -42,5 +42,5 @@ def test_pawn_multiline_black_selection_order():
 
     res = board.copy().move_text("三兵进一")
     assert res is not None
-    # For BLACK the implementation reverses poss before selection; ensure selected x==3
+    # For SIDE_BLACK the implementation reverses poss before selection; ensure selected x==3
     assert res.pos_from[0] == 3

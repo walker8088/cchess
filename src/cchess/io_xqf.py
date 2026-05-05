@@ -20,7 +20,7 @@ import struct
 from typing import Tuple
 
 from .board import ChessBoard
-from .common import RED, append_move_to_game, get_fench_color
+from .common import SIDE_RED, append_move_to_game, get_fench_color
 from .constants import GAME_RESULT_MAP
 
 # XQF 协议常量
@@ -561,7 +561,7 @@ def read_from_xqf(full_file_name, game_class, _read_annotation=True):
     if game.first_move:
         game.init_board.set_move_side(game.first_move.board_before().move_side())
     else:
-        game.init_board.set_move_side(RED)
+        game.init_board.set_move_side(SIDE_RED)
 
     game.info["move_side"] = str(game.init_board.move_side())
 

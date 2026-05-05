@@ -27,13 +27,13 @@ from .common import (
     _QUALIFIER_DIGIT_MAP,
     _V_CHANGE_INDEX,
     _ZH_TO_HALF,
-    BLACK,
+    SIDE_BLACK,
     COLUMN_MAP,
     DIRECTION_MAP,
     FULLWIDTH_NUM_MAP,
     PIECE_MAP,
     QUALIFIER_MAP,
-    RED,
+    SIDE_RED,
     REVERSE_PIECE_MAP,
     fench_to_species,
     fench_to_text,
@@ -68,8 +68,8 @@ class MoveInfo:
     to_pos: Tuple[int, int]
     moving_fench: str  # 移动的棋子字符
     captured_fench: Optional[str]  # 被吃棋子，None 表示无吃子
-    prev_move_side: int  # 移动前走子方 (RED/BLACK/ANY_COLOR)
-    next_move_side: int  # 移动后走子方 (RED/BLACK/ANY_COLOR)
+    prev_move_side: int  # 移动前走子方 (SIDE_RED/SIDE_BLACK/ANY_COLOR)
+    next_move_side: int  # 移动后走子方 (SIDE_RED/SIDE_BLACK/ANY_COLOR)
     board_before: List[List[Optional[str]]]  # 移动前棋盘数组的深拷贝
     board_after: List[List[Optional[str]]]  # 移动后棋盘数组的深拷贝
     prev_attack_matrix_dirty: bool  # 移动前攻击矩阵脏标志
@@ -91,7 +91,7 @@ class MoveNotation:
     - direction: 方向（+进/-退/=平）
     - distance: 距离/目标列
     - qualifier: 限定词（前/中/后/数字）
-    - piece_color: 棋子颜色（RED/BLACK）
+    - piece_color: 棋子颜色（SIDE_RED/SIDE_BLACK）
 
     支持红方和黑方格式的走法文本解析，统一转换为中间表示后，
     可以方便地输出为不同格式（中文等）。
@@ -117,7 +117,7 @@ class MoveNotation:
         self.is_capture = is_capture
         self.is_check = is_check
         self.is_checkmate = is_checkmate
-        self.piece_color = piece_color  # RED/BLACK
+        self.piece_color = piece_color  # SIDE_RED/SIDE_BLACK
 
     @staticmethod
     def from_move(move):
@@ -128,24 +128,24 @@ class MoveNotation:
         species, color = fench_to_species(fench)
 
         # 确定棋子类型（大写红方，小写黑方）
-        piece_type = species.upper() if color == RED else species.lower()
+        piece_type = species.upper() if color == SIDE_RED else species.lower()
 
         # 计算列（红方视角）
         column = move.pos_from[0]
-        if color == BLACK:
+        if color == SIDE_BLACK:
             # 黑方需要转换为红方视角
             column = 8 - column
 
         # 计算方向和目标信息
         diff = move.pos_to[1] - move.pos_from[1]
-        if color == BLACK:
+        if color == SIDE_BLACK:
             diff = -diff
 
         if diff == 0:
             direction = "="
             # 平移动：目标列（红方视角）
             target_column = move.pos_to[0]
-            if color == BLACK:
+            if color == SIDE_BLACK:
                 target_column = 8 - target_column
             # 对于平移动，距离表示目标列
             distance = target_column
@@ -157,7 +157,7 @@ class MoveNotation:
             if species in ("a", "b", "n"):  # 士、相、马
                 # 目标列（红方视角）
                 target_column = move.pos_to[0]
-                if color == BLACK:
+                if color == SIDE_BLACK:
                     target_column = 8 - target_column
                 distance = target_column
             else:  # 王、车、炮、兵
@@ -181,7 +181,7 @@ class MoveNotation:
             if count > 1:
                 # 排序位置（红方从下到上，黑方从上到下）
                 # 当y坐标相同时，按x坐标排序（红方从左到右，黑方从右到左）
-                if color == RED:
+                if color == SIDE_RED:
                     # 红方：从下到上，当y相同时从左到右
                     positions.sort(key=lambda p: (p[1], p[0]), reverse=True)
                 else:
@@ -299,7 +299,7 @@ class MoveNotation:
             return None
 
         # 4. 确定棋子颜色
-        piece_color = RED if piece_type.isupper() else BLACK
+        piece_color = SIDE_RED if piece_type.isupper() else SIDE_BLACK
 
         return MoveNotation(
             piece_type=piece_type,
@@ -363,7 +363,7 @@ class MoveNotation:
         color = self.piece_color
         direction_name = DIRECTION_MAP[self.direction][1 if traditional else 0]
         qualifier_name = self._get_qualifier_name(color, traditional)
-        is_black = color == BLACK
+        is_black = color == SIDE_BLACK
 
         if self.direction == "=" or self.piece_type.lower() in ("a", "b", "n"):
             # 平移动，或士/相/马的进退移动：显示目标列
@@ -390,7 +390,7 @@ class MoveNotation:
 
     def _get_target_column(self, color):
         """获取目标列，红方用中文数字，黑方用全角数字"""
-        if color == RED:
+        if color == SIDE_RED:
             return COLUMN_MAP[self.distance][0]
         return FULLWIDTH_NUM_MAP.get(self.distance, str(self.distance))
 
@@ -421,8 +421,8 @@ class MoveNotation:
 def _detect_move_side_from_text(move_str):
     """根据着法字符串中的数字类型检测走子方。
 
-    - 含中文数字（一二三...）→ RED
-    - 含阿拉伯数字（123...或 123...）→ BLACK
+    - 含中文数字（一二三...）→ SIDE_RED
+    - 含阿拉伯数字（123...或 123...）→ SIDE_BLACK
     - 混合中文和阿拉伯数字 → 抛 ValueError
     - 不含任何数字 → 抛 ValueError
 
@@ -430,7 +430,7 @@ def _detect_move_side_from_text(move_str):
         move_str: 走法字符串（已去除空格）
 
     返回:
-        int: RED(1) 或 BLACK(2)，其余情况抛异常
+        int: SIDE_RED(1) 或 SIDE_BLACK(2)，其余情况抛异常
     """
     # 检查是否包含中文数字
     has_chinese = any(ch in _ZH_TO_HALF for ch in move_str)
@@ -442,9 +442,9 @@ def _detect_move_side_from_text(move_str):
     if has_chinese and has_arabic:
         raise ValueError(f"走法字符串数字格式混合: {move_str!r}")
     if has_chinese and not has_arabic:
-        return RED
+        return SIDE_RED
     if has_arabic and not has_chinese:
-        return BLACK
+        return SIDE_BLACK
     # 不含任何数字，属于异常走法
     raise ValueError(f"走法字符串不含数字: {move_str!r}")
 
@@ -769,7 +769,7 @@ class Move:
         """获取目标位置字符串（兼容旧版）"""
         # 根据走子方确定使用哪个索引
         # 红方使用中文数字，黑方使用全角数字
-        if piece_color == RED:
+        if piece_color == SIDE_RED:
             h_index = _H_LEVEL_INDEX
             v_index = _V_CHANGE_INDEX
         else:

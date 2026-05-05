@@ -22,7 +22,10 @@ from .common import (
     EMPTY_FEN,
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
+    # 向后兼容别名
     RED,
+    SIDE_BLACK,
+    SIDE_RED,
     fen_move_color,
     fench_to_species,
     fench_to_text,
@@ -64,8 +67,8 @@ __all__ = [
     "EngineError",
     # common
     "ANY_COLOR",
-    "RED",
-    "BLACK",
+    "SIDE_RED",
+    "SIDE_BLACK",
     "fench_to_species",
     "get_fench_color",
     "fench_to_text",

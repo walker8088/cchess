@@ -29,6 +29,8 @@ from .constants import (  # noqa: F401 (re-exported for other modules)
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
     RED,
+    SIDE_BLACK,
+    SIDE_RED,
 )
 
 # -----------------------------------------------------#
@@ -161,8 +163,8 @@ QUALIFIER_MAP = {
 
 # 限定词数字映射（红方中文数字，黑方全角数字）
 _QUALIFIER_DIGIT_MAP = {
-    RED: ("一", "二", "三", "四", "五", "六", "七", "八", "九"),
-    BLACK: ("１", "２", "３", "４", "５", "６", "７", "８", "９"),
+    SIDE_RED: ("一", "二", "三", "四", "五", "六", "七", "八", "九"),
+    SIDE_BLACK: ("１", "２", "３", "４", "５", "６", "７", "８", "９"),
 }
 
 # 反向查找：列号字符 -> 列索引
@@ -202,7 +204,7 @@ def _convert_digit_format(digit_char, move_side):
 
     参数:
         digit_char: 数字字符（中文、半角或全角）
-        move_side: 走子方（RED=1 用中文数字，BLACK=2 用全角数字）
+        move_side: 走子方（SIDE_RED=1 用中文数字，SIDE_BLACK=2 用全角数字）
 
     返回:
         str: 转换后的数字字符，无法转换返回 None
@@ -219,15 +221,15 @@ def _convert_digit_format(digit_char, move_side):
         half_digit = int(digit_char)
         if half_digit == 0 or half_digit > 9:
             return None
-        if move_side == 1:  # RED: 半角转中文
+        if move_side == 1:  # SIDE_RED: 半角转中文
             return _HALF_TO_ZH[half_digit]
         return chr(0xFF10 + half_digit)
 
     # 中文数字（仅用于红方）
     if digit_char in _ZH_TO_HALF:
-        if move_side == 1:  # RED: 保持中文
+        if move_side == 1:  # SIDE_RED: 保持中文
             return _HALF_TO_ZH[_ZH_TO_HALF[digit_char]]
-        # BLACK 不接受中文数字，返回 None
+        # SIDE_BLACK 不接受中文数字，返回 None
         return None
 
     return None
@@ -253,7 +255,7 @@ def _get_index(digit_char, use_v_index=False):
         pass
 
     # 尝试转换格式后查找
-    converted = _convert_digit_format(digit_char, RED)  # 规范局面下使用红方格式
+    converted = _convert_digit_format(digit_char, SIDE_RED)  # 规范局面下使用红方格式
     if converted:
         try:
             return index_array.index(converted)
@@ -291,7 +293,7 @@ def _get_v_index(step_digit):
     return _get_index(step_digit, use_v_index=True)
 
 
-def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
+def _normalize_digit_char(digit_char, original_side, normalized_side=SIDE_RED):
     """将数字字符转换为规范局面下的格式。
 
     当原始局面是黑方走子时，走法字符串中的数字是全角格式（如"２"）。
@@ -299,7 +301,7 @@ def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
 
     参数:
         digit_char: 原始数字字符
-        original_side: 原始走子方 (RED/BLACK)
+        original_side: 原始走子方 (SIDE_RED/SIDE_BLACK)
         normalized_side: 规范局面走子方 (默认为RED)
 
     返回:
@@ -309,11 +311,11 @@ def _normalize_digit_char(digit_char, original_side, normalized_side=RED):
         return digit_char
 
     # 如果原始是黑方，规范局面是红方，需要将全角数字转换为中文数字
-    if original_side == BLACK and normalized_side == RED:
+    if original_side == SIDE_BLACK and normalized_side == SIDE_RED:
         return _FULLWIDTH_TO_CHINESE.get(digit_char, digit_char)
 
     # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
-    if original_side == RED and normalized_side == BLACK:
+    if original_side == SIDE_RED and normalized_side == SIDE_BLACK:
         return _CHINESE_TO_FULLWIDTH.get(digit_char, digit_char)
 
     return digit_char
@@ -334,13 +336,13 @@ def _normalize_move_str(move_str, original_side):
 
     参数:
         move_str: 原始走法字符串
-        original_side: 原始走子方 (RED/BLACK)
+        original_side: 原始走子方 (SIDE_RED/SIDE_BLACK)
 
     返回:
         str: 转换后的走法字符串（规范局面红方视角格式）
     """
     # 规范局面总是红方视角
-    if original_side == RED:
+    if original_side == SIDE_RED:
         return move_str
 
     # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
@@ -482,7 +484,7 @@ def text_to_fench(text, color):
     if text not in _name_fench_dict:
         return None
     fench = _name_fench_dict[text]
-    return fench.lower() if color == BLACK else fench.upper()
+    return fench.lower() if color == SIDE_BLACK else fench.upper()
 
 
 def swap_fench(fench: str) -> str:
@@ -506,9 +508,9 @@ def fench_to_species(fen_ch):
         fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
 
     返回:
-        tuple: (species, color)，其中 species 是小写棋子类型，color 是 RED 或 BLACK
+        tuple: (species, color)，其中 species 是小写棋子类型，color 是 SIDE_RED 或 SIDE_BLACK
     """
-    return (fen_ch.lower(), BLACK if fen_ch.islower() else RED)
+    return (fen_ch.lower(), SIDE_BLACK if fen_ch.islower() else SIDE_RED)
 
 
 def get_fench_color(fen_ch):
@@ -518,15 +520,15 @@ def get_fench_color(fen_ch):
         fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
 
     返回:
-        int: RED 或 BLACK
+        int: SIDE_RED 或 SIDE_BLACK
     """
-    return BLACK if fen_ch.islower() else RED
+    return SIDE_BLACK if fen_ch.islower() else SIDE_RED
 
 
 # -----------------------------------------------------#
 def fen_move_color(fen):
     color = fen.rstrip().split(" ")[1].lower()
-    return RED if color == "w" else BLACK
+    return SIDE_RED if color == "w" else SIDE_BLACK
 
 
 # -----------------------------------------------------#

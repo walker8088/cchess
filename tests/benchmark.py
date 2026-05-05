@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from cchess import BLACK, FULL_INIT_FEN, RED, ChessBoard
+from cchess import SIDE_BLACK, FULL_INIT_FEN, SIDE_RED, ChessBoard
 from cchess.common import fench_to_species
 from cchess.piece import Piece
 

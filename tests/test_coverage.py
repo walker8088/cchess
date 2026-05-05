@@ -15,9 +15,9 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
 from cchess import (
-    BLACK,
+    SIDE_BLACK,
     FULL_INIT_FEN,
-    RED,
+    SIDE_RED,
     CChessError,
     ChessBoard,
     Move,
@@ -215,24 +215,24 @@ class TestMovePrepareForEngine:
         move = board.copy().move((0, 0), (0, 9))
         assert move is not None, "Move should be valid"
         assert move.captured == "p", "Should capture the pawn"
-        move.prepare_for_engine(RED, [])
+        move.prepare_for_engine(SIDE_RED, [])
         assert move.fen_for_engine is not None
         assert move.move_list_for_engine == []
 
     def test_prepare_for_engine_no_capture_empty_history(self):
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
-        move.prepare_for_engine(RED, [])
+        move.prepare_for_engine(SIDE_RED, [])
         assert move.fen_for_engine is not None
         assert move.move_list_for_engine == [move.to_iccs()]
 
     def test_prepare_for_engine_no_capture_with_history(self):
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.copy().move((0, 0), (0, 1))
-        move1.prepare_for_engine(RED, [])
+        move1.prepare_for_engine(SIDE_RED, [])
         board.next_turn()
         move2 = board.copy().move((0, 9), (0, 8))
-        move2.prepare_for_engine(BLACK, [move1])
+        move2.prepare_for_engine(SIDE_BLACK, [move1])
         assert move2.fen_for_engine == move1.fen_for_engine
         assert move2.move_list_for_engine == move1.move_list_for_engine[:] + [
             move2.to_iccs()
@@ -608,7 +608,7 @@ class TestMoveNotationToCompact:
         """Test basic compact format."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("C", 6, "=", 4, "", piece_color=RED)
+        notation = MoveNotation("C", 6, "=", 4, "", piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "C" in text
         assert "=" in text
@@ -617,7 +617,7 @@ class TestMoveNotationToCompact:
         """Test compact format with qualifier."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("R", 2, "+", 3, "f", piece_color=RED)
+        notation = MoveNotation("R", 2, "+", 3, "f", piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "f" in text
 
@@ -625,7 +625,7 @@ class TestMoveNotationToCompact:
         """Test compact format with capture marker."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("R", 6, "+", 5, "", is_capture=True, piece_color=RED)
+        notation = MoveNotation("R", 6, "+", 5, "", is_capture=True, piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "x" in text
 
@@ -633,7 +633,7 @@ class TestMoveNotationToCompact:
         """Test compact format with check marker."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("C", 6, "=", 4, "", is_check=True, piece_color=RED)
+        notation = MoveNotation("C", 6, "=", 4, "", is_check=True, piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "+" in text
 
@@ -641,7 +641,7 @@ class TestMoveNotationToCompact:
         """Test compact format with checkmate marker."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("C", 6, "=", 4, "", is_checkmate=True, piece_color=RED)
+        notation = MoveNotation("C", 6, "=", 4, "", is_checkmate=True, piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "#" in text
 
@@ -650,7 +650,7 @@ class TestMoveNotationToCompact:
         from cchess.move import MoveNotation
 
         notation = MoveNotation(
-            "R", 6, "+", 5, "f", is_capture=True, is_check=True, piece_color=RED
+            "R", 6, "+", 5, "f", is_capture=True, is_check=True, piece_color=SIDE_RED
         )
         text = notation.to_compact()
         assert "f" in text
@@ -681,7 +681,7 @@ class TestMoveToTextCompactAndHelpers:
         """Test _get_dest_str for red pieces."""
         board = ChessBoard(FULL_INIT_FEN)
         move = board.copy().move((0, 0), (0, 1))
-        result = move._get_dest_str("r", RED, 1)
+        result = move._get_dest_str("r", SIDE_RED, 1)
         assert result is not None
 
     def test_get_dest_str_black(self):
@@ -690,7 +690,7 @@ class TestMoveToTextCompactAndHelpers:
         board.next_turn()
         move = board.copy().move((0, 9), (0, 8))
         if move:
-            result = move._get_dest_str("r", BLACK, -1)
+            result = move._get_dest_str("r", SIDE_BLACK, -1)
             assert result is not None
 
     def test_get_dest_str_advisor_bishop_horse(self):
@@ -698,7 +698,7 @@ class TestMoveToTextCompactAndHelpers:
         board = ChessBoard("3ak4/4r4/9/9/9/9/9/9/9/3AK4 w")
         move = board.copy().move((3, 0), (4, 1))
         if move:
-            result = move._get_dest_str("a", RED, 1)
+            result = move._get_dest_str("a", SIDE_RED, 1)
             assert result is not None
 
     def test_get_detailed_info_capture(self):
@@ -1769,8 +1769,8 @@ class TestBoard:
     def test_board_occupied_color(self):
         """Test ChessBoard.occupied for color checking."""
         board = ChessBoard(FULL_INIT_FEN)
-        assert board.occupied((0, 0)) == RED
-        assert board.occupied((0, 9)) == BLACK
+        assert board.occupied((0, 0)) == SIDE_RED
+        assert board.occupied((0, 9)) == SIDE_BLACK
         assert board.occupied((4, 4)) is None
 
     def test_board_to_full_fen(self):
@@ -1865,20 +1865,20 @@ class TestBoard:
     def test_board_get_king_no_king(self):
         """Test ChessBoard.get_king when no king exists (line 296)."""
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
-        assert board.get_king(RED) is None
+        assert board.get_king(SIDE_RED) is None
 
     def test_board_get_all_pieces_with_chess_player(self):
         """Test ChessBoard.get_all_pieces with ChessPlayer color (lines 264-265)."""
         board = ChessBoard(FULL_INIT_FEN)
         # 现在直接使用整数颜色值
-        pieces = list(board.get_all_pieces(color=RED))
+        pieces = list(board.get_all_pieces(color=SIDE_RED))
         assert len(pieces) == 16
 
     def test_board_get_king_with_chess_player(self):
         """Test ChessBoard.get_king with ChessPlayer (lines 285-286)."""
         board = ChessBoard(FULL_INIT_FEN)
         # 现在直接使用整数颜色值
-        king = board.get_king(RED)
+        king = board.get_king(SIDE_RED)
         assert king is not None
         assert king.fench == "K"
 

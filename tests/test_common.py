@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from cchess import RED, BLACK, FULL_INIT_FEN
+from cchess import SIDE_RED, SIDE_BLACK, FULL_INIT_FEN
 from cchess.common import fench_to_txt_name, text_to_fench, get_fen_pieces, get_fen_type, get_fen_type_detail
 
 
@@ -40,21 +40,21 @@ class TestCommon():
         assert fench_to_txt_name('X') is None  # 不存在的棋子
 
     def test_text_to_fench(self):
-        assert text_to_fench('帅', RED) == 'K'
-        assert text_to_fench('将', BLACK) == 'k'
-        assert text_to_fench('车', RED) == 'R'
-        assert text_to_fench('车', BLACK) == 'r'
-        assert text_to_fench('马', RED) == 'N'
-        assert text_to_fench('马', BLACK) == 'n'
-        assert text_to_fench('炮', RED) == 'C'
-        assert text_to_fench('炮', BLACK) == 'c'
-        assert text_to_fench('兵', RED) == 'P'
-        assert text_to_fench('卒', BLACK) == 'p'
-        assert text_to_fench('仕', RED) == 'A'
-        assert text_to_fench('士', BLACK) == 'a'
-        assert text_to_fench('相', RED) == 'B'
-        assert text_to_fench('象', BLACK) == 'b'
-        assert text_to_fench('不存在', RED) is None
+        assert text_to_fench('帅', SIDE_RED) == 'K'
+        assert text_to_fench('将', SIDE_BLACK) == 'k'
+        assert text_to_fench('车', SIDE_RED) == 'R'
+        assert text_to_fench('车', SIDE_BLACK) == 'r'
+        assert text_to_fench('马', SIDE_RED) == 'N'
+        assert text_to_fench('马', SIDE_BLACK) == 'n'
+        assert text_to_fench('炮', SIDE_RED) == 'C'
+        assert text_to_fench('炮', SIDE_BLACK) == 'c'
+        assert text_to_fench('兵', SIDE_RED) == 'P'
+        assert text_to_fench('卒', SIDE_BLACK) == 'p'
+        assert text_to_fench('仕', SIDE_RED) == 'A'
+        assert text_to_fench('士', SIDE_BLACK) == 'a'
+        assert text_to_fench('相', SIDE_RED) == 'B'
+        assert text_to_fench('象', SIDE_BLACK) == 'b'
+        assert text_to_fench('不存在', SIDE_RED) is None
 
     def test_get_fen_pieces(self):
         pieces = get_fen_pieces(FULL_INIT_FEN)

@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pytest
 
 from cchess import (
-    BLACK,
+    SIDE_BLACK,
     FULL_INIT_FEN,
-    RED,
+    SIDE_RED,
     CChessError,
     ChessBoard,
     fen_move_color,
@@ -39,8 +39,8 @@ class TestBoard:
         board = ChessBoard("")
         assert "9/9/9/9/9/9/9/9/9/9 w" == board.to_fen()
 
-        assert board.get_king(RED) is None
-        assert board.get_king(BLACK) is None
+        assert board.get_king(SIDE_RED) is None
+        assert board.get_king(SIDE_BLACK) is None
         assert board.is_checking() is False
         assert board.has_no_legal_moves() is True
         assert board.is_mirror() is True
@@ -69,11 +69,11 @@ class TestBoard:
         board = board.swap()
         assert board.to_fen() == fen
 
-        assert board.get_king(RED) is not None
-        assert (board.get_king(RED).x, board.get_king(RED).y) == (4, 0)
+        assert board.get_king(SIDE_RED) is not None
+        assert (board.get_king(SIDE_RED).x, board.get_king(SIDE_RED).y) == (4, 0)
 
-        assert board.get_king(BLACK) is not None
-        assert (board.get_king(BLACK).x, board.get_king(BLACK).y) == (4, 9)
+        assert board.get_king(SIDE_BLACK) is not None
+        assert (board.get_king(SIDE_BLACK).x, board.get_king(SIDE_BLACK).y) == (4, 9)
         assert len(list(board.create_moves())) == 44
 
         assert board.is_checking() is False
@@ -107,10 +107,10 @@ class TestBoard:
         board.swap()
         assert board.to_fen() == fen2
 
-        k = board.get_king(RED)
+        k = board.get_king(SIDE_RED)
         assert (k.x, k.y) == (4, 0)
 
-        k = board.get_king(BLACK)
+        k = board.get_king(SIDE_BLACK)
         assert (k.x, k.y) == (4, 9)
 
         assert board.is_checking() is False
@@ -171,14 +171,14 @@ class TestBoard:
         assert board.copy().move_text("相三进一").to_iccs() == "g0i2"
 
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w"
-        assert fen_move_color(fen) == RED
+        assert fen_move_color(fen) == SIDE_RED
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR w - - 0 1"
-        assert fen_move_color(fen) == RED
+        assert fen_move_color(fen) == SIDE_RED
 
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b"
-        assert fen_move_color(fen) == BLACK
+        assert fen_move_color(fen) == SIDE_BLACK
         fen = "rnbakabnr/9/1c5c1/p1p1p3p/6p2/9/P1P1P1P1P/1C2B2C1/9/RN1AKABNR b - - 0 1"
-        assert fen_move_color(fen) == BLACK
+        assert fen_move_color(fen) == SIDE_BLACK
 
     def test_line1(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -203,7 +203,7 @@ class TestBoard:
 
         new_board = board.copy()
         move = new_board.move((4, 0), (4, 9))
-        # assert new_board.get_king(ChessSide.BLACK) is None
+        # assert new_board.get_king(ChessSide.SIDE_BLACK) is None
         assert new_board.to_fen() == "4K4/9/9/9/9/9/9/9/9/9 w"
 
         assert move.is_king_killed() is True
@@ -456,7 +456,7 @@ class TestBoard:
         board = ChessBoard(FULL_INIT_FEN)
 
         move = board.copy().move_iccs("a0a1")
-        assert move.move_side == RED
+        assert move.move_side == SIDE_RED
         assert move.to_iccs() == "a0a1"
         assert str(move) == "a0a1"
         assert move.board_before().is_valid_move(move.pos_from, move.pos_to) is True
@@ -474,7 +474,7 @@ class TestBoard:
             "r1bak1b1r/4a4/2n1ccn2/p1p1C1p1p/9/9/P1P1P1P1P/4C1N2/9/RNBAKABR1 w"
         )
         move = board.copy().move_text("前炮退二")
-        assert move.move_side == RED
+        assert move.move_side == SIDE_RED
 
     def test_board_text(self):
         board = ChessBoard(FULL_INIT_FEN)

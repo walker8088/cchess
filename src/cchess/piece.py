@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
 from .common import (
-    BLACK,
-    RED,
+    SIDE_BLACK,
+    SIDE_RED,
     _get_target_x,
     _get_v_index,
     get_fench_color,
@@ -28,19 +28,19 @@ from .common import (
 # -----------------------------------------------------#
 # 士象固定位置（红方/黑方字典）
 _ADVISOR_POS = {
-    RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
-    BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
+    SIDE_RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
+    SIDE_BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
 }
 
 _BISHOP_POS = {
-    RED: frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
-    BLACK: frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
+    SIDE_RED: frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
+    SIDE_BLACK: frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
 }
 
 # 九宫格 y 范围（红方/黑方）
 _PALACE_Y_RANGE = {
-    RED: (0, 2),
-    BLACK: (7, 9),
+    SIDE_RED: (0, 2),
+    SIDE_BLACK: (7, 9),
 }
 
 # 九宫格 x 范围
@@ -48,14 +48,14 @@ _PALACE_X_RANGE = (3, 5)
 
 # 象的活动范围 y 边界（红方/黑方）
 _BISHOP_Y_RANGE = {
-    RED: (0, 4),
-    BLACK: (5, 9),
+    SIDE_RED: (0, 4),
+    SIDE_BLACK: (5, 9),
 }
 
 # 兵卒相关常量（红方/黑方）
-_PAWN_DY = {RED: 1, BLACK: -1}  # 前进步长（y 方向）
-_PAWN_RIVER_Y = {RED: 5, BLACK: 4}  # 过河界限
-_PAWN_Y_RANGE = {RED: (3, 9), BLACK: (0, 6)}  # 合法活动 y 范围
+_PAWN_DY = {SIDE_RED: 1, SIDE_BLACK: -1}  # 前进步长（y 方向）
+_PAWN_RIVER_Y = {SIDE_RED: 5, SIDE_BLACK: 4}  # 过河界限
+_PAWN_Y_RANGE = {SIDE_RED: (3, 9), SIDE_BLACK: (0, 6)}  # 合法活动 y 范围
 
 
 # 滑走棋子方向常量（车、炮）
@@ -151,7 +151,7 @@ class Piece:
         if target_fench is None:
             return False
         # FEN 大写=红方，小写=黑方；目标棋子颜色与己方不同即为敌方
-        return target_fench.isupper() != (self.color == RED)
+        return target_fench.isupper() != (self.color == SIDE_RED)
 
     def _create_moves_from_offsets(self, offsets):
         """从偏移量列表生成候选走子。
@@ -485,7 +485,7 @@ class Knight(Piece):
             target_fench = board[ny][nx]
             if target_fench is not None:
                 # 快速同色判断：FEN 大写=红方，小写=黑方
-                if target_fench.isupper() == (self.color == RED):
+                if target_fench.isupper() == (self.color == SIDE_RED):
                     continue  # 同色棋子，跳过
 
             moves.append((curr_pos, (nx, ny)))
@@ -657,7 +657,7 @@ class Pawn(Piece):
     def is_crossed_river(self):
         """判断兵/卒是否已经过河。"""
         limit = _PAWN_RIVER_Y[self.color]
-        return self.y >= limit if self.color == RED else self.y <= limit
+        return self.y >= limit if self.color == SIDE_RED else self.y <= limit
 
     def create_moves(self):
         """生成兵/卒所有可能的合法走子。"""

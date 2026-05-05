@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import ANY_COLOR, BLACK, RED
+from cchess import ANY_COLOR, SIDE_BLACK, SIDE_RED
 from cchess.common import next_color
 
 
@@ -27,7 +27,7 @@ class TestPiece:
         assert next_color(ANY_COLOR) == ANY_COLOR
         assert next_color(ANY_COLOR) == ANY_COLOR
 
-        # 测试 RED
-        assert next_color(RED) == BLACK
-        assert next_color(RED) == BLACK
-        assert next_color(next_color(RED)) == RED
+        # 测试 SIDE_RED
+        assert next_color(SIDE_RED) == SIDE_BLACK
+        assert next_color(SIDE_RED) == SIDE_BLACK
+        assert next_color(next_color(SIDE_RED)) == SIDE_RED

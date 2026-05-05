@@ -109,7 +109,7 @@ class TestUcci:
 
         fen, moves, result = load_move_txt(Path("tests", "data", "ucci_test1_move.txt"))
         game = Game.read_from(Path("tests", "data", "ucci_test1.xqf"))
-        game.init_board.set_move_side(cchess.RED)
+        game.init_board.set_move_side(cchess.SIDE_RED)
 
         assert game.init_board.to_fen() == fen
         assert game.info["result"] == result
@@ -135,7 +135,7 @@ class TestUcci:
                     break
                 elif action == "dead":
                     # print(output)
-                    if board.move_side() == cchess.RED:
+                    if board.move_side() == cchess.SIDE_RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -195,7 +195,7 @@ class TestUci:
                     break
                 elif action == "dead":
                     # print(output)
-                    if board.move_side().color == cchess.RED:
+                    if board.move_side().color == cchess.SIDE_RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
@@ -260,7 +260,7 @@ class TestUci:
                 elif action == "dead":
                     # print(output)
 
-                    if board.move_side().color == cchess.RED:
+                    if board.move_side().color == cchess.SIDE_RED:
                         assert result == S_BLACK_WIN
                     else:
                         assert result == S_RED_WIN
