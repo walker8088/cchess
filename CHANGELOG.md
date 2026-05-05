@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 优化 `Knight.create_moves()` 方法，性能提升约 35%
 - 简化 `io_xqf.py` 和 `read_cbr.py` 中的重复代码
 - 清理遗留注释代码和未使用导入
-- 统一数字格式处理（RED 用中文，BLACK 用全角）
+- 统一数字格式处理（SIDE_RED 用中文，SIDE_BLACK 用全角）
 
 ### Fixed
 - 移除 `board.py` 中未使用的 `Union` 导入

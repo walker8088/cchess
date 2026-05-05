@@ -28,10 +28,10 @@
 - **示例**:
   ```python
   # 旧代码
-  red_pieces = board.get_pieces(RED)
+  red_pieces = board.get_pieces(SIDE_RED)
   
   # 新代码
-  red_pieces = board.get_all_pieces(RED)
+  red_pieces = board.get_all_pieces(SIDE_RED)
   ```
 
 ### 2. 方法移除
@@ -61,7 +61,7 @@
 
 #### 2.4 `ChessPlayer` 类移除
 - **旧 API**: 使用 `ChessPlayer` 类表示颜色
-- **新方案**: 使用整数常量 `RED=1`, `BLACK=2`, `ANY_COLOR=0`
+- **新方案**: 使用整数常量 `SIDE_RED=1`, `SIDE_BLACK=2`, `SIDE_ANY=0`
 - **影响**: 所有使用 `ChessPlayer` 的代码需要更新
 - **示例**:
   ```python
@@ -70,15 +70,15 @@
   board.set_move_side(player)
   
   # 新代码
-  from cchess import RED
-  board.set_move_side(RED)
+  from cchess import SIDE_RED
+  board.set_move_side(SIDE_RED)
   ```
 
 ### 3. 常量重命名
 
-#### 3.1 `NO_COLOR` -> `ANY_COLOR`
+#### 3.1 `NO_COLOR` -> `SIDE_ANY`
 - **旧常量**: `NO_COLOR`
-- **新常量**: `ANY_COLOR`
+- **新常量**: `SIDE_ANY`
 - **影响**: 所有使用 `NO_COLOR` 的代码需要更新
 - **示例**:
   ```python
@@ -86,7 +86,7 @@
   from cchess import NO_COLOR
   
   # 新代码
-  from cchess import ANY_COLOR
+  from cchess import SIDE_ANY
   ```
 
 ### 4. 属性命名统一
@@ -101,7 +101,7 @@
   side = board.move_side
   
   # 设置走子方
-  board.set_move_side(RED)
+  board.set_move_side(SIDE_RED)
   ```
 
 ## 性能优化相关变化
@@ -124,7 +124,7 @@
 from cchess import ChessPlayer, NO_COLOR
 
 # 新导入
-from cchess import RED, BLACK, ANY_COLOR
+from cchess import SIDE_RED, SIDE_BLACK, SIDE_ANY
 ```
 
 ### 步骤 2: 更新方法调用
@@ -149,8 +149,8 @@ if board.move_player == player:
     # ...
 
 # 新方式
-from cchess import RED
-if board.move_side == RED:
+from cchess import SIDE_RED
+if board.move_side == SIDE_RED:
     # ...
 ```
 
@@ -158,7 +158,7 @@ if board.move_side == RED:
 
 ```python
 # 旧常量
-NO_COLOR -> ANY_COLOR
+NO_COLOR -> SIDE_ANY
 ```
 
 ## 影响范围分析

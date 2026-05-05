@@ -48,7 +48,7 @@ python -m pytest tests/test_coverage.py -x -q
 - `positions` - 坐标列表（避免使用 `poss`）
 - `next_node` - 链表下一个节点（避免 shadow 内置 `next`）
 - `engine_out_queue` - 引擎输出队列（拼写正确）
-- `ANY_COLOR` - 任意颜色（原 `NO_COLOR`，语义更清晰）
+- `SIDE_ANY` - 任意颜色（原 `NO_COLOR`，语义更清晰）
 
 ### 性能优化点
 

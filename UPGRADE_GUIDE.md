@@ -43,16 +43,16 @@ from cchess import ChessBoard
 
 board = ChessBoard()
 positions = board.get_fenchs('K')
-pieces = board.get_pieces(RED)
+pieces = board.get_pieces(SIDE_RED)
 ```
 
 **更新后：**
 ```python
-from cchess import ChessBoard, RED
+from cchess import ChessBoard, SIDE_RED
 
 board = ChessBoard()
 positions = board.get_fench_positions('K')
-pieces = board.get_all_pieces(RED)
+pieces = board.get_all_pieces(SIDE_RED)
 ```
 
 #### 3.2 Move.from_text() 移除
@@ -86,9 +86,9 @@ if board.move_player == player:
 
 **更新后：**
 ```python
-from cchess import RED
+from cchess import SIDE_RED
 
-if board.move_side == RED:
+if board.move_side == SIDE_RED:
     # ...
 ```
 
@@ -103,9 +103,9 @@ color = NO_COLOR
 
 **更新后：**
 ```python
-from cchess import ANY_COLOR
+from cchess import SIDE_ANY
 
-color = ANY_COLOR
+color = SIDE_ANY
 ```
 
 ### 4. 处理移除的方法
@@ -185,9 +185,9 @@ def upgrade_file(filepath):
         (r'\.get_fenchs\(', '.get_fench_positions('),
         (r'\.get_pieces\(', '.get_all_pieces('),
         (r'Move\.from_text\(', '# Move.from_text() 已移除，请使用 board.move_text()'),
-        (r'NO_COLOR', 'ANY_COLOR'),
-        (r'ChessPlayer\.RED', 'RED'),
-        (r'ChessPlayer\.BLACK', 'BLACK'),
+        (r'NO_COLOR', 'SIDE_ANY'),
+        (r'ChessPlayer\.SIDE_RED', 'SIDE_RED'),
+        (r'ChessPlayer\.SIDE_BLACK', 'SIDE_BLACK'),
     ]
     
     for old, new in replacements:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
 
 ```python
 # compatibility.py
-from cchess import ChessBoard, Move, RED, BLACK, ANY_COLOR
+from cchess import ChessBoard, Move, SIDE_RED, SIDE_BLACK, SIDE_ANY
 
 class BackwardCompatibleBoard(ChessBoard):
     """向后兼容的棋盘类"""
@@ -270,13 +270,13 @@ def move_from_text(move_str, board):
 Move.from_text = staticmethod(move_from_text)
 
 # 导出兼容性常量
-NO_COLOR = ANY_COLOR
+NO_COLOR = SIDE_ANY
 
 # 创建兼容的 ChessPlayer 类（如果确实需要）
 class ChessPlayer:
-    RED = RED
-    BLACK = BLACK
-    NO_COLOR = ANY_COLOR
+    SIDE_RED = SIDE_RED
+    SIDE_BLACK = SIDE_BLACK
+    NO_COLOR = SIDE_ANY
     
     @staticmethod
     def next(color):
@@ -333,7 +333,7 @@ print(f'create_moves x1000: {elapsed:.3f}s')
 ### Q1: 升级后出现 ImportError: cannot import name 'ChessPlayer'
 
 **解决方案：**
-- 将 `from cchess import ChessPlayer` 改为 `from cchess import RED, BLACK, ANY_COLOR`
+- 将 `from cchess import ChessPlayer` 改为 `from cchess import SIDE_RED, SIDE_BLACK, SIDE_ANY`
 - 使用整数常量代替 ChessPlayer 实例
 
 ### Q2: Move.from_text() 调用失败
@@ -395,6 +395,6 @@ print(f'create_moves x1000: {elapsed:.3f}s')
 1. 更新方法名（2个重命名）
 2. 更新 API 调用方式（Move.from_text -> board.move_text）
 3. 更新颜色处理（ChessPlayer -> 整数常量）
-4. 更新常量名（NO_COLOR -> ANY_COLOR）
+4. 更新常量名（NO_COLOR -> SIDE_ANY）
 
 虽然涉及不兼容变化，但迁移工作相对直接，且能获得显著的性能改进。

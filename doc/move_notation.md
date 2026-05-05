@@ -176,7 +176,7 @@ def __init__(
     is_capture: bool = False, # 是否吃子
     is_check: bool = False,   # 是否将军
     is_checkmate: bool = False, # 是否将死
-    piece_color: int = None   # RED(1)/BLACK(2)
+    piece_color: int = None   # SIDE_RED(1)/SIDE_BLACK(2)
 ):
 ```
 

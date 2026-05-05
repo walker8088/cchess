@@ -321,12 +321,12 @@ def test_move_captures_piece():
 # ❌ 测试内部实现细节
 def test_make_move_switches_turn():
     board.make_move(from, to)
-    assert board.move_player == BLACK  # 测试了不该测试的
+    assert board.move_player == SIDE_BLACK  # 测试了不该测试的
 
 # ✅ 测试外部行为
 def test_move_switches_turn():
     board.move(from, to)
-    assert board.move_player == BLACK  # 测试公共 API
+    assert board.move_player == SIDE_BLACK  # 测试公共 API
 ```
 
 ### 4.3 测试数据管理

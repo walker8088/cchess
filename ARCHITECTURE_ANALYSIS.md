@@ -23,7 +23,7 @@ class ChessBoard:
         self._board: List[List[Optional[str]]] = [
             [None for _ in range(9)] for _ in range(10)
         ]
-        self._move_side = ANY_COLOR
+        self._move_side = SIDE_ANY
         # 攻击矩阵缓存
         self._red_attacks: List[List[bool]] = [
             [False for _ in range(9)] for _ in range(10)
@@ -96,7 +96,7 @@ class MoveNotation:
 ```cchess/src/cchess/board.py#L350-380
 def normalized(self) -> "ChessBoard":
     """返回规范局面（黑方视角转换为红方视角）"""
-    if self._move_side == RED:
+    if self._move_side == SIDE_RED:
         return self.copy()
     # 黑方走子时，返回翻转+交换后的局面
     return self.flip().swap()
@@ -128,8 +128,8 @@ def _update_attack_matrix(self):
 ```cchess/src/cchess/piece.py#L40-60
 # 大量使用模块级常量缓存
 _ADVISOR_POS = {
-    RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
-    BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
+    SIDE_RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
+    SIDE_BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
 }
 
 # 预计算方向常量，避免重复创建

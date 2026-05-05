@@ -4,8 +4,8 @@ release v1.26.2 (2026年第2次发布)
 【API不兼容变化】
   * 移除 Move.from_text() 静态方法 → 使用 board.move_text() 实例方法
   * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_pieces()
-  * 移除 ChessPlayer 类 → 使用整数常量 RED=1, BLACK=2, ANY_COLOR=0
-  * 重命名 NO_COLOR → ANY_COLOR（语义更清晰）
+  * 移除 ChessPlayer 类 → 使用整数常量 SIDE_RED=1, SIDE_BLACK=2, SIDE_ANY=0
+  * 重命名 NO_COLOR → SIDE_ANY（语义更清晰）
 
 【性能优化】
   * 关键操作性能提升 3.5-5.1倍（走法生成、棋子遍历等）
