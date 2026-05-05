@@ -59,7 +59,7 @@ pads = (5, 5)
 BOARD_SIZE = (WIDTH, HEIGHT) = (530, 586)
 SCREEN_SIZE = (WIDTH, HEIGHT)
 
-win_dict = {cchess.BLACK: "红胜", cchess.RED: "黑胜"}
+win_dict = {cchess.SIDE_BLACK: "红胜", cchess.SIDE_RED: "黑胜"}
 
 go_params = {"depth": 15}
 
@@ -236,7 +236,7 @@ class GameTable:
                 image = self.pieces_image[piece.fench.lower()]
                 board_pos = pos_to_screen(key)
 
-                if piece.color == cchess.RED:
+                if piece.color == cchess.SIDE_RED:
                     offset = (0, 0, 52, 52)
                 else:
                     offset = (53, 0, 52, 52)
@@ -399,8 +399,8 @@ if __name__ == "__main__":
 
     table = GameTable()
 
-    table.attach_engine(engine, cchess.BLACK)
-    table.attach_engine(engine, cchess.RED)
+    table.attach_engine(engine, cchess.SIDE_BLACK)
+    table.attach_engine(engine, cchess.SIDE_RED)
 
     type_name = "马兵类杀法"
     # type_name = '兵类杀法'
@@ -450,7 +450,7 @@ if __name__ == "__main__":
             elif has_move:
                 move_side = table.board.move_side()
                 if table.board.has_no_legal_moves():
-                    if move_side == cchess.RED:
+                    if move_side == cchess.SIDE_RED:
                         print("挑战失败！", game_it)
                         bad_files.append(game_it[0])
                     else:
