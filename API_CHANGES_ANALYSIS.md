@@ -89,6 +89,23 @@
   from cchess import SIDE_ANY
   ```
 
+#### 3.2 `RED` / `BLACK` -> `SIDE_RED` / `SIDE_BLACK`
+- **旧常量**: `RED`, `BLACK`
+- **新常量**: `SIDE_RED`, `SIDE_BLACK`
+- **影响**: 所有直接使用 `RED` / `BLACK` 常量的代码需要更新
+- **示例**:
+  ```python
+  # 旧代码
+  from cchess import RED, BLACK
+  if board.move_side == RED:
+      ...
+  
+  # 新代码
+  from cchess import SIDE_RED, SIDE_BLACK
+  if board.move_side == SIDE_RED:
+      ...
+  ```
+
 ### 4. 属性命名统一
 
 #### 4.1 `move_player` -> `move_side`
@@ -157,8 +174,10 @@ if board.move_side == SIDE_RED:
 ### 步骤 4: 更新常量引用
 
 ```python
-# 旧常量
+# 旧常量 → 新常量
 NO_COLOR -> SIDE_ANY
+RED -> SIDE_RED
+BLACK -> SIDE_BLACK
 ```
 
 ## 影响范围分析
@@ -226,7 +245,7 @@ python test_api_compatibility.py
 
 1. **方法重命名**：2 个方法
 2. **方法移除**：3 个方法 + 1 个类
-3. **常量重命名**：1 个常量
+3. **常量重命名**：3 个常量（`NO_COLOR` → `SIDE_ANY`、`RED` → `SIDE_RED`、`BLACK` → `SIDE_BLACK`）
 4. **命名统一**：1 个属性
 
 这些变化主要是为了：
