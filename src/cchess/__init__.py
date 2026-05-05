@@ -16,14 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .board import ChessBoard, fen_flip, fen_mirror, fen_swap
 from .common import (
-    ANY_COLOR,
-    BLACK,
     EMPTY_BOARD,
     EMPTY_FEN,
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
-    # 向后兼容别名
-    RED,
     SIDE_ANY,
     SIDE_BLACK,
     SIDE_RED,
@@ -67,7 +63,6 @@ __all__ = [
     "CChessError",
     "EngineError",
     # common
-    "ANY_COLOR",
     "SIDE_ANY",
     "SIDE_RED",
     "SIDE_BLACK",

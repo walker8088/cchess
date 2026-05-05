@@ -17,11 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # 颜色常量
 SIDE_ANY, SIDE_RED, SIDE_BLACK = (0, 1, 2)
 
-# 向后兼容别名
-ANY_COLOR = SIDE_ANY
-RED = SIDE_RED
-BLACK = SIDE_BLACK
-
 # 棋盘常量
 EMPTY_BOARD = "9/9/9/9/9/9/9/9/9/9"
 FULL_INIT_BOARD = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR"

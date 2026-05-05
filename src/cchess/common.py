@@ -22,13 +22,10 @@ from collections import OrderedDict
 from pathlib import Path
 
 from .constants import (  # noqa: F401 (re-exported for other modules)
-    ANY_COLOR,
-    BLACK,
     EMPTY_BOARD,
     EMPTY_FEN,
     FULL_INIT_BOARD,
     FULL_INIT_FEN,
-    RED,
     SIDE_ANY,
     SIDE_BLACK,
     SIDE_RED,
