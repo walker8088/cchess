@@ -915,25 +915,10 @@ class Move:
         if move_str[0] not in ["进", "退", "平"]:
             return None
 
-        # 分发到对应 Piece 类的 text_move_to_pos 方法
-        # 延迟导入避免循环依赖
-        from .piece import Advisor, Bishop, Cannon, King, Knight, Pawn, Rook
+        # 使用函数式 API 解析走法
+        from .piece import text_move_to_pos
 
-        piece_dispatch = {
-            "k": King.text_move_to_pos,
-            "a": Advisor.text_move_to_pos,
-            "b": Bishop.text_move_to_pos,
-            "n": Knight.text_move_to_pos,
-            "r": Rook.text_move_to_pos,
-            "c": Cannon.text_move_to_pos,
-            "p": Pawn.text_move_to_pos,
-        }
-
-        handler = piece_dispatch.get(piece_fench)
-        if handler:
-            return handler(pos_from, move_str)
-
-        return None
+        return text_move_to_pos(piece_fench, pos_from, move_str)
 
 
 def _parse_notation(move_str: str) -> Optional[tuple]:

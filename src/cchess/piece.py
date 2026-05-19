@@ -12,6 +12,21 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+中国象棋棋子模块
+
+提供棋子走法生成、合法性检查、中文走法解析等功能。
+
+设计架构：
+- 使用函数式 API 替代类层次结构
+- 通过分发表（dispatch dict）根据棋子类型路由
+- 性能优化：减少对象创建开销，直接操作棋盘数组
+
+主要函数：
+- is_valid_pos(): 检查棋子位置合法性
+- is_valid_move(): 检查走法合法性
+- create_moves(): 生成所有合法走法
+- text_move_to_pos(): 解析中文走法
 """
 
 from __future__ import annotations
@@ -26,98 +41,88 @@ from .common import (
 )
 
 # -----------------------------------------------------#
-# 士象固定位置（红方/黑方字典）
-_ADVISOR_POS = {
-    SIDE_RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
-    SIDE_BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
+# 按棋子类型分组的常量（优化 7：提高内聚）
+# -----------------------------------------------------#
+_PIECE_CONSTANTS = {
+    'k': {
+        'palace_x': (3, 5),
+        'palace_y': {SIDE_RED: (0, 2), SIDE_BLACK: (7, 9)},
+    },
+    'a': {
+        'positions': {
+            SIDE_RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
+            SIDE_BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
+        },
+    },
+    'b': {
+        'positions': {
+            SIDE_RED: frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
+            SIDE_BLACK: frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
+        },
+        'y_range': {SIDE_RED: (0, 4), SIDE_BLACK: (5, 9)},
+    },
+    'p': {
+        'dy': {SIDE_RED: 1, SIDE_BLACK: -1},
+        'river_y': {SIDE_RED: 5, SIDE_BLACK: 4},
+        'y_range': {SIDE_RED: (3, 9), SIDE_BLACK: (0, 6)},
+    },
 }
 
-_BISHOP_POS = {
-    SIDE_RED: frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
-    SIDE_BLACK: frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
-}
-
-# 九宫格 y 范围（红方/黑方）
-_PALACE_Y_RANGE = {
-    SIDE_RED: (0, 2),
-    SIDE_BLACK: (7, 9),
-}
-
-# 九宫格 x 范围
-_PALACE_X_RANGE = (3, 5)
-
-# 象的活动范围 y 边界（红方/黑方）
-_BISHOP_Y_RANGE = {
-    SIDE_RED: (0, 4),
-    SIDE_BLACK: (5, 9),
-}
-
-# 兵卒相关常量（红方/黑方）
-_PAWN_DY = {SIDE_RED: 1, SIDE_BLACK: -1}  # 前进步长（y 方向）
-_PAWN_RIVER_Y = {SIDE_RED: 5, SIDE_BLACK: 4}  # 过河界限
-_PAWN_Y_RANGE = {SIDE_RED: (3, 9), SIDE_BLACK: (0, 6)}  # 合法活动 y 范围
-
-
-# 滑走棋子方向常量（车、炮）
+# 通用常量
 _SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
-
-# 马棋子走法偏移量（目标偏移, 蹩腿偏移）
 _KNIGHT_MOVES = (
-    ((1, 2), (0, 1)),  # 右跳上：纵向2格，蹩腿在上方
-    ((1, -2), (0, -1)),  # 右跳下：纵向2格，蹩腿在下方
-    ((-1, 2), (0, 1)),  # 左跳上：纵向2格，蹩腿在上方
-    ((-1, -2), (0, -1)),  # 左跳下：纵向2格，蹩腿在下方
-    ((2, 1), (1, 0)),  # 上跳右：横向2格，蹩腿在右方
-    ((2, -1), (1, 0)),  # 下跳右：横向2格，蹩腿在右方
-    ((-2, 1), (-1, 0)),  # 上跳左：横向2格，蹩腿在左方
-    ((-2, -1), (-1, 0)),  # 下跳左：横向2格，蹩腿在左方
+    ((1, 2), (0, 1)), ((1, -2), (0, -1)), ((-1, 2), (0, 1)), ((-1, -2), (0, -1)),
+    ((2, 1), (1, 0)), ((2, -1), (1, 0)), ((-2, 1), (-1, 0)), ((-2, -1), (-1, 0)),
 )
 
-
 # -----------------------------------------------------#
-def abs_diff(x, y):
+# 内部辅助函数（纯函数，无外部依赖）
+# -----------------------------------------------------#
+def _is_on_board(pos):
+    """检查坐标是否在棋盘范围内。"""
+    return 0 <= pos[0] <= 8 and 0 <= pos[1] <= 9
+
+
+def _is_enemy_fench(fench_from, fench_to):
+    """判断目标棋子是否为敌方。"""
+    if fench_to is None:
+        return False
+    color_from = get_fench_color(fench_from)
+    return fench_to.isupper() != (color_from == SIDE_RED)
+
+
+def _abs_diff(x, y):
     """返回两点坐标在各维度上的绝对差值元组。"""
     return (abs(x[0] - y[0]), abs(x[1] - y[1]))
 
 
 def _linear_piece_move(pos_from, move_str):
-    """解析王、车、炮、兵的走法（直线移动）。
-
-    参数:
-        pos_from: 起点坐标
-        move_str: 走法字符串（如'进一'、'平五'）
-
-    返回:
-        tuple: 目标坐标 (x, y)，无法解析返回 None
-    """
-    # 平移
+    """解析王、车、炮、兵的走法（直线移动）。"""
     if move_str[0] == "平":
         new_x = _get_target_x(move_str[1])
-        if new_x is None:
-            return None
-        return (new_x, pos_from[1])
-
-    # 前进/后退
+        return (new_x, pos_from[1]) if new_x is not None else None
+    
     step_digit = move_str[1:].strip()
     diff = _get_v_index(step_digit)
     if diff is None:
         return None
     if move_str[0] == "退":
         diff = -diff
-
     return (pos_from[0], pos_from[1] + diff)
 
 
-# -----------------------------------------------------#
+# =====================================================
+# 向后兼容层（Piece 类层次结构）
+# 注意：这些类仅用于向后兼容，建议使用函数式 API
+# =====================================================
+
 class Piece:
-    """棋子基类，封装棋子在棋盘上的位置、类型与颜色等通用属性。"""
+    """棋子基类（向后兼容，建议使用函数式 API）。"""
 
     __slots__ = ["board", "fench", "color", "x", "y"]
 
-    # pylint: disable=attribute-defined-outside-init
-
     def __init__(self, board, fench, pos):
-        """初始化棋子，记录所属棋盘、FEN 字符、颜色及坐标。"""
+        """初始化棋子。"""
         self.board = board
         self.fench = fench
         self.color = get_fench_color(fench)
@@ -125,45 +130,25 @@ class Piece:
 
     def is_valid_pos(self, pos):
         """判断给定坐标是否在棋盘范围内。"""
-        return (0 <= pos[0] < 9) and (0 <= pos[1] <= 9)
+        return _is_on_board(pos)
 
-    def is_valid_move(self, _pos_to):
-        """判断移动到目标位置是否合法（基类默认返回 True）。"""
-        return True
+    def is_valid_move(self, pos_to):
+        """判断移动到目标位置是否合法。"""
+        return is_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     def get_color_fench(self):
-        """返回带颜色前缀的棋子标识字符串（如 'rk'、'bK'）。"""
+        """返回带颜色前缀的棋子标识字符串。"""
         if self.fench.islower():
             return f"b{self.fench}"
         return f"r{self.fench.lower()}"
 
     def is_enemy_piece(self, target_fench):
-        """判断目标棋子是否为敌方。
-
-        FEN 字符约定：大写表示红方棋子，小写表示黑方棋子。
-
-        参数:
-            target_fench: 目标棋子的 FEN 字符，None 表示空位
-
-        返回:
-            bool: True 如果是敌方棋子，False 如果是友方棋子或空位
-        """
-        if target_fench is None:
-            return False
-        # FEN 大写=红方，小写=黑方；目标棋子颜色与己方不同即为敌方
-        return target_fench.isupper() != (self.color == SIDE_RED)
+        """判断目标棋子是否为敌方。"""
+        return _is_enemy_fench(self.fench, target_fench)
 
     def _create_moves_from_offsets(self, offsets):
-        """从偏移量列表生成候选走子。
-
-        参数:
-            offsets: 相对当前位置的偏移量列表，如 [(1, 1), (-1, -1)]
-
-        返回:
-            过滤后的合法走子迭代器
-        """
+        """从偏移量列表生成候选走子。"""
         curr_pos = (self.x, self.y)
-        # 内联边界检查：0 <= x <= 8, 0 <= y <= 9
         moves = []
         for dx, dy in offsets:
             nx, ny = self.x + dx, self.y + dy
@@ -172,59 +157,15 @@ class Piece:
         return filter(self.board.is_valid_move_t, moves)
 
     def _create_sliding_moves(self, directions):
-        """生成滑走棋子（车/炮不吃子时）的走法，沿方向扫描直到遇到棋子或边界。
-
-        参数:
-            directions: 方向列表，如 [(0,1), (0,-1), (1,0), (-1,0)]
-
-        返回:
-            合法走子列表
-        """
-        moves = []
-        curr_x, curr_y = self.x, self.y
-        board = self.board._board
-
-        for dx, dy in directions:
-            x, y = curr_x + dx, curr_y + dy
-
-            # 内联边界检查：0 <= x < 9, 0 <= y <= 9
-            while 0 <= x <= 8 and 0 <= y <= 9:
-                target = board[y][x]
-
-                if target is None:
-                    moves.append(((curr_x, curr_y), (x, y)))
-                else:
-                    if self.is_enemy_piece(target):
-                        moves.append(((curr_x, curr_y), (x, y)))
-                    break
-
-                x += dx
-                y += dy
-
-        return moves
+        """生成滑走棋子的走法。"""
+        return _create_sliding_moves(self.board, self.fench, (self.x, self.y), directions)
 
     def _is_on_straight_line(self, pos_to):
-        """判断目标位置是否与当前位置在同一直线上。
-
-        参数:
-            pos_to: 目标坐标 (x, y)
-
-        返回:
-            bool: True 如果在同一直线上，否则 False
-        """
-        return self.x == pos_to[0] or self.y == pos_to[1]
+        """判断目标位置是否与当前位置在同一直线上。"""
+        return (self.x == pos_to[0]) or (self.y == pos_to[1])
 
     def _count_line_pieces(self, pos_to):
-        """计算当前位置到目标位置直线上的棋子数量（不含端点）。
-
-        前提：调用者需确保 pos_to 在同一直线上。
-
-        参数:
-            pos_to: 目标坐标 (x, y)
-
-        返回:
-            int: 中间棋子数量
-        """
+        """计算当前位置到目标位置直线上的棋子数量。"""
         if self.x != pos_to[0]:
             return self.board.count_x_line_in(self.y, self.x, pos_to[0])
         return self.board.count_y_line_in(self.x, self.y, pos_to[1])
@@ -249,439 +190,393 @@ class Piece:
             return Pawn(board, fench, pos)
         return None
 
+    def create_moves(self):
+        """生成所有合法走法（向后兼容方法）。"""
+        return create_moves(self.board, self.fench, (self.x, self.y))
+
 
 # -----------------------------------------------------#
-# 王
+# 向后兼容的棋子子类
+# -----------------------------------------------------#
+
 class King(Piece):
-    """将/帅棋子，只能在九宫格内移动。"""
-
+    """将/帅棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_pos(self, pos):
-        """判断位置是否在己方九宫格内。"""
-        if not super().is_valid_pos(pos):
-            return False
-        # 九宫格范围：x 见 _PALACE_X_RANGE，y 见 _PALACE_Y_RANGE
-        min_x, max_x = _PALACE_X_RANGE
-        min_y, max_y = _PALACE_Y_RANGE[self.color]
-        return min_x <= pos[0] <= max_x and min_y <= pos[1] <= max_y
+        return _king_valid_pos(self.fench, pos)
 
     def is_valid_move(self, pos_to):
-        """判断将/帅移动到目标位置是否合法（含白脸将规则）。"""
-        k2 = self.board.get_king(next_color(self.color))
-        if k2 is not None:
-            if (
-                (self.x == k2.x)
-                and (pos_to[1] == k2.y)
-                and (self.board.count_y_line_in(self.x, self.y, k2.y) == 0)
-            ):
-                return True
-
-        if not self.is_valid_pos(pos_to):
-            return False
-
-        diff = abs_diff(pos_to, (self.x, self.y))
-
-        return (diff[0] + diff[1]) == 1
-
-    def create_moves(self):
-        """生成将/帅所有可能的合法走子。"""
-        positions = [
-            (self.x + 1, self.y),
-            (self.x - 1, self.y),
-            (self.x, self.y + 1),
-            (self.x, self.y - 1),
-        ]
-
-        k2 = self.board.get_king(next_color(self.color))
-        if k2 is not None:
-            positions.append((k2.x, k2.y))
-
-        curr_pos = (self.x, self.y)
-        return (
-            (curr_pos, to_pos)
-            for to_pos in positions
-            if self.board.is_valid_move_t((curr_pos, to_pos))
-        )
+        return _king_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算将/帅目标坐标。
-
-        参数:
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进一'、'平五'）
-
-        返回:
-            tuple: 目标坐标 (x, y)，无法解析返回 None
-        """
-        # 将/帅走法同车、炮、兵：使用通用解析逻辑
-        if move_str[0] == "平":
-            new_x = _get_target_x(move_str[1])
-            if new_x is None:
-                return None
-            return (new_x, pos_from[1])
-
-        step_digit = move_str[1:].strip()
-        diff = _get_v_index(step_digit)
-        if diff is None:
-            return None
-        if move_str[0] == "退":
-            diff = -diff
-        return (pos_from[0], pos_from[1] + diff)
+        return _linear_piece_move(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 士
 class Advisor(Piece):
-    """士/仕棋子，只能在九宫格内斜走。"""
-
+    """士/仕棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_pos(self, pos):
-        """判断位置是否在己方九宫格内的士位上。"""
-        if not super().is_valid_pos(pos):
-            return False
-        return pos in _ADVISOR_POS[self.color]
+        return _advisor_valid_pos(self.fench, pos)
 
     def is_valid_move(self, pos_to):
-        """判断士/仕斜走一步到目标位置是否合法。"""
-        if not self.is_valid_pos(pos_to):
-            return False
-
-        if abs_diff((self.x, self.y), pos_to) == (1, 1):
-            return True
-
-        return False
-
-    def create_moves(self):
-        """生成士/仕所有可能的合法走子。"""
-        return self._create_moves_from_offsets([(1, 1), (1, -1), (-1, 1), (-1, -1)])
+        return _advisor_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算士/仕目标坐标。
-
-        参数:
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进 6'、'退 3'）
-
-        返回:
-            tuple: 目标坐标 (x, y)，无法解析返回 None
-        """
-        direction = move_str[0]
-        target_digit = move_str[1:].strip()
-
-        new_x = _get_target_x(target_digit)
-        if new_x is None:
-            return None
-
-        if abs(new_x - pos_from[0]) != 1:
-            return None
-
-        # 规范局面下（红方视角）：进 = y增加，退 = y减少
-        diff_y = 1 if direction == "进" else -1
-
-        return (new_x, pos_from[1] + diff_y)
+        return _advisor_text_move_to_pos(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 象
 class Bishop(Piece):
-    """象/相棋子，走田字，不能过河。"""
-
+    """象/相棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_pos(self, pos):
-        """判断位置是否在己方半场内的象位上。"""
-        if not super().is_valid_pos(pos):
-            return False
-
-        return pos in _BISHOP_POS[self.color]
+        return _bishop_valid_pos(self.fench, pos)
 
     def is_valid_move(self, pos_to):
-        """判断象/相走田字到目标位置是否合法（含塞象眼和过河检查）。"""
-        if abs_diff((self.x, self.y), (pos_to)) != (2, 2):
-            return False
-
-        # 塞象眼：田字中心位置
-        eye_x = (self.x + pos_to[0]) // 2
-        eye_y = (self.y + pos_to[1]) // 2
-        if self.board.get_fench((eye_x, eye_y)) is not None:
-            return False
-
-        # 象不能过河：y 范围见 _BISHOP_Y_RANGE
-        min_y, max_y = _BISHOP_Y_RANGE[self.color]
-        return min_y <= pos_to[1] <= max_y
-
-    def create_moves(self):
-        """生成象/相所有可能的合法走子。"""
-        return self._create_moves_from_offsets([(2, 2), (2, -2), (-2, 2), (-2, -2)])
+        return _bishop_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算象/相目标坐标。
-
-        参数:
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进 5'、'退 3'）
-
-        返回:
-            tuple: 目标坐标 (x, y)，无法解析返回 None
-        """
-        direction = move_str[0]
-        target_digit = move_str[1:].strip()
-
-        new_x = _get_target_x(target_digit)
-        if new_x is None:
-            return None
-
-        if abs(new_x - pos_from[0]) != 2:
-            return None
-
-        # 规范局面下（红方视角）：进 = y增加，退 = y减少
-        diff_y = 2 if direction == "进" else -2
-
-        return (new_x, pos_from[1] + diff_y)
+        return _bishop_text_move_to_pos(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 马
 class Knight(Piece):
-    """马棋子，走日字，有蹩马腿限制。"""
-
+    """马棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
-        """判断马走日字到目标位置是否合法（含蹩马腿检查）。"""
-        for (dx, dy), (bx, by) in _KNIGHT_MOVES:
-            if self.x + dx == pos_to[0] and self.y + dy == pos_to[1]:
-                # 目标位置匹配，检查蹩马腿
-                return self.board.get_fench((self.x + bx, self.y + by)) is None
-        return False
-
-    def create_moves(self):
-        """生成马所有可能的合法走子。
-
-        使用预计算的偏移量，减少运行时计算。
-        """
-
-        curr_pos = (self.x, self.y)
-        board = self.board._board  # 直接访问棋盘数组
-        moves = []
-
-        for (dx, dy), (bx, by) in _KNIGHT_MOVES:
-            nx, ny = self.x + dx, self.y + dy
-
-            # 快速边界检查
-            if not (0 <= nx <= 8 and 0 <= ny <= 9):
-                continue
-
-            # 检查蹩马腿
-            if board[self.y + by][self.x + bx] is not None:
-                continue
-
-            # 检查目标位置
-            target_fench = board[ny][nx]
-            if target_fench is not None:
-                # 快速同色判断：FEN 大写=红方，小写=黑方
-                if target_fench.isupper() == (self.color == SIDE_RED):
-                    continue  # 同色棋子，跳过
-
-            moves.append((curr_pos, (nx, ny)))
-
-        return moves
+        return _knight_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算马目标坐标。
-
-        参数:
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进 5'、'退 3'）
-
-        返回:
-            tuple: 目标坐标 (x, y)，无法解析返回 None
-        """
-        direction = move_str[0]
-        target_digit = move_str[1:].strip()
-
-        new_x = _get_target_x(target_digit)
-        if new_x is None:
-            return None
-
-        diff_x = abs(pos_from[0] - new_x)
-
-        if diff_x not in (1, 2):
-            return None
-
-        diff_y_magnitude = 2 if diff_x == 1 else 1
-
-        # 规范局面下（红方视角）：进 = y增加，退 = y减少
-        diff_y = diff_y_magnitude if direction == "进" else -diff_y_magnitude
-
-        return (new_x, pos_from[1] + diff_y)
+        return _knight_text_move_to_pos(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 车
 class Rook(Piece):
-    """车棋子，沿直线行走，不能越子。"""
-
+    """车棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
-        """判断车直线移动到目标位置是否合法（不能越子）。"""
-        if not self._is_on_straight_line(pos_to):
-            return False
-        return self._count_line_pieces(pos_to) == 0
-
-    def create_moves(self):
-        """生成车所有可能的合法走子。"""
-        return self._create_sliding_moves(_SLIDING_DIRECTIONS)
+        return _rook_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算车目标坐标。
-
-        参数:
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进一'、'平五'）
-
-        返回:
-            tuple: 目标坐标 (x, y)，无法解析返回 None
-        """
         return _linear_piece_move(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 炮
 class Cannon(Piece):
-    """炮棋子，直行不越子，吃子需隔一子（炮架）。"""
-
+    """炮棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
-        """判断炮移动到目标位置是否合法（直行不越子，吃子需隔一子）。"""
-        if not self._is_on_straight_line(pos_to):
-            return False
-
-        count = self._count_line_pieces(pos_to)
-        target = self.board.get_fench(pos_to)
-        # 不吃子：中间无障碍
-        if count == 0 and target is None:
-            return True
-        # 吃子：中间恰好隔一个棋子
-        if count == 1 and target is not None:
-            return True
-
-        return False
-
-    def create_moves(self):
-        """生成炮所有可能的合法走子。
-
-        炮的走法规则：
-        1. 不吃子时：沿直线行走，不能越子（同车）
-        2. 吃子时：必须隔一个棋子（炮架）才能吃
-        """
-        moves = []
-        curr_x, curr_y = self.x, self.y
-
-        for dx, dy in _SLIDING_DIRECTIONS:
-            x, y = curr_x + dx, curr_y + dy
-            screen_found = False  # 是否找到炮架
-
-            while self.is_valid_pos((x, y)):
-                target = self.board._board[y][x]
-
-                if not screen_found:
-                    # 寻找炮架阶段
-                    if target is None:
-                        # 空位，可以移动
-                        moves.append(((curr_x, curr_y), (x, y)))
-                    else:
-                        # 遇到第一个棋子，作为炮架
-                        screen_found = True
-                else:
-                    # 炮架后阶段
-                    if target is not None:
-                        if self.is_enemy_piece(target):
-                            moves.append(((curr_x, curr_y), (x, y)))
-                        # 无论是否吃子，都停止扫描
-                        break
-
-                x += dx
-                y += dy
-
-        return moves
+        return _cannon_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算炮目标坐标。"""
         return _linear_piece_move(pos_from, move_str)
 
 
-# -----------------------------------------------------#
-# 兵/卒
 class Pawn(Piece):
-    """兵/卒棋子，未过河前只能前进，过河后可左右移动。"""
-
+    """兵/卒棋子（向后兼容）。"""
     __slots__ = ()
 
     def is_valid_pos(self, pos):
-        """判断位置是否在兵的合法活动范围内（不能后退）。"""
-        if not super().is_valid_pos(pos):
-            return False
-        # 兵不能后退：y 范围见 _PAWN_Y_RANGE
-        min_y, max_y = _PAWN_Y_RANGE[self.color]
-        return min_y <= pos[1] <= max_y
+        return _pawn_valid_pos(self.fench, pos)
 
     def is_valid_move(self, pos_to):
-        """判断兵/卒移动到目标位置是否合法（含过河前后规则）。"""
-        step = (pos_to[0] - self.x, pos_to[1] - self.y)
-        crossed_river = self.is_crossed_river()
-
-        # 前进方向：见 _PAWN_DY
-        forward_step = (0, _PAWN_DY[self.color])
-        if not crossed_river and step == forward_step:
-            return True
-
-        # 过河后可前进或左右移动
-        if crossed_river:
-            side_steps = ((-1, 0), (1, 0))
-            if step == forward_step or step in side_steps:
-                return True
-
-        return False
+        return _pawn_valid_move(self.board, self.fench, (self.x, self.y), pos_to)
 
     def is_crossed_river(self):
-        """判断兵/卒是否已经过河。"""
-        limit = _PAWN_RIVER_Y[self.color]
-        return self.y >= limit if self.color == SIDE_RED else self.y <= limit
-
-    def create_moves(self):
-        """生成兵/卒所有可能的合法走子。"""
-        curr_pos = (self.x, self.y)
-        moves = []
-        # 前进方向：见 _PAWN_DY
-        dy = _PAWN_DY[self.color]
-        forward = (self.x, self.y + dy)
-        # 快速边界检查（y 范围 0-9）
-        if 0 <= forward[1] <= 9:
-            moves.append((curr_pos, forward))
-
-        # 过河后可左右移动
-        if self.is_crossed_river():
-            # 左右移动，x 范围 0-8
-            lx, rx = self.x - 1, self.x + 1
-            if lx >= 0:
-                moves.append((curr_pos, (lx, self.y)))
-            if rx <= 8:
-                moves.append((curr_pos, (rx, self.y)))
-
-        return filter(self.board.is_valid_move_t, moves)
+        return _crossed_river(self.fench, (self.x, self.y))
 
     @staticmethod
     def text_move_to_pos(pos_from, move_str):
-        """从中文走法片段计算兵/卒目标坐标。"""
         return _linear_piece_move(pos_from, move_str)
+
+
+# =====================================================
+# 各棋子的核心实现函数（按类型分组）
+# =====================================================
+
+# --- 王 ---
+def _king_valid_pos(fench, pos):
+    if not _is_on_board(pos):
+        return False
+    color = get_fench_color(fench)
+    cfg = _PIECE_CONSTANTS['k']
+    min_x, max_x = cfg['palace_x']
+    min_y, max_y = cfg['palace_y'][color]
+    return min_x <= pos[0] <= max_x and min_y <= pos[1] <= max_y
+
+def _king_valid_move(board, fench, pos_from, pos_to):
+    color = get_fench_color(fench)
+    k2_pos = board.get_king_pos(next_color(color))
+    if k2_pos is not None:
+        if pos_from[0] == k2_pos[0] and pos_to[1] == k2_pos[1]:
+            if board.count_y_line_in(pos_from[0], pos_from[1], k2_pos[1]) == 0:
+                return True
+    if not _king_valid_pos(fench, pos_to):
+        return False
+    diff = _abs_diff(pos_from, pos_to)
+    return (diff[0] + diff[1]) == 1
+
+def _king_create_moves(board, fench, pos):
+    x, y = pos
+    color = get_fench_color(fench)
+    positions = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    k2_pos = board.get_king_pos(next_color(color))
+    if k2_pos is not None:
+        positions.append(k2_pos)
+    curr_pos = (x, y)
+    return ((curr_pos, to_pos) for to_pos in positions if board.is_valid_move_t((curr_pos, to_pos)))
+
+# --- 士 ---
+def _advisor_valid_pos(fench, pos):
+    if not _is_on_board(pos):
+        return False
+    return pos in _PIECE_CONSTANTS['a']['positions'][get_fench_color(fench)]
+
+def _advisor_valid_move(board, fench, pos_from, pos_to):
+    if not _advisor_valid_pos(fench, pos_to):
+        return False
+    return _abs_diff(pos_from, pos_to) == (1, 1)
+
+def _advisor_create_moves(board, fench, pos):
+    x, y = pos
+    curr_pos = (x, y)
+    moves = []
+    for dx, dy in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx <= 8 and 0 <= ny <= 9:
+            moves.append((curr_pos, (nx, ny)))
+    return filter(board.is_valid_move_t, moves)
+
+def _advisor_text_move_to_pos(pos_from, move_str):
+    direction = move_str[0]
+    target_digit = move_str[1:].strip()
+    new_x = _get_target_x(target_digit)
+    if new_x is None or abs(new_x - pos_from[0]) != 1:
+        return None
+    diff_y = 1 if direction == "进" else -1
+    return (new_x, pos_from[1] + diff_y)
+
+# --- 象 ---
+def _bishop_valid_pos(fench, pos):
+    if not _is_on_board(pos):
+        return False
+    return pos in _PIECE_CONSTANTS['b']['positions'][get_fench_color(fench)]
+
+def _bishop_valid_move(board, fench, pos_from, pos_to):
+    if _abs_diff(pos_from, pos_to) != (2, 2):
+        return False
+    eye_x = (pos_from[0] + pos_to[0]) // 2
+    eye_y = (pos_from[1] + pos_to[1]) // 2
+    if board.get_fench((eye_x, eye_y)) is not None:
+        return False
+    color = get_fench_color(fench)
+    min_y, max_y = _PIECE_CONSTANTS['b']['y_range'][color]
+    return min_y <= pos_to[1] <= max_y
+
+def _bishop_create_moves(board, fench, pos):
+    x, y = pos
+    curr_pos = (x, y)
+    moves = []
+    for dx, dy in [(2, 2), (2, -2), (-2, 2), (-2, -2)]:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx <= 8 and 0 <= ny <= 9:
+            moves.append((curr_pos, (nx, ny)))
+    return filter(board.is_valid_move_t, moves)
+
+def _bishop_text_move_to_pos(pos_from, move_str):
+    direction = move_str[0]
+    target_digit = move_str[1:].strip()
+    new_x = _get_target_x(target_digit)
+    if new_x is None or abs(new_x - pos_from[0]) != 2:
+        return None
+    diff_y = 2 if direction == "进" else -2
+    return (new_x, pos_from[1] + diff_y)
+
+# --- 马 ---
+def _knight_valid_move(board, fench, pos_from, pos_to):
+    for (dx, dy), (bx, by) in _KNIGHT_MOVES:
+        if pos_from[0] + dx == pos_to[0] and pos_from[1] + dy == pos_to[1]:
+            return board.get_fench((pos_from[0] + bx, pos_from[1] + by)) is None
+    return False
+
+def _knight_create_moves(board, fench, pos):
+    x, y = pos
+    color = get_fench_color(fench)
+    board_arr = board._board
+    curr_pos = (x, y)
+    moves = []
+    for (dx, dy), (bx, by) in _KNIGHT_MOVES:
+        nx, ny = x + dx, y + dy
+        if not (0 <= nx <= 8 and 0 <= ny <= 9):
+            continue
+        if board_arr[y + by][x + bx] is not None:
+            continue
+        target_fench = board_arr[ny][nx]
+        if target_fench is not None and target_fench.isupper() == (color == SIDE_RED):
+            continue
+        moves.append((curr_pos, (nx, ny)))
+    return moves
+
+def _knight_text_move_to_pos(pos_from, move_str):
+    direction = move_str[0]
+    target_digit = move_str[1:].strip()
+    new_x = _get_target_x(target_digit)
+    if new_x is None:
+        return None
+    diff_x = abs(pos_from[0] - new_x)
+    if diff_x not in (1, 2):
+        return None
+    diff_y_magnitude = 2 if diff_x == 1 else 1
+    diff_y = diff_y_magnitude if direction == "进" else -diff_y_magnitude
+    return (new_x, pos_from[1] + diff_y)
+
+# --- 车 ---
+def _rook_valid_move(board, fench, pos_from, pos_to):
+    if pos_from[0] != pos_to[0] and pos_from[1] != pos_to[1]:
+        return False
+    if pos_from[0] != pos_to[0]:
+        return board.count_x_line_in(pos_from[1], pos_from[0], pos_to[0]) == 0
+    return board.count_y_line_in(pos_from[0], pos_from[1], pos_to[1]) == 0
+
+# --- 炮 ---
+def _cannon_valid_move(board, fench, pos_from, pos_to):
+    if pos_from[0] != pos_to[0] and pos_from[1] != pos_to[1]:
+        return False
+    if pos_from[0] != pos_to[0]:
+        count = board.count_x_line_in(pos_from[1], pos_from[0], pos_to[0])
+    else:
+        count = board.count_y_line_in(pos_from[0], pos_from[1], pos_to[1])
+    target = board.get_fench(pos_to)
+    return (count == 0 and target is None) or (count == 1 and target is not None)
+
+# --- 兵 ---
+def _pawn_valid_pos(fench, pos):
+    if not _is_on_board(pos):
+        return False
+    color = get_fench_color(fench)
+    min_y, max_y = _PIECE_CONSTANTS['p']['y_range'][color]
+    return min_y <= pos[1] <= max_y
+
+def _crossed_river(fench, pos):
+    color = get_fench_color(fench)
+    limit = _PIECE_CONSTANTS['p']['river_y'][color]
+    return pos[1] >= limit if color == SIDE_RED else pos[1] <= limit
+
+def _pawn_valid_move(board, fench, pos_from, pos_to):
+    step = (pos_to[0] - pos_from[0], pos_to[1] - pos_from[1])
+    crossed = _crossed_river(fench, pos_from)
+    color = get_fench_color(fench)
+    forward_step = (0, _PIECE_CONSTANTS['p']['dy'][color])
+    if not crossed and step == forward_step:
+        return True
+    if crossed and (step == forward_step or step in ((-1, 0), (1, 0))):
+        return True
+    return False
+
+# =====================================================
+# 滑走棋子通用逻辑（优化 6：提取通用逻辑）
+# =====================================================
+def _create_sliding_moves(board, fench, pos, directions, is_cannon=False):
+    x, y = pos
+    board_arr = board._board
+    curr_pos = (x, y)
+    moves = []
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        screen_found = False
+        while 0 <= nx <= 8 and 0 <= ny <= 9:
+            target = board_arr[ny][nx]
+            if not is_cannon:
+                if target is None:
+                    moves.append((curr_pos, (nx, ny)))
+                else:
+                    if _is_enemy_fench(fench, target):
+                        moves.append((curr_pos, (nx, ny)))
+                    break
+            else:
+                if not screen_found:
+                    if target is None:
+                        moves.append((curr_pos, (nx, ny)))
+                    else:
+                        screen_found = True
+                else:
+                    if target is not None:
+                        if _is_enemy_fench(fench, target):
+                            moves.append((curr_pos, (nx, ny)))
+                        break
+            nx += dx
+            ny += dy
+    return moves
+
+def _rook_create_moves(board, fench, pos):
+    return _create_sliding_moves(board, fench, pos, _SLIDING_DIRECTIONS, is_cannon=False)
+
+def _cannon_create_moves(board, fench, pos):
+    return _create_sliding_moves(board, fench, pos, _SLIDING_DIRECTIONS, is_cannon=True)
+
+def _pawn_create_moves(board, fench, pos):
+    x, y = pos
+    color = get_fench_color(fench)
+    curr_pos = (x, y)
+    moves = []
+    dy = _PIECE_CONSTANTS['p']['dy'][color]
+    forward = (x, y + dy)
+    if 0 <= forward[1] <= 9:
+        moves.append((curr_pos, forward))
+    if _crossed_river(fench, pos):
+        lx, rx = x - 1, x + 1
+        if lx >= 0:
+            moves.append((curr_pos, (lx, y)))
+        if rx <= 8:
+            moves.append((curr_pos, (rx, y)))
+    return filter(board.is_valid_move_t, moves)
+
+# =====================================================
+# 统一分发表（优化 2：集中管理）
+# =====================================================
+_PIECE_RULES = {
+    'k': {'valid_pos': _king_valid_pos, 'valid_move': _king_valid_move, 'create_moves': _king_create_moves, 'text_move': _linear_piece_move},
+    'a': {'valid_pos': _advisor_valid_pos, 'valid_move': _advisor_valid_move, 'create_moves': _advisor_create_moves, 'text_move': _advisor_text_move_to_pos},
+    'b': {'valid_pos': _bishop_valid_pos, 'valid_move': _bishop_valid_move, 'create_moves': _bishop_create_moves, 'text_move': _bishop_text_move_to_pos},
+    'n': {'valid_move': _knight_valid_move, 'create_moves': _knight_create_moves, 'text_move': _knight_text_move_to_pos},
+    'r': {'valid_move': _rook_valid_move, 'create_moves': _rook_create_moves, 'text_move': _linear_piece_move},
+    'c': {'valid_move': _cannon_valid_move, 'create_moves': _cannon_create_moves, 'text_move': _linear_piece_move},
+    'p': {'valid_pos': _pawn_valid_pos, 'valid_move': _pawn_valid_move, 'create_moves': _pawn_create_moves, 'text_move': _linear_piece_move},
+}
+
+# 派生分发表（保持现有 API 兼容）
+_VALID_POS_TABLE = {k: v['valid_pos'] for k, v in _PIECE_RULES.items() if 'valid_pos' in v}
+_VALID_MOVE_TABLE = {k: v['valid_move'] for k, v in _PIECE_RULES.items()}
+_CREATE_MOVES_TABLE = {k: v['create_moves'] for k, v in _PIECE_RULES.items()}
+_TEXT_MOVE_TABLE = {k: v['text_move'] for k, v in _PIECE_RULES.items()}
+
+# =====================================================
+# 公共 API 函数
+# =====================================================
+def is_valid_pos(fench, pos):
+    handler = _VALID_POS_TABLE.get(fench.lower())
+    return handler(fench, pos) if handler else _is_on_board(pos)
+
+def is_valid_move(board, fench, pos_from, pos_to):
+    handler = _VALID_MOVE_TABLE.get(fench.lower())
+    return handler(board, fench, pos_from, pos_to) if handler else False
+
+def create_moves(board, fench, pos):
+    handler = _CREATE_MOVES_TABLE.get(fench.lower())
+    return handler(board, fench, pos) if handler else []
+
+def text_move_to_pos(piece_fench, pos_from, move_str):
+    handler = _TEXT_MOVE_TABLE.get(piece_fench)
+    return handler(pos_from, move_str) if handler else None
+
+# =====================================================
+# 向后兼容层（委托给公共 API）
+# =====================================================
