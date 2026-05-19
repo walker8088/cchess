@@ -27,14 +27,14 @@ from .common import (
     _QUALIFIER_DIGIT_MAP,
     _V_CHANGE_INDEX,
     _ZH_TO_HALF,
-    SIDE_BLACK,
     COLUMN_MAP,
     DIRECTION_MAP,
     FULLWIDTH_NUM_MAP,
     PIECE_MAP,
     QUALIFIER_MAP,
-    SIDE_RED,
     REVERSE_PIECE_MAP,
+    SIDE_BLACK,
+    SIDE_RED,
     fench_to_species,
     fench_to_text,
     full2half,
@@ -45,17 +45,30 @@ from .common import (
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
-# 限定词前缀
+# 限定词前缀（WXF 标准格式）
+# 前→+, 中→-, 后→., 一二三四五→abcde
 PRE_NUM_MAP = {
-    "前": "f",
-    "中": "m",
-    "后": "b",
-    "後": "b",
-    "一": "1",
-    "二": "2",
-    "三": "3",
-    "四": "4",
-    "五": "5",
+    "前": "+",
+    "中": "-",
+    "后": ".",
+    "後": ".",
+    "一": "a",
+    "二": "b",
+    "三": "c",
+    "四": "d",
+    "五": "e",
+}
+
+# WXF 限定词到中文名称的映射
+_WXF_QUALIFIER_TO_CN = {
+    "+": ("前", "前"),  # 简/繁
+    "-": ("中", "中"),
+    ".": ("后", "後"),
+    "a": ("一", "一"),
+    "b": ("二", "二"),
+    "c": ("三", "三"),
+    "d": ("四", "四"),
+    "e": ("五", "五"),
 }
 
 
@@ -192,39 +205,39 @@ class MoveNotation:
                 idx = positions.index(move.pos_from)
 
                 if count == 2:
-                    qualifier = "f" if idx == 0 else "b"  # 前/后
+                    qualifier = "+" if idx == 0 else "."  # 前/后 (WXF: +/.)
                 elif count == 3:
                     if idx == 0:
-                        qualifier = "f"  # 前
+                        qualifier = "+"  # 前 (WXF: +)
                     elif idx == 1:
-                        qualifier = "m"  # 中
+                        qualifier = "-"  # 中 (WXF: -)
                     else:
-                        qualifier = "b"  # 后
+                        qualifier = "."  # 后 (WXF: .)
                 elif count == 4:
                     # 排序后：前(idx=0), 二(idx=1), 三(idx=2), 后(idx=3)
                     if idx == 0:
-                        qualifier = "f"  # 前
+                        qualifier = "+"  # 前 (WXF: +)
                     elif idx == 1:
-                        qualifier = "2"  # 二
+                        qualifier = "b"  # 二 (WXF: b)
                     elif idx == 2:
-                        qualifier = "3"  # 三
+                        qualifier = "c"  # 三 (WXF: c)
                     else:  # idx == 3
-                        qualifier = "b"  # 后
+                        qualifier = "."  # 后 (WXF: .)
                 elif count == 5:
                     if idx == 0:
-                        qualifier = "f"  # 前
+                        qualifier = "+"  # 前 (WXF: +)
                     elif idx == count - 1:
-                        qualifier = "b"  # 后
+                        qualifier = "."  # 后 (WXF: .)
                     else:
-                        # 使用数字限定词：二、三、四
-                        qualifier = str(idx + 1)  # 1+1=2, 2+1=3, 3+1=4
+                        # 使用字母限定词：二三四→bcd (WXF)
+                        qualifier = chr(ord("a") + idx)  # idx=1→b, idx=2→c, idx=3→d
                 elif count > 5:
                     if idx == 0:
-                        qualifier = "f"  # 前
+                        qualifier = "+"  # 前 (WXF: +)
                     elif idx == count - 1:
-                        qualifier = "b"  # 后
+                        qualifier = "."  # 后 (WXF: .)
                     else:
-                        qualifier = str(idx + 1)  # 数字限定词
+                        qualifier = chr(ord("a") + idx)  # 字母限定词 (WXF)
 
         return MoveNotation(
             piece_type,
@@ -331,14 +344,48 @@ class MoveNotation:
         return _CHINESE_NUM_TO_INT.get(distance_char)
 
     def to_compact(self):
-        """转换为紧凑格式"""
+        """转换为 WXF 纵线格式
+
+        WXF 格式规范：
+        - 符号写在棋子的后面
+        - 进=+ 退=- 平=.
+        - 前=+ 中=- 后=.
+        - 多兵同线：一二三四五→abcde
+        - 有限定词时不显示列号
+        - 无限定词时显示列号（1-9，从右到左）
+
+        示例：
+        - 炮二平五 → C2.5
+        - 前炮退二 → C+-2
+        - 前车平五 → R+.5
+        - 一兵平五 → Pa.5
+        """
         result = ""
-        if self.qualifier:
-            result += self.qualifier
+        # 棋子名称（大写=红方，小写=黑方）
         result += self.piece_type
-        result += str(self.column + 1)  # 转换为1-9
-        result += self.direction
-        result += str(self.distance)
+
+        if self.qualifier:
+            # 有限定词：符号写在棋子后面，不显示列号
+            result += self.qualifier
+        else:
+            # 无限定词：显示列号（WXF 从右到左 1-9）
+            wxf_column = 9 - self.column
+            result += str(wxf_column)
+
+        # 方向符号：进=+ 退=- 平=.
+        if self.direction == "=":
+            result += "."
+        else:
+            result += self.direction
+
+        # 距离/目标列
+        if self.direction == "=" or self.piece_type.lower() in ("a", "b", "n"):
+            # 平移或士/相/马：距离是目标列，需要转换为 WXF（从右到左）
+            wxf_target = 9 - self.distance
+            result += str(wxf_target)
+        else:
+            # 王/车/炮/兵进退：距离是步数，直接使用
+            result += str(self.distance)
 
         # 添加特殊标记
         if self.is_capture:
@@ -377,16 +424,29 @@ class MoveNotation:
         )
 
     def _get_qualifier_name(self, color, traditional):
-        """获取限定词名称"""
+        """获取限定词名称（从 WXF 符号转中文）"""
         if not self.qualifier:
             return ""
 
+        # WXF 符号限定词（+/-.）：直接映射
+        if self.qualifier in ("+", "-", "."):
+            return _WXF_QUALIFIER_TO_CN.get(self.qualifier, ("", ""))[
+                1 if traditional else 0
+            ]
+
+        # WXF 字母限定词（abcde）：多兵同线
+        if self.qualifier in ("a", "b", "c", "d", "e"):
+            return _WXF_QUALIFIER_TO_CN.get(self.qualifier, ("", ""))[
+                1 if traditional else 0
+            ]
+
+        # 兼容旧格式（f/m/b/1-9）
+        if self.qualifier in ("f", "m", "b"):
+            return QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
         if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
-            # 数字限定词：红方中文数字，黑方全角数字
             return _QUALIFIER_DIGIT_MAP[color][int(self.qualifier) - 1]
 
-        # 字母限定词（f/m/b）：红黑一致，仅简繁有别
-        return QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
+        return ""
 
     def _get_target_column(self, color):
         """获取目标列，红方用中文数字，黑方用全角数字"""

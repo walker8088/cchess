@@ -45,7 +45,7 @@ from .common import (
     next_color,
     swap_fench,
 )
-from .constants import SIDE_ANY, SIDE_BLACK, FEN_CHAR_SET, FEN_NUM_SET, SIDE_RED
+from .constants import FEN_CHAR_SET, FEN_NUM_SET, SIDE_ANY, SIDE_BLACK, SIDE_RED
 from .exception import CChessError
 from .move import Move, MoveInfo
 from .zhash_data import Z_HASH_C90, Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY
@@ -361,11 +361,11 @@ class ChessBoard:
 
     def get_piece(self, pos):
         """返回指定位置的 `Piece` 实例（若有棋子），否则返回 None。
-        
+
         注意：此方法保留用于向后兼容，建议改用 get_fench() 获取棋子字符。
         """
         from .piece import Piece
-        
+
         fench = self.get_fench(pos)
         return Piece.create(self, fench, pos) if fench else None
 
@@ -374,11 +374,11 @@ class ChessBoard:
 
         参数:
             color (int|None): 若指定，仅返回该颜色的棋子。
-        
+
         注意：此方法保留用于向后兼容，建议改用 get_all_fench_positions()。
         """
         from .piece import Piece
-        
+
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
@@ -396,11 +396,11 @@ class ChessBoard:
 
         参数:
             color (int): 指定要查找的颜色。
-        
+
         注意：此方法保留用于向后兼容，建议改用 get_king_pos()。
         """
         from .piece import Piece
-        
+
         pos = self.get_king_pos(color)
         if pos is None:
             return None
@@ -486,6 +486,7 @@ class ChessBoard:
 
         # 使用函数式 API 检查走法合法性
         from .piece import is_valid_move as piece_is_valid_move
+
         return piece_is_valid_move(self, fench_from, pos_from, pos_to)
 
     def _move_piece(
@@ -578,7 +579,9 @@ class ChessBoard:
         norm = self.normalized()
 
         norm_move_str = (
-            _normalize_move_str(move_str, SIDE_BLACK) if text_side == SIDE_BLACK else move_str
+            _normalize_move_str(move_str, SIDE_BLACK)
+            if text_side == SIDE_BLACK
+            else move_str
         )
 
         # 词法解析：从中文走法文本解析中间表示
@@ -636,7 +639,7 @@ class ChessBoard:
         return moves
 
     def _find_piece_positions(self, norm, fench, piece_fench, column, qualifier):
-        """根据限定词和列查找候选棋子位置"""
+        """根据限定词和列查找候选棋子位置（支持 WXF 格式）"""
         if qualifier:
             all_positions = norm.get_fench_positions(fench)
             if not all_positions:
@@ -645,7 +648,19 @@ class ChessBoard:
             if piece_fench in {"r", "c", "n", "p"}:
                 all_positions.sort(key=lambda p: p[1], reverse=True)
 
-                if qualifier == "f":
+                # WXF 符号限定词：+前/-中/.后
+                if qualifier == "+":
+                    return [all_positions[0]] if all_positions else []
+                elif qualifier == "-":
+                    return [all_positions[1]] if len(all_positions) > 1 else []
+                elif qualifier == ".":
+                    return [all_positions[-1]] if all_positions else []
+                # WXF 字母限定词：abcde 对应索引 01234
+                elif qualifier in {"a", "b", "c", "d", "e"}:
+                    idx = ord(qualifier) - ord("a")
+                    return [all_positions[idx]] if 0 <= idx < len(all_positions) else []
+                # 兼容旧格式：f/m/b
+                elif qualifier == "f":
                     return [all_positions[0]] if all_positions else []
                 elif qualifier == "m":
                     return [all_positions[1]] if len(all_positions) > 1 else []
@@ -687,7 +702,7 @@ class ChessBoard:
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
         """
         from .piece import create_moves as piece_create_moves
-        
+
         is_flipped = not self.is_normalized()
         normalized_board = self.normalized()
 
@@ -706,7 +721,7 @@ class ChessBoard:
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
         """
         from .piece import create_moves as piece_create_moves
-        
+
         fench = self.get_fench(pos)
         if not fench:
             return
@@ -723,7 +738,9 @@ class ChessBoard:
         norm_fench = normalized_board.get_fench(norm_pos)
 
         if norm_fench:
-            for from_pos, to_pos in piece_create_moves(normalized_board, norm_fench, norm_pos):
+            for from_pos, to_pos in piece_create_moves(
+                normalized_board, norm_fench, norm_pos
+            ):
                 if is_flipped:
                     from_pos = self.denormalize_pos(from_pos)
                     to_pos = self.denormalize_pos(to_pos)
@@ -788,7 +805,7 @@ class ChessBoard:
     def _compute_piece_attacks(self, fench, pos) -> List[Tuple[int, int]]:
         """返回棋子可以攻击到的坐标列表（包括吃子位置）。"""
         from .piece import create_moves as piece_create_moves
-        
+
         attacks = []
         for from_pos, to_pos in piece_create_moves(self, fench, pos):
             attacks.append(to_pos)
@@ -812,7 +829,7 @@ class ChessBoard:
             for x in range(9):
                 self._red_attacks[y][x] = False
                 self._black_attacks[y][x] = False
-        
+
         # 遍历所有棋子，填充攻击矩阵
         for fench, pos in self.get_all_fench_positions():
             attacks = self._compute_piece_attacks(fench, pos)
@@ -820,7 +837,7 @@ class ChessBoard:
             matrix = self._get_attack_matrix(color)
             for x, y in attacks:
                 matrix[y][x] = True
-        
+
         self._attack_matrix_dirty = False
 
     def is_checking(self) -> bool:
@@ -845,17 +862,17 @@ class ChessBoard:
     def has_no_legal_moves(self) -> bool:
         """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
         from .piece import create_moves as piece_create_moves
-        
+
         king_pos = self.get_king_pos(self._move_side)
         if not king_pos:
             return True
-        
+
         for fench, pos in self.get_all_fench_positions(self._move_side):
             for move_it in piece_create_moves(self, fench, pos):
                 if self.is_valid_move_t(move_it):
                     if not self.is_checked_move(move_it[0], move_it[1]):
                         return False
-        
+
         return True
 
     def count_x_line_in(self, y: int, x_from: int, x_to: int) -> int:

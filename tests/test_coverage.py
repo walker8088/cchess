@@ -15,8 +15,8 @@ import pytest
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
 from cchess import (
-    SIDE_BLACK,
     FULL_INIT_FEN,
+    SIDE_BLACK,
     SIDE_RED,
     CChessError,
     ChessBoard,
@@ -551,7 +551,7 @@ class TestMoveNotationFromText:
         board = ChessBoard("3ak4/9/9/9/4r4/9/9/9/9/4R1R2 w")
         notation = MoveNotation.from_text("前车平五", board)
         assert notation is not None
-        assert notation.qualifier == "f"
+        assert notation.qualifier == "+"  # WXF: + = 前
 
     def test_from_text_invalid_length(self):
         """Test from_text with invalid length."""
@@ -605,13 +605,13 @@ class TestMoveNotationToCompact:
     """Tests for MoveNotation.to_compact() - compact format output (lines 335-351)."""
 
     def test_to_compact_basic(self):
-        """Test basic compact format."""
+        """Test basic WXF format."""
         from cchess.move import MoveNotation
 
         notation = MoveNotation("C", 6, "=", 4, "", piece_color=SIDE_RED)
         text = notation.to_compact()
         assert "C" in text
-        assert "=" in text
+        assert "." in text  # WXF: . = 平
 
     def test_to_compact_with_qualifier(self):
         """Test compact format with qualifier."""
@@ -625,7 +625,9 @@ class TestMoveNotationToCompact:
         """Test compact format with capture marker."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("R", 6, "+", 5, "", is_capture=True, piece_color=SIDE_RED)
+        notation = MoveNotation(
+            "R", 6, "+", 5, "", is_capture=True, piece_color=SIDE_RED
+        )
         text = notation.to_compact()
         assert "x" in text
 
@@ -641,7 +643,9 @@ class TestMoveNotationToCompact:
         """Test compact format with checkmate marker."""
         from cchess.move import MoveNotation
 
-        notation = MoveNotation("C", 6, "=", 4, "", is_checkmate=True, piece_color=SIDE_RED)
+        notation = MoveNotation(
+            "C", 6, "=", 4, "", is_checkmate=True, piece_color=SIDE_RED
+        )
         text = notation.to_compact()
         assert "#" in text
 
@@ -825,7 +829,7 @@ class TestParseNotation:
 
         result = _parse_notation("前车进一")
         assert result is not None
-        assert result[4] == "f"
+        assert result[4] == "+"  # WXF: + = 前
 
     def test_parse_notation_basic(self):
         """Test _parse_notation basic move."""
