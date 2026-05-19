@@ -216,24 +216,6 @@ class ChessBoard:
 
         return b
 
-    @staticmethod
-    def fen_mirror(fen: str) -> str:
-        """返回给定 FEN 字符串的镜像局面 FEN。"""
-        b = ChessBoard(fen)
-        return b.mirror().to_fen()
-
-    @staticmethod
-    def fen_flip(fen: str) -> str:
-        """返回给定 FEN 字符串的翻转局面 FEN。"""
-        b = ChessBoard(fen)
-        return b.flip().to_fen()
-
-    @staticmethod
-    def fen_swap(fen: str) -> str:
-        """返回给定 FEN 字符串的交换局面 FEN。"""
-        b = ChessBoard(fen)
-        return b.swap().to_fen()
-
     def is_mirror(self):
         """判断当前棋盘是否关于竖中线对称（镜像局面）。"""
         board = self._board  # 局部变量引用，减少属性访问
@@ -570,8 +552,14 @@ class ChessBoard:
 
         内部实现，直接在 board 上操作，避免额外类实例化。
         """
-        from .common import COLUMN_MAP, _normalize_move_str
-        from .move import MoveNotation, _detect_move_side_from_text
+        from .common import (
+            _HALF_TO_ZH,
+            COLUMN_MAP,
+            DIRECTION_MAP,
+            _detect_move_side_from_text,
+            _normalize_move_str,
+        )
+        from .move import MoveNotation
         from .piece import text_move_to_pos
 
         move_str = move_str.replace(" ", "")
@@ -608,21 +596,11 @@ class ChessBoard:
             return None
 
         # 构建走法字符串
-        direction_char = {"+": "进", "-": "退", "=": "平"}.get(direction, "")
+        direction_char = DIRECTION_MAP.get(direction, ("", ""))[0]
         if direction == "=" or piece_fench in {"a", "b", "n"}:
             distance_char = COLUMN_MAP[distance][0] if 0 <= distance <= 8 else ""
         else:
-            distance_char = {
-                1: "一",
-                2: "二",
-                3: "三",
-                4: "四",
-                5: "五",
-                6: "六",
-                7: "七",
-                8: "八",
-                9: "九",
-            }.get(distance, "")
+            distance_char = _HALF_TO_ZH[distance] if 1 <= distance <= 9 else ""
         move_str_part = direction_char + distance_char
 
         # 计算目标坐标（使用函数式 API）
@@ -1117,14 +1095,14 @@ class ChessBoardOneHot(ChessBoard):
 # 模块级 FEN 变换函数（避免从 common.py 导入 board 导致循环导入）
 def fen_mirror(fen: str) -> str:
     """返回 FEN 字符串的水平镜像版本（左右翻转）。"""
-    return ChessBoard.fen_mirror(fen)
+    return ChessBoard(fen).mirror().to_fen()
 
 
 def fen_flip(fen: str) -> str:
     """返回 FEN 字符串的垂直翻转版本（上下翻转）。"""
-    return ChessBoard.fen_flip(fen)
+    return ChessBoard(fen).flip().to_fen()
 
 
 def fen_swap(fen: str) -> str:
     """返回 FEN 字符串的交换版本（红黑互换）。"""
-    return ChessBoard.fen_swap(fen)
+    return ChessBoard(fen).swap().to_fen()

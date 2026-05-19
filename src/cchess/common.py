@@ -168,6 +168,17 @@ QUALIFIER_MAP = {
     "9": ("九", "九"),
 }
 
+# 从 QUALIFIER_MAP 自动生成逆向映射（中文 → WXF 符号）
+# WXF 格式键优先于旧格式键（如 "前" → "+" 而非 "f"）
+_WXF_QUALIFIER_KEYS = {"+", "-", ".", "a", "b", "c", "d", "e"}
+PRE_NUM_MAP: dict[str, str] = {}
+for _key, (_simp, _trad) in QUALIFIER_MAP.items():
+    # 对每个中文值，映射回 WXF 符号（优先保留已有映射的 WXF 键）
+    if _simp not in PRE_NUM_MAP or _key in _WXF_QUALIFIER_KEYS:
+        PRE_NUM_MAP[_simp] = _key
+    if _trad not in PRE_NUM_MAP or _key in _WXF_QUALIFIER_KEYS:
+        PRE_NUM_MAP[_trad] = _key
+
 # 限定词数字映射（红方中文数字，黑方全角数字）
 _QUALIFIER_DIGIT_MAP = {
     SIDE_RED: ("一", "二", "三", "四", "五", "六", "七", "八", "九"),
@@ -203,7 +214,38 @@ _DIRECTION_CHAR_TO_SYMBOL: dict[str, str] = {
 }
 
 # -----------------------------------------------------#
-# 走法文本解析辅助函数（被 move.py 和 piece.py 共用）
+# 走法文本解析辅助函数（被 move.py、piece.py 和 board.py 共用）
+
+
+def _detect_move_side_from_text(move_str):
+    """根据着法字符串中的数字类型检测走子方。
+
+    - 含中文数字（一二三...）→ SIDE_RED
+    - 含阿拉伯数字（123...或 123...）→ SIDE_BLACK
+    - 混合中文和阿拉伯数字 → 抛 ValueError
+    - 不含任何数字 → 抛 ValueError
+
+    参数:
+        move_str: 走法字符串（已去除空格）
+
+    返回:
+        int: SIDE_RED(1) 或 SIDE_BLACK(2)，其余情况抛异常
+    """
+    # 检查是否包含中文数字
+    has_chinese = any(ch in _ZH_TO_HALF for ch in move_str)
+
+    # 检查是否包含阿拉伯数字（先转半角再检查）
+    move_str_half = full2half(move_str)
+    has_arabic = any(ch.isdigit() for ch in move_str_half)
+
+    if has_chinese and has_arabic:
+        raise ValueError(f"走法字符串数字格式混合: {move_str!r}")
+    if has_chinese and not has_arabic:
+        return SIDE_RED
+    if has_arabic and not has_chinese:
+        return SIDE_BLACK
+    # 不含任何数字，属于异常走法
+    raise ValueError(f"走法字符串不含数字: {move_str!r}")
 
 
 def _convert_digit_format(digit_char, move_side):
@@ -353,13 +395,7 @@ def _normalize_move_str(move_str, original_side):
         return move_str
 
     # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
-    result = []
-    for char in move_str:
-        if char in _FULLWIDTH_TO_CHINESE:
-            result.append(_FULLWIDTH_TO_CHINESE[char])
-        else:
-            result.append(char)
-    return "".join(result)
+    return "".join(_normalize_digit_char(c, original_side) for c in move_str)
 
 
 def _get_target_x(digit_char):
@@ -426,38 +462,16 @@ def iccs_list_mirror(iccs_list):
 
 
 # -----------------------------------------------------#
-_fench_name_dict = {
-    "K": "帅",
-    "k": "将",
-    "A": "仕",
-    "a": "士",
-    "B": "相",
-    "b": "象",
-    "N": "马",
-    "n": "马",
-    "R": "车",
-    "r": "车",
-    "C": "炮",
-    "c": "炮",
-    "P": "兵",
-    "p": "卒",
-}
+# 从 PIECE_MAP 自动派生的映射（避免手工维护重复数据）
 
-_name_fench_dict = {
-    "帅": "K",
-    "将": "k",
-    "仕": "A",
-    "士": "a",
-    "相": "B",
-    "象": "b",
-    "马": "n",
-    "车": "r",
-    "炮": "c",
-    "兵": "P",
-    "卒": "p",
-}
+# FEN → 简体中文名称
+_FENCH_NAME_DICT = {k: v[0] for k, v in PIECE_MAP.items()}
 
-_fench_txt_name_dict = {
+# 简体中文名称 → FEN
+_NAME_FENCH_DICT = {v[0]: k for k, v in PIECE_MAP.items()}
+
+# 特殊字体名称映射（含异体字：砗/碼/砲，用于文本棋盘显示）
+_FENCH_TXT_NAME_DICT = {
     "K": "帅",
     "A": "仕",
     "B": "相",
@@ -477,20 +491,19 @@ _fench_txt_name_dict = {
 
 # -----------------------------------------------------#
 def fench_to_txt_name(fench):
-    if fench not in _fench_txt_name_dict:
+    if fench not in _FENCH_TXT_NAME_DICT:
         return None
-
-    return _fench_txt_name_dict[fench]
+    return _FENCH_TXT_NAME_DICT[fench]
 
 
 def fench_to_text(fench):
-    return _fench_name_dict[fench]
+    return _FENCH_NAME_DICT[fench]
 
 
 def text_to_fench(text, color):
-    if text not in _name_fench_dict:
+    if text not in _NAME_FENCH_DICT:
         return None
-    fench = _name_fench_dict[text]
+    fench = _NAME_FENCH_DICT[text]
     return fench.lower() if color == SIDE_BLACK else fench.upper()
 
 

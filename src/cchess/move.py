@@ -24,38 +24,23 @@ from .common import (
     _COLUMN_CHAR_TO_IDX,
     _DIRECTION_CHAR_TO_SYMBOL,
     _QUALIFIER_DIGIT_MAP,
-    _ZH_TO_HALF,
     COLUMN_MAP,
     DIRECTION_MAP,
     FULLWIDTH_NUM_MAP,
     PIECE_MAP,
+    PRE_NUM_MAP,
     QUALIFIER_MAP,
     REVERSE_PIECE_MAP,
     SIDE_BLACK,
     SIDE_RED,
     fench_to_species,
     fench_to_text,
-    full2half,
     next_color,
     pos2iccs,
     swap_fench,
 )
 
 # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-
-# 限定词前缀（WXF 标准格式）
-# 前→+, 中→-, 后→., 一二三四五→abcde
-PRE_NUM_MAP = {
-    "前": "+",
-    "中": "-",
-    "后": ".",
-    "後": ".",
-    "一": "a",
-    "二": "b",
-    "三": "c",
-    "四": "d",
-    "五": "e",
-}
 
 
 # -----------------------------------------------------#
@@ -452,38 +437,6 @@ class MoveNotation:
 
     def __str__(self):
         return self.to_compact()
-
-
-# -----------------------------------------------------#
-def _detect_move_side_from_text(move_str):
-    """根据着法字符串中的数字类型检测走子方。
-
-    - 含中文数字（一二三...）→ SIDE_RED
-    - 含阿拉伯数字（123...或 123...）→ SIDE_BLACK
-    - 混合中文和阿拉伯数字 → 抛 ValueError
-    - 不含任何数字 → 抛 ValueError
-
-    参数:
-        move_str: 走法字符串（已去除空格）
-
-    返回:
-        int: SIDE_RED(1) 或 SIDE_BLACK(2)，其余情况抛异常
-    """
-    # 检查是否包含中文数字
-    has_chinese = any(ch in _ZH_TO_HALF for ch in move_str)
-
-    # 检查是否包含阿拉伯数字（先转半角再检查）
-    move_str_half = full2half(move_str)
-    has_arabic = any(ch.isdigit() for ch in move_str_half)
-
-    if has_chinese and has_arabic:
-        raise ValueError(f"走法字符串数字格式混合: {move_str!r}")
-    if has_chinese and not has_arabic:
-        return SIDE_RED
-    if has_arabic and not has_chinese:
-        return SIDE_BLACK
-    # 不含任何数字，属于异常走法
-    raise ValueError(f"走法字符串不含数字: {move_str!r}")
 
 
 # -----------------------------------------------------#
