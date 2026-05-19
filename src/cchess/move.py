@@ -23,9 +23,7 @@ from .common import (
     _CHINESE_NUM_TO_INT,
     _COLUMN_CHAR_TO_IDX,
     _DIRECTION_CHAR_TO_SYMBOL,
-    _H_LEVEL_INDEX,
     _QUALIFIER_DIGIT_MAP,
-    _V_CHANGE_INDEX,
     _ZH_TO_HALF,
     COLUMN_MAP,
     DIRECTION_MAP,
@@ -57,18 +55,6 @@ PRE_NUM_MAP = {
     "三": "c",
     "四": "d",
     "五": "e",
-}
-
-# WXF 限定词到中文名称的映射
-_WXF_QUALIFIER_TO_CN = {
-    "+": ("前", "前"),  # 简/繁
-    "-": ("中", "中"),
-    ".": ("后", "後"),
-    "a": ("一", "一"),
-    "b": ("二", "二"),
-    "c": ("三", "三"),
-    "d": ("四", "四"),
-    "e": ("五", "五"),
 }
 
 
@@ -252,17 +238,16 @@ class MoveNotation:
         )
 
     @staticmethod
-    def from_text(text, board):
+    def from_text(text):
         """从中文走法文本解析中间表示
 
         参数:
             text: 中文走法字符串，如"炮二平五"、"前车进一"
-            board: ChessBoard对象，用于获取棋盘状态
 
         返回:
             MoveNotation对象，解析失败返回None
         """
-        if not text or not board:
+        if not text:
             return None
 
         text = text.replace(" ", "")
@@ -424,26 +409,18 @@ class MoveNotation:
         )
 
     def _get_qualifier_name(self, color, traditional):
-        """获取限定词名称（从 WXF 符号转中文）"""
+        """获取限定词名称（从 WXF/旧格式 转中文）"""
         if not self.qualifier:
             return ""
 
-        # WXF 符号限定词（+/-.）：直接映射
-        if self.qualifier in ("+", "-", "."):
-            return _WXF_QUALIFIER_TO_CN.get(self.qualifier, ("", ""))[
-                1 if traditional else 0
-            ]
+        idx = 1 if traditional else 0
+        # 从统一 QUALIFIER_MAP 查找（支持 WXF + 旧格式）
+        name = QUALIFIER_MAP.get(self.qualifier)
+        if name:
+            return name[idx]
 
-        # WXF 字母限定词（abcde）：多兵同线
-        if self.qualifier in ("a", "b", "c", "d", "e"):
-            return _WXF_QUALIFIER_TO_CN.get(self.qualifier, ("", ""))[
-                1 if traditional else 0
-            ]
-
-        # 兼容旧格式（f/m/b/1-9）
-        if self.qualifier in ("f", "m", "b"):
-            return QUALIFIER_MAP.get(self.qualifier, ("", ""))[1 if traditional else 0]
-        if self.qualifier in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
+        # 兼容旧数字格式（6-9）
+        if self.qualifier in ("6", "7", "8", "9"):
             return _QUALIFIER_DIGIT_MAP[color][int(self.qualifier) - 1]
 
         return ""
@@ -819,47 +796,6 @@ class Move:
 
         return text
 
-    def _get_direction_str(self, diff):
-        """获取走法方向字符串（平/进/退）"""
-        if diff == 0:
-            return "平"
-        return "进" if diff > 0 else "退"
-
-    def _get_dest_str(self, fench, piece_color, diff):
-        """获取目标位置字符串（兼容旧版）"""
-        # 根据走子方确定使用哪个索引
-        # 红方使用中文数字，黑方使用全角数字
-        if piece_color == SIDE_RED:
-            h_index = _H_LEVEL_INDEX
-            v_index = _V_CHANGE_INDEX
-        else:
-            # 黑方使用全角数字，需要将坐标转换为黑方视角
-            # 黑方视角：x坐标从右到左，y坐标从上到下
-            # 所以需要将x坐标转换为黑方索引
-            h_index = ("１", "２", "３", "４", "５", "６", "７", "８", "９")
-            v_index = ("误", "１", "２", "３", "４", "５", "６", "７", "８", "９")
-
-        if fench.lower() in ("k", "r", "c", "p"):
-            # 王车炮兵规则
-            if diff == 0:
-                return h_index[self.pos_to[0]]
-            if diff > 0:
-                return v_index[diff]
-            return v_index[-diff]
-        # 士相马的规则
-        return h_index[self.pos_to[0]]
-
-    def _get_detailed_info(self):
-        """获取详细信息列表（吃子、将军、将死）"""
-        details = []
-        if self.captured:
-            details.append(f"吃{fench_to_text(self.captured)}")
-        if self.is_checkmate:
-            details.append("将死")
-        elif self.is_checking:
-            details.append("将军")
-        return details
-
     def to_text_detail(
         self,
         show_variation,
@@ -952,76 +888,3 @@ class Move:
         将内部 (x,y) 坐标元组转换为引擎使用的 ICCS 表示法。
         """
         return pos2iccs(self.pos_from, self.pos_to)
-
-    @staticmethod
-    def text_move_to_std_move(piece_fench, pos_from, move_str):
-        """将中文走法片段转换为目标坐标。
-
-        参数:
-            piece_fench: 棋子类型字符
-            pos_from: 起点坐标（在规范局面中）
-            move_str: 走法字符串（如'进一'、'平五'等）
-
-        返回:
-            tuple: 目标坐标 (x, y)（在规范局面中），无法解析返回 None
-
-        注意：所有走法都在规范局面（红方视角）下解析
-        """
-        # 移动规则检查
-        if not move_str:
-            return None
-        if piece_fench in ["a", "b", "n"] and move_str[0] == "平":
-            return None
-        if move_str[0] not in ["进", "退", "平"]:
-            return None
-
-        # 使用函数式 API 解析走法
-        from .piece import text_move_to_pos
-
-        return text_move_to_pos(piece_fench, pos_from, move_str)
-
-
-def _parse_notation(move_str: str) -> Optional[tuple]:
-    """词法解析中文走法文本。
-
-    返回:
-        (piece_type, column, direction, distance, qualifier) 或 None
-    """
-    if not move_str or len(move_str) < 3:
-        return None
-
-    # 解析限定词
-    qualifier = ""
-    offset = 0
-    if move_str[0] in PRE_NUM_MAP:
-        qualifier = PRE_NUM_MAP[move_str[0]]
-        offset = 1
-
-    # 解析棋子类型
-    piece_type = REVERSE_PIECE_MAP.get(move_str[offset])
-    if not piece_type:
-        return None
-    offset += 1
-
-    # 解析列
-    column = None
-    if move_str[offset] not in _DIRECTION_CHAR_TO_SYMBOL:
-        column = _COLUMN_CHAR_TO_IDX.get(move_str[offset])
-        if column is None:
-            return None
-        offset += 1
-
-    # 解析方向
-    direction = _DIRECTION_CHAR_TO_SYMBOL.get(move_str[offset])
-    if not direction:
-        return None
-    offset += 1
-
-    # 解析距离
-    distance = MoveNotation._parse_distance_char(
-        move_str[offset:], direction, piece_type
-    )
-    if distance is None:
-        return None
-
-    return (piece_type, column, direction, distance, qualifier)

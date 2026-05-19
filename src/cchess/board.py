@@ -571,7 +571,7 @@ class ChessBoard:
         内部实现，直接在 board 上操作，避免额外类实例化。
         """
         from .common import COLUMN_MAP, _normalize_move_str
-        from .move import _detect_move_side_from_text, _parse_notation
+        from .move import MoveNotation, _detect_move_side_from_text
         from .piece import text_move_to_pos
 
         move_str = move_str.replace(" ", "")
@@ -585,11 +585,15 @@ class ChessBoard:
         )
 
         # 词法解析：从中文走法文本解析中间表示
-        notation = _parse_notation(norm_move_str)
+        notation = MoveNotation.from_text(norm_move_str)
         if not notation:
             return None
 
-        piece_type, column, direction, distance, qualifier = notation
+        piece_type = notation.piece_type
+        column = notation.column
+        direction = notation.direction
+        distance = notation.distance
+        qualifier = notation.qualifier
         fench = piece_type.upper()
         piece_fench = fench.lower()
 
