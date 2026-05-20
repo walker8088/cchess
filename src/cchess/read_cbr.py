@@ -17,8 +17,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import struct
 
 from .board import ChessBoard
-from .common import SIDE_BLACK, SIDE_RED, append_move_to_game, get_fench_color
-from .constants import GAME_RESULT_MAP
+from .common import (
+    GAME_RESULT_MAP,
+    SIDE_BLACK,
+    SIDE_RED,
+    append_move_to_game,
+    get_fench_color,
+)
 from .exception import CChessError
 
 # pylint: disable=too-many-locals,too-many-branches

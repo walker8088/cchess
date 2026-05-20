@@ -38,6 +38,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from typing import Iterator, List, Optional, Tuple
 
 from .common import (
+    _HALF_TO_ZH,
+    COLUMN_MAP,
+    DIRECTION_MAP,
+    FEN_CHAR_SET,
+    FEN_NUM_SET,
+    SIDE_ANY,
+    SIDE_BLACK,
+    SIDE_RED,
+    _detect_move_side_from_text,
+    _normalize_move_str,
     fench_to_txt_name,
     get_fench_color,
     iccs2pos,
@@ -45,9 +55,18 @@ from .common import (
     next_color,
     swap_fench,
 )
-from .constants import FEN_CHAR_SET, FEN_NUM_SET, SIDE_ANY, SIDE_BLACK, SIDE_RED
 from .exception import CChessError
-from .move import Move, MoveInfo
+from .move import Move, MoveInfo, MoveNotation
+from .piece import (
+    Piece,
+    text_move_to_pos,
+)
+from .piece import (
+    create_moves as piece_create_moves,
+)
+from .piece import (
+    is_valid_move as piece_is_valid_move,
+)
 from .zhash_data import Z_HASH_C90, Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY
 
 # -----------------------------------------------------#
@@ -346,8 +365,6 @@ class ChessBoard:
 
         注意：此方法保留用于向后兼容，建议改用 get_fench() 获取棋子字符。
         """
-        from .piece import Piece
-
         fench = self.get_fench(pos)
         return Piece.create(self, fench, pos) if fench else None
 
@@ -359,8 +376,6 @@ class ChessBoard:
 
         注意：此方法保留用于向后兼容，建议改用 get_all_fench_positions()。
         """
-        from .piece import Piece
-
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
@@ -381,8 +396,6 @@ class ChessBoard:
 
         注意：此方法保留用于向后兼容，建议改用 get_king_pos()。
         """
-        from .piece import Piece
-
         pos = self.get_king_pos(color)
         if pos is None:
             return None
@@ -467,8 +480,6 @@ class ChessBoard:
                 return False
 
         # 使用函数式 API 检查走法合法性
-        from .piece import is_valid_move as piece_is_valid_move
-
         return piece_is_valid_move(self, fench_from, pos_from, pos_to)
 
     def _move_piece(
@@ -552,16 +563,6 @@ class ChessBoard:
 
         内部实现，直接在 board 上操作，避免额外类实例化。
         """
-        from .common import (
-            _HALF_TO_ZH,
-            COLUMN_MAP,
-            DIRECTION_MAP,
-            _detect_move_side_from_text,
-            _normalize_move_str,
-        )
-        from .move import MoveNotation
-        from .piece import text_move_to_pos
-
         move_str = move_str.replace(" ", "")
         text_side = _detect_move_side_from_text(move_str)
         norm = self.normalized()
@@ -690,8 +691,6 @@ class ChessBoard:
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
         """
-        from .piece import create_moves as piece_create_moves
-
         is_flipped = not self.is_normalized()
         normalized_board = self.normalized()
 
@@ -709,8 +708,6 @@ class ChessBoard:
 
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
         """
-        from .piece import create_moves as piece_create_moves
-
         fench = self.get_fench(pos)
         if not fench:
             return
@@ -793,8 +790,6 @@ class ChessBoard:
 
     def _compute_piece_attacks(self, fench, pos) -> List[Tuple[int, int]]:
         """返回棋子可以攻击到的坐标列表（包括吃子位置）。"""
-        from .piece import create_moves as piece_create_moves
-
         attacks = []
         for from_pos, to_pos in piece_create_moves(self, fench, pos):
             attacks.append(to_pos)
@@ -850,8 +845,6 @@ class ChessBoard:
 
     def has_no_legal_moves(self) -> bool:
         """判断当前走子方是否没有任何合法且不留被将军的走法（困毙）。"""
-        from .piece import create_moves as piece_create_moves
-
         king_pos = self.get_king_pos(self._move_side)
         if not king_pos:
             return True

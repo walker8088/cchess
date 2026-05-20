@@ -21,15 +21,21 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 
-from .constants import (  # noqa: F401 (re-exported for other modules)
-    EMPTY_BOARD,
-    EMPTY_FEN,
-    FULL_INIT_BOARD,
-    FULL_INIT_FEN,
-    SIDE_ANY,
-    SIDE_BLACK,
-    SIDE_RED,
-)
+# 颜色常量
+SIDE_ANY, SIDE_RED, SIDE_BLACK = (0, 1, 2)
+
+# 棋盘常量
+EMPTY_BOARD = "9/9/9/9/9/9/9/9/9/9"
+FULL_INIT_BOARD = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR"
+
+EMPTY_FEN = f"{EMPTY_BOARD} w"
+FULL_INIT_FEN = f"{FULL_INIT_BOARD} w"
+
+FEN_NUM_SET = frozenset(("1", "2", "3", "4", "5", "6", "7", "8", "9"))
+FEN_CHAR_SET = frozenset(("k", "a", "b", "n", "r", "c", "p"))
+
+# 比赛结果映射
+GAME_RESULT_MAP = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
 # -----------------------------------------------------#
 # 中文数字映射常量（用于走法文本解析）

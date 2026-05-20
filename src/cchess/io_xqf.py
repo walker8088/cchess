@@ -20,8 +20,7 @@ import struct
 from typing import Tuple
 
 from .board import ChessBoard
-from .common import SIDE_RED, append_move_to_game, get_fench_color
-from .constants import GAME_RESULT_MAP
+from .common import GAME_RESULT_MAP, SIDE_RED, append_move_to_game, get_fench_color
 
 # XQF 协议常量
 _XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
@@ -45,8 +44,8 @@ def _xqf_decode_pos(man_pos):
 def _xqf_decode_pos2(man_pos):
     """将包含两个压缩位置的元组解码为 ((from_x,from_y),(to_x,to_y))。"""
     return (
-        (int(man_pos[0] // 10), man_pos[0] % 10),
-        (int(man_pos[1] // 10), man_pos[1] % 10),
+        _xqf_decode_pos(man_pos[0]),
+        _xqf_decode_pos(man_pos[1]),
     )
 
 
