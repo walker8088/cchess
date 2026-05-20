@@ -35,7 +35,7 @@ from .common import (
     SIDE_RED,
     fench_to_species,
     fench_to_text,
-    next_color,
+    next_side,
     pos2iccs,
     swap_fench,
 )
@@ -556,7 +556,7 @@ class Move:
         if self.move_info.captured_fench is not None:
             self.move_info.captured_fench = swap_fench(self.move_info.captured_fench)
 
-        self.move_info.prev_move_side = next_color(self.move_info.prev_move_side)
+        self.move_info.prev_move_side = next_side(self.move_info.prev_move_side)
 
         self._clear_caches()
 

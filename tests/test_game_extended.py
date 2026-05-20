@@ -17,7 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
-from cchess import Game, ChessBoard, FULL_INIT_FEN
+
+from cchess import FULL_INIT_FEN, ChessBoard, Game
 
 
 class TestGameExtended:
@@ -74,38 +75,6 @@ class TestGameExtended:
         board_dump = game.dump_init_board()
         assert isinstance(board_dump, list)
         assert len(board_dump) == 22  # 棋盘有10行，打印出来22行数据
-
-    """
-    def test_dump_moves_line(self):
-        game = Game()
-        board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move((0, 0), (0, 1))
-        move2 = board.copy().move((1, 2), (1, 1))
-        move1.append_next_move(move2)
-        
-        game.append_first_move(move1)
-        
-        move_line = game.dump_moves_line()
-        assert isinstance(move_line, list)
-        assert len(move_line) >= 2
-    
-    def test_dump_text_moves_with_annote(self):
-        game = Game()
-        board = ChessBoard(FULL_INIT_FEN)
-        move1 = board.copy().move((0, 0), (0, 1))
-        move1.annote = "好棋"
-        move2 = board.copy().move((1, 2), (1, 1))
-        move1.append_next_move(move2)
-        
-        game.append_first_move(move1)
-        
-        moves_with_annote = game.dump_text_moves_with_annote()
-        assert isinstance(moves_with_annote, list)
-        if len(moves_with_annote) > 0 and len(moves_with_annote[0]) > 0:
-            text, annote = moves_with_annote[0][0]
-            assert isinstance(text, str)
-            assert isinstance(annote, str)
-    """
 
     def test_append_first_move(self):
         game = Game()

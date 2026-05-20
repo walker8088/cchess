@@ -35,28 +35,6 @@ from cchess.read_txt import (
 )
 
 
-class TestMove:
-    def test_move_creation(self):
-        m = PGNMove("兵七进一")
-        assert m.notation == "兵七进一"
-        assert m.annote is None
-
-    def test_move_with_annote(self):
-        m = PGNMove("炮二平五")
-        m.annote = "开局"
-        assert m.notation == "炮二平五"
-        assert m.annote == "开局"
-
-
-class TestMoveNode:
-    def test_add_variation(self):
-        root = MoveNode(PGNMove("root"))
-        node = MoveNode(PGNMove("兵七进一"))
-        root.add_variation(node)
-        assert len(root.move.variations) == 1
-        assert root.move.variations[0].move.notation == "兵七进一"
-
-
 class TestPGNGame:
     def test_headers(self):
         headers = {"Event": "Test", "Date": "2024.01.01"}

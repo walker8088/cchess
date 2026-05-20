@@ -280,8 +280,8 @@ class ChessPlayer:
     
     @staticmethod
     def next(color):
-        from cchess.common import next_color
-        return next_color(color)
+        from cchess.common import next_side
+        return next_side(color)
 ```
 
 ## 验证升级结果

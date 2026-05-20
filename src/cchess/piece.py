@@ -37,43 +37,50 @@ from .common import (
     _get_target_x,
     _get_v_index,
     get_fench_color,
-    next_color,
+    next_side,
 )
 
 # -----------------------------------------------------#
 # 按棋子类型分组的常量（优化 7：提高内聚）
 # -----------------------------------------------------#
 _PIECE_CONSTANTS = {
-    'k': {
-        'palace_x': (3, 5),
-        'palace_y': {SIDE_RED: (0, 2), SIDE_BLACK: (7, 9)},
+    "k": {
+        "palace_x": (3, 5),
+        "palace_y": {SIDE_RED: (0, 2), SIDE_BLACK: (7, 9)},
     },
-    'a': {
-        'positions': {
+    "a": {
+        "positions": {
             SIDE_RED: frozenset(((3, 0), (5, 0), (4, 1), (3, 2), (5, 2))),
             SIDE_BLACK: frozenset(((3, 9), (5, 9), (4, 8), (3, 7), (5, 7))),
         },
     },
-    'b': {
-        'positions': {
+    "b": {
+        "positions": {
             SIDE_RED: frozenset(((2, 0), (6, 0), (0, 2), (4, 2), (2, 4), (6, 4))),
             SIDE_BLACK: frozenset(((2, 9), (6, 9), (0, 7), (4, 7), (2, 5), (6, 5))),
         },
-        'y_range': {SIDE_RED: (0, 4), SIDE_BLACK: (5, 9)},
+        "y_range": {SIDE_RED: (0, 4), SIDE_BLACK: (5, 9)},
     },
-    'p': {
-        'dy': {SIDE_RED: 1, SIDE_BLACK: -1},
-        'river_y': {SIDE_RED: 5, SIDE_BLACK: 4},
-        'y_range': {SIDE_RED: (3, 9), SIDE_BLACK: (0, 6)},
+    "p": {
+        "dy": {SIDE_RED: 1, SIDE_BLACK: -1},
+        "river_y": {SIDE_RED: 5, SIDE_BLACK: 4},
+        "y_range": {SIDE_RED: (3, 9), SIDE_BLACK: (0, 6)},
     },
 }
 
 # 通用常量
 _SLIDING_DIRECTIONS = ((0, 1), (0, -1), (1, 0), (-1, 0))
 _KNIGHT_MOVES = (
-    ((1, 2), (0, 1)), ((1, -2), (0, -1)), ((-1, 2), (0, 1)), ((-1, -2), (0, -1)),
-    ((2, 1), (1, 0)), ((2, -1), (1, 0)), ((-2, 1), (-1, 0)), ((-2, -1), (-1, 0)),
+    ((1, 2), (0, 1)),
+    ((1, -2), (0, -1)),
+    ((-1, 2), (0, 1)),
+    ((-1, -2), (0, -1)),
+    ((2, 1), (1, 0)),
+    ((2, -1), (1, 0)),
+    ((-2, 1), (-1, 0)),
+    ((-2, -1), (-1, 0)),
 )
+
 
 # -----------------------------------------------------#
 # 内部辅助函数（纯函数，无外部依赖）
@@ -101,7 +108,7 @@ def _linear_piece_move(pos_from, move_str):
     if move_str[0] == "平":
         new_x = _get_target_x(move_str[1])
         return (new_x, pos_from[1]) if new_x is not None else None
-    
+
     step_digit = move_str[1:].strip()
     diff = _get_v_index(step_digit)
     if diff is None:
@@ -115,6 +122,7 @@ def _linear_piece_move(pos_from, move_str):
 # 向后兼容层（Piece 类层次结构）
 # 注意：这些类仅用于向后兼容，建议使用函数式 API
 # =====================================================
+
 
 class Piece:
     """棋子基类（向后兼容，建议使用函数式 API）。"""
@@ -158,7 +166,9 @@ class Piece:
 
     def _create_sliding_moves(self, directions):
         """生成滑走棋子的走法。"""
-        return _create_sliding_moves(self.board, self.fench, (self.x, self.y), directions)
+        return _create_sliding_moves(
+            self.board, self.fench, (self.x, self.y), directions
+        )
 
     def _is_on_straight_line(self, pos_to):
         """判断目标位置是否与当前位置在同一直线上。"""
@@ -199,8 +209,10 @@ class Piece:
 # 向后兼容的棋子子类
 # -----------------------------------------------------#
 
+
 class King(Piece):
     """将/帅棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_pos(self, pos):
@@ -216,6 +228,7 @@ class King(Piece):
 
 class Advisor(Piece):
     """士/仕棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_pos(self, pos):
@@ -231,6 +244,7 @@ class Advisor(Piece):
 
 class Bishop(Piece):
     """象/相棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_pos(self, pos):
@@ -246,6 +260,7 @@ class Bishop(Piece):
 
 class Knight(Piece):
     """马棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
@@ -258,6 +273,7 @@ class Knight(Piece):
 
 class Rook(Piece):
     """车棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
@@ -270,6 +286,7 @@ class Rook(Piece):
 
 class Cannon(Piece):
     """炮棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_move(self, pos_to):
@@ -282,6 +299,7 @@ class Cannon(Piece):
 
 class Pawn(Piece):
     """兵/卒棋子（向后兼容）。"""
+
     __slots__ = ()
 
     def is_valid_pos(self, pos):
@@ -302,19 +320,21 @@ class Pawn(Piece):
 # 各棋子的核心实现函数（按类型分组）
 # =====================================================
 
+
 # --- 王 ---
 def _king_valid_pos(fench, pos):
     if not _is_on_board(pos):
         return False
     color = get_fench_color(fench)
-    cfg = _PIECE_CONSTANTS['k']
-    min_x, max_x = cfg['palace_x']
-    min_y, max_y = cfg['palace_y'][color]
+    cfg = _PIECE_CONSTANTS["k"]
+    min_x, max_x = cfg["palace_x"]
+    min_y, max_y = cfg["palace_y"][color]
     return min_x <= pos[0] <= max_x and min_y <= pos[1] <= max_y
+
 
 def _king_valid_move(board, fench, pos_from, pos_to):
     color = get_fench_color(fench)
-    k2_pos = board.get_king_pos(next_color(color))
+    k2_pos = board.get_king_pos(next_side(color))
     if k2_pos is not None:
         if pos_from[0] == k2_pos[0] and pos_to[1] == k2_pos[1]:
             if board.count_y_line_in(pos_from[0], pos_from[1], k2_pos[1]) == 0:
@@ -324,26 +344,34 @@ def _king_valid_move(board, fench, pos_from, pos_to):
     diff = _abs_diff(pos_from, pos_to)
     return (diff[0] + diff[1]) == 1
 
+
 def _king_create_moves(board, fench, pos):
     x, y = pos
     color = get_fench_color(fench)
     positions = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-    k2_pos = board.get_king_pos(next_color(color))
+    k2_pos = board.get_king_pos(next_side(color))
     if k2_pos is not None:
         positions.append(k2_pos)
     curr_pos = (x, y)
-    return ((curr_pos, to_pos) for to_pos in positions if board.is_valid_move_t((curr_pos, to_pos)))
+    return (
+        (curr_pos, to_pos)
+        for to_pos in positions
+        if board.is_valid_move_t((curr_pos, to_pos))
+    )
+
 
 # --- 士 ---
 def _advisor_valid_pos(fench, pos):
     if not _is_on_board(pos):
         return False
-    return pos in _PIECE_CONSTANTS['a']['positions'][get_fench_color(fench)]
+    return pos in _PIECE_CONSTANTS["a"]["positions"][get_fench_color(fench)]
+
 
 def _advisor_valid_move(board, fench, pos_from, pos_to):
     if not _advisor_valid_pos(fench, pos_to):
         return False
     return _abs_diff(pos_from, pos_to) == (1, 1)
+
 
 def _advisor_create_moves(board, fench, pos):
     x, y = pos
@@ -355,6 +383,7 @@ def _advisor_create_moves(board, fench, pos):
             moves.append((curr_pos, (nx, ny)))
     return filter(board.is_valid_move_t, moves)
 
+
 def _advisor_text_move_to_pos(pos_from, move_str):
     direction = move_str[0]
     target_digit = move_str[1:].strip()
@@ -364,11 +393,13 @@ def _advisor_text_move_to_pos(pos_from, move_str):
     diff_y = 1 if direction == "进" else -1
     return (new_x, pos_from[1] + diff_y)
 
+
 # --- 象 ---
 def _bishop_valid_pos(fench, pos):
     if not _is_on_board(pos):
         return False
-    return pos in _PIECE_CONSTANTS['b']['positions'][get_fench_color(fench)]
+    return pos in _PIECE_CONSTANTS["b"]["positions"][get_fench_color(fench)]
+
 
 def _bishop_valid_move(board, fench, pos_from, pos_to):
     if _abs_diff(pos_from, pos_to) != (2, 2):
@@ -378,8 +409,9 @@ def _bishop_valid_move(board, fench, pos_from, pos_to):
     if board.get_fench((eye_x, eye_y)) is not None:
         return False
     color = get_fench_color(fench)
-    min_y, max_y = _PIECE_CONSTANTS['b']['y_range'][color]
+    min_y, max_y = _PIECE_CONSTANTS["b"]["y_range"][color]
     return min_y <= pos_to[1] <= max_y
+
 
 def _bishop_create_moves(board, fench, pos):
     x, y = pos
@@ -391,6 +423,7 @@ def _bishop_create_moves(board, fench, pos):
             moves.append((curr_pos, (nx, ny)))
     return filter(board.is_valid_move_t, moves)
 
+
 def _bishop_text_move_to_pos(pos_from, move_str):
     direction = move_str[0]
     target_digit = move_str[1:].strip()
@@ -400,12 +433,14 @@ def _bishop_text_move_to_pos(pos_from, move_str):
     diff_y = 2 if direction == "进" else -2
     return (new_x, pos_from[1] + diff_y)
 
+
 # --- 马 ---
 def _knight_valid_move(board, fench, pos_from, pos_to):
     for (dx, dy), (bx, by) in _KNIGHT_MOVES:
         if pos_from[0] + dx == pos_to[0] and pos_from[1] + dy == pos_to[1]:
             return board.get_fench((pos_from[0] + bx, pos_from[1] + by)) is None
     return False
+
 
 def _knight_create_moves(board, fench, pos):
     x, y = pos
@@ -425,6 +460,7 @@ def _knight_create_moves(board, fench, pos):
         moves.append((curr_pos, (nx, ny)))
     return moves
 
+
 def _knight_text_move_to_pos(pos_from, move_str):
     direction = move_str[0]
     target_digit = move_str[1:].strip()
@@ -438,6 +474,7 @@ def _knight_text_move_to_pos(pos_from, move_str):
     diff_y = diff_y_magnitude if direction == "进" else -diff_y_magnitude
     return (new_x, pos_from[1] + diff_y)
 
+
 # --- 车 ---
 def _rook_valid_move(board, fench, pos_from, pos_to):
     if pos_from[0] != pos_to[0] and pos_from[1] != pos_to[1]:
@@ -445,6 +482,7 @@ def _rook_valid_move(board, fench, pos_from, pos_to):
     if pos_from[0] != pos_to[0]:
         return board.count_x_line_in(pos_from[1], pos_from[0], pos_to[0]) == 0
     return board.count_y_line_in(pos_from[0], pos_from[1], pos_to[1]) == 0
+
 
 # --- 炮 ---
 def _cannon_valid_move(board, fench, pos_from, pos_to):
@@ -457,29 +495,33 @@ def _cannon_valid_move(board, fench, pos_from, pos_to):
     target = board.get_fench(pos_to)
     return (count == 0 and target is None) or (count == 1 and target is not None)
 
+
 # --- 兵 ---
 def _pawn_valid_pos(fench, pos):
     if not _is_on_board(pos):
         return False
     color = get_fench_color(fench)
-    min_y, max_y = _PIECE_CONSTANTS['p']['y_range'][color]
+    min_y, max_y = _PIECE_CONSTANTS["p"]["y_range"][color]
     return min_y <= pos[1] <= max_y
+
 
 def _crossed_river(fench, pos):
     color = get_fench_color(fench)
-    limit = _PIECE_CONSTANTS['p']['river_y'][color]
+    limit = _PIECE_CONSTANTS["p"]["river_y"][color]
     return pos[1] >= limit if color == SIDE_RED else pos[1] <= limit
+
 
 def _pawn_valid_move(board, fench, pos_from, pos_to):
     step = (pos_to[0] - pos_from[0], pos_to[1] - pos_from[1])
     crossed = _crossed_river(fench, pos_from)
     color = get_fench_color(fench)
-    forward_step = (0, _PIECE_CONSTANTS['p']['dy'][color])
+    forward_step = (0, _PIECE_CONSTANTS["p"]["dy"][color])
     if not crossed and step == forward_step:
         return True
     if crossed and (step == forward_step or step in ((-1, 0), (1, 0))):
         return True
     return False
+
 
 # =====================================================
 # 滑走棋子通用逻辑（优化 6：提取通用逻辑）
@@ -516,18 +558,23 @@ def _create_sliding_moves(board, fench, pos, directions, is_cannon=False):
             ny += dy
     return moves
 
+
 def _rook_create_moves(board, fench, pos):
-    return _create_sliding_moves(board, fench, pos, _SLIDING_DIRECTIONS, is_cannon=False)
+    return _create_sliding_moves(
+        board, fench, pos, _SLIDING_DIRECTIONS, is_cannon=False
+    )
+
 
 def _cannon_create_moves(board, fench, pos):
     return _create_sliding_moves(board, fench, pos, _SLIDING_DIRECTIONS, is_cannon=True)
+
 
 def _pawn_create_moves(board, fench, pos):
     x, y = pos
     color = get_fench_color(fench)
     curr_pos = (x, y)
     moves = []
-    dy = _PIECE_CONSTANTS['p']['dy'][color]
+    dy = _PIECE_CONSTANTS["p"]["dy"][color]
     forward = (x, y + dy)
     if 0 <= forward[1] <= 9:
         moves.append((curr_pos, forward))
@@ -539,24 +586,60 @@ def _pawn_create_moves(board, fench, pos):
             moves.append((curr_pos, (rx, y)))
     return filter(board.is_valid_move_t, moves)
 
+
 # =====================================================
 # 统一分发表（优化 2：集中管理）
 # =====================================================
 _PIECE_RULES = {
-    'k': {'valid_pos': _king_valid_pos, 'valid_move': _king_valid_move, 'create_moves': _king_create_moves, 'text_move': _linear_piece_move},
-    'a': {'valid_pos': _advisor_valid_pos, 'valid_move': _advisor_valid_move, 'create_moves': _advisor_create_moves, 'text_move': _advisor_text_move_to_pos},
-    'b': {'valid_pos': _bishop_valid_pos, 'valid_move': _bishop_valid_move, 'create_moves': _bishop_create_moves, 'text_move': _bishop_text_move_to_pos},
-    'n': {'valid_move': _knight_valid_move, 'create_moves': _knight_create_moves, 'text_move': _knight_text_move_to_pos},
-    'r': {'valid_move': _rook_valid_move, 'create_moves': _rook_create_moves, 'text_move': _linear_piece_move},
-    'c': {'valid_move': _cannon_valid_move, 'create_moves': _cannon_create_moves, 'text_move': _linear_piece_move},
-    'p': {'valid_pos': _pawn_valid_pos, 'valid_move': _pawn_valid_move, 'create_moves': _pawn_create_moves, 'text_move': _linear_piece_move},
+    "k": {
+        "valid_pos": _king_valid_pos,
+        "valid_move": _king_valid_move,
+        "create_moves": _king_create_moves,
+        "text_move": _linear_piece_move,
+    },
+    "a": {
+        "valid_pos": _advisor_valid_pos,
+        "valid_move": _advisor_valid_move,
+        "create_moves": _advisor_create_moves,
+        "text_move": _advisor_text_move_to_pos,
+    },
+    "b": {
+        "valid_pos": _bishop_valid_pos,
+        "valid_move": _bishop_valid_move,
+        "create_moves": _bishop_create_moves,
+        "text_move": _bishop_text_move_to_pos,
+    },
+    "n": {
+        "valid_move": _knight_valid_move,
+        "create_moves": _knight_create_moves,
+        "text_move": _knight_text_move_to_pos,
+    },
+    "r": {
+        "valid_move": _rook_valid_move,
+        "create_moves": _rook_create_moves,
+        "text_move": _linear_piece_move,
+    },
+    "c": {
+        "valid_move": _cannon_valid_move,
+        "create_moves": _cannon_create_moves,
+        "text_move": _linear_piece_move,
+    },
+    "p": {
+        "valid_pos": _pawn_valid_pos,
+        "valid_move": _pawn_valid_move,
+        "create_moves": _pawn_create_moves,
+        "text_move": _linear_piece_move,
+    },
 }
 
 # 派生分发表（保持现有 API 兼容）
-_VALID_POS_TABLE = {k: v['valid_pos'] for k, v in _PIECE_RULES.items() if 'valid_pos' in v}
-_VALID_MOVE_TABLE = {k: v['valid_move'] for k, v in _PIECE_RULES.items()}
-_CREATE_MOVES_TABLE = {k: v['create_moves'] for k, v in _PIECE_RULES.items()}
-_TEXT_MOVE_TABLE = {k: v['text_move'] for k, v in _PIECE_RULES.items()}
+_VALID_POS_TABLE = {
+    k: v["valid_pos"] for k, v in _PIECE_RULES.items() if "valid_pos" in v
+}
+_VALID_MOVE_TABLE = {k: v["valid_move"] for k, v in _PIECE_RULES.items()}
+_CREATE_MOVES_TABLE = {k: v["create_moves"] for k, v in _PIECE_RULES.items()}
+_TEXT_MOVE_TABLE = {k: v["text_move"] for k, v in _PIECE_RULES.items()}
+
 
 # =====================================================
 # 公共 API 函数
@@ -565,17 +648,21 @@ def is_valid_pos(fench, pos):
     handler = _VALID_POS_TABLE.get(fench.lower())
     return handler(fench, pos) if handler else _is_on_board(pos)
 
+
 def is_valid_move(board, fench, pos_from, pos_to):
     handler = _VALID_MOVE_TABLE.get(fench.lower())
     return handler(board, fench, pos_from, pos_to) if handler else False
+
 
 def create_moves(board, fench, pos):
     handler = _CREATE_MOVES_TABLE.get(fench.lower())
     return handler(board, fench, pos) if handler else []
 
+
 def text_move_to_pos(piece_fench, pos_from, move_str):
     handler = _TEXT_MOVE_TABLE.get(piece_fench)
     return handler(pos_from, move_str) if handler else None
+
 
 # =====================================================
 # 向后兼容层（委托给公共 API）

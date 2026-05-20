@@ -52,7 +52,7 @@ from .common import (
     get_fench_color,
     iccs2pos,
     load_json,
-    next_color,
+    next_side,
     swap_fench,
 )
 from .exception import CChessError
@@ -230,7 +230,7 @@ class ChessBoard:
             for y in range(10)
         ]
 
-        b.set_move_side(next_color(b.move_side()))
+        b.set_move_side(next_side(b.move_side()))
         b._attack_matrix_dirty = True
 
         return b
@@ -537,7 +537,7 @@ class ChessBoard:
 
         # 切换走子方（除非吃掉将帅）
         if captured_fench not in ("k", "K"):
-            self._move_side = next_color(self._move_side)
+            self._move_side = next_side(self._move_side)
 
         # 创建 Move 对象，传入棋盘实例
         move = Move(move_info, board_before, board_after)
@@ -683,7 +683,7 @@ class ChessBoard:
 
     def next_turn(self):
         """切换到下一个走子方并返回新的颜色值（工具方法）。"""
-        self._move_side = next_color(self._move_side)
+        self._move_side = next_side(self._move_side)
         return self._move_side
 
     def create_moves(self) -> Iterator[Tuple[Tuple[int, int], Tuple[int, int]]]:
@@ -759,7 +759,7 @@ class ChessBoard:
 
         # 检查将军
         if check_after_move:
-            self._move_side = next_color(self._move_side)
+            self._move_side = next_side(self._move_side)
             checking = self.is_checking()
             self._move_side = prev_side
         else:
@@ -828,7 +828,7 @@ class ChessBoard:
         """判断当前走子方是否对对方构成将军（对方王被攻击）。"""
         if self._attack_matrix_dirty:
             self._recompute_attack_matrix()
-        king_pos = self.get_king_pos(next_color(self._move_side))
+        king_pos = self.get_king_pos(next_side(self._move_side))
         if not king_pos:
             return False
         matrix = self._get_attack_matrix(self._move_side)
@@ -837,7 +837,7 @@ class ChessBoard:
     def is_checkmate(self) -> bool:
         """判断当前局面在对方回合是否为将死（无路可走）。"""
         original_player = self._move_side
-        self._move_side = next_color(self._move_side)
+        self._move_side = next_side(self._move_side)
         try:
             return self.has_no_legal_moves()
         finally:

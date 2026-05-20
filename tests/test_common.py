@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 Copyright (C) 2014  walker li <walker8088@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -14,115 +14,132 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
+"""
 
-from cchess import SIDE_RED, SIDE_BLACK, FULL_INIT_FEN
-from cchess.common import fench_to_txt_name, text_to_fench, get_fen_pieces, get_fen_type, get_fen_type_detail
+from cchess import FULL_INIT_FEN, SIDE_ANY, SIDE_BLACK, SIDE_RED
+from cchess.common import (
+    fench_to_txt_name,
+    get_fen_pieces,
+    get_fen_type,
+    get_fen_type_detail,
+    next_side,
+    text_to_fench,
+)
 
 
-class TestCommon():
+# -----------------------------------------------------#
+class TestPiece:
+    def test_base(self):
+        # 测试 SIDE_ANY
+        assert next_side(SIDE_ANY) == SIDE_ANY
 
+        # 测试 SIDE_RED
+        assert next_side(SIDE_RED) == SIDE_BLACK
+        assert next_side(next_side(SIDE_RED)) == SIDE_RED
+
+
+class TestCommon:
     def test_fench_to_txt_name(self):
-        assert fench_to_txt_name('K') == '帅'
-        assert fench_to_txt_name('k') == '将'
-        assert fench_to_txt_name('R') == '车'
-        assert fench_to_txt_name('r') == '砗'
-        assert fench_to_txt_name('N') == '马'
-        assert fench_to_txt_name('n') == '碼'
-        assert fench_to_txt_name('C') == '炮'
-        assert fench_to_txt_name('c') == '砲'
-        assert fench_to_txt_name('P') == '兵'
-        assert fench_to_txt_name('p') == '卒'
-        assert fench_to_txt_name('A') == '仕'
-        assert fench_to_txt_name('a') == '士'
-        assert fench_to_txt_name('B') == '相'
-        assert fench_to_txt_name('b') == '象'
-        assert fench_to_txt_name('X') is None  # 不存在的棋子
+        assert fench_to_txt_name("K") == "帅"
+        assert fench_to_txt_name("k") == "将"
+        assert fench_to_txt_name("R") == "车"
+        assert fench_to_txt_name("r") == "砗"
+        assert fench_to_txt_name("N") == "马"
+        assert fench_to_txt_name("n") == "碼"
+        assert fench_to_txt_name("C") == "炮"
+        assert fench_to_txt_name("c") == "砲"
+        assert fench_to_txt_name("P") == "兵"
+        assert fench_to_txt_name("p") == "卒"
+        assert fench_to_txt_name("A") == "仕"
+        assert fench_to_txt_name("a") == "士"
+        assert fench_to_txt_name("B") == "相"
+        assert fench_to_txt_name("b") == "象"
+        assert fench_to_txt_name("X") is None  # 不存在的棋子
 
     def test_text_to_fench(self):
-        assert text_to_fench('帅', SIDE_RED) == 'K'
-        assert text_to_fench('将', SIDE_BLACK) == 'k'
-        assert text_to_fench('车', SIDE_RED) == 'R'
-        assert text_to_fench('车', SIDE_BLACK) == 'r'
-        assert text_to_fench('马', SIDE_RED) == 'N'
-        assert text_to_fench('马', SIDE_BLACK) == 'n'
-        assert text_to_fench('炮', SIDE_RED) == 'C'
-        assert text_to_fench('炮', SIDE_BLACK) == 'c'
-        assert text_to_fench('兵', SIDE_RED) == 'P'
-        assert text_to_fench('卒', SIDE_BLACK) == 'p'
-        assert text_to_fench('仕', SIDE_RED) == 'A'
-        assert text_to_fench('士', SIDE_BLACK) == 'a'
-        assert text_to_fench('相', SIDE_RED) == 'B'
-        assert text_to_fench('象', SIDE_BLACK) == 'b'
-        assert text_to_fench('不存在', SIDE_RED) is None
+        assert text_to_fench("帅", SIDE_RED) == "K"
+        assert text_to_fench("将", SIDE_BLACK) == "k"
+        assert text_to_fench("车", SIDE_RED) == "R"
+        assert text_to_fench("车", SIDE_BLACK) == "r"
+        assert text_to_fench("马", SIDE_RED) == "N"
+        assert text_to_fench("马", SIDE_BLACK) == "n"
+        assert text_to_fench("炮", SIDE_RED) == "C"
+        assert text_to_fench("炮", SIDE_BLACK) == "c"
+        assert text_to_fench("兵", SIDE_RED) == "P"
+        assert text_to_fench("卒", SIDE_BLACK) == "p"
+        assert text_to_fench("仕", SIDE_RED) == "A"
+        assert text_to_fench("士", SIDE_BLACK) == "a"
+        assert text_to_fench("相", SIDE_RED) == "B"
+        assert text_to_fench("象", SIDE_BLACK) == "b"
+        assert text_to_fench("不存在", SIDE_RED) is None
 
     def test_get_fen_pieces(self):
         pieces = get_fen_pieces(FULL_INIT_FEN)
-        assert pieces['R'] == 2  # 红车
-        assert pieces['N'] == 2  # 红马
-        assert pieces['C'] == 2  # 红炮
-        assert pieces['P'] == 5  # 红兵
-        assert pieces['K'] == 1  # 红帅
-        assert pieces['A'] == 2  # 红仕
-        assert pieces['B'] == 2  # 红相
-        assert pieces['r'] == 2  # 黑车
-        assert pieces['n'] == 2  # 黑马
-        assert pieces['c'] == 2  # 黑炮
-        assert pieces['p'] == 5  # 黑卒
-        assert pieces['k'] == 1  # 黑将
-        assert pieces['a'] == 2  # 黑士
-        assert pieces['b'] == 2  # 黑象
+        assert pieces["R"] == 2  # 红车
+        assert pieces["N"] == 2  # 红马
+        assert pieces["C"] == 2  # 红炮
+        assert pieces["P"] == 5  # 红兵
+        assert pieces["K"] == 1  # 红帅
+        assert pieces["A"] == 2  # 红仕
+        assert pieces["B"] == 2  # 红相
+        assert pieces["r"] == 2  # 黑车
+        assert pieces["n"] == 2  # 黑马
+        assert pieces["c"] == 2  # 黑炮
+        assert pieces["p"] == 5  # 黑卒
+        assert pieces["k"] == 1  # 黑将
+        assert pieces["a"] == 2  # 黑士
+        assert pieces["b"] == 2  # 黑象
 
         # 空棋盘
-        empty_fen = '9/9/9/9/9/9/9/9/9/9 w'
+        empty_fen = "9/9/9/9/9/9/9/9/9/9 w"
         pieces = get_fen_pieces(empty_fen)
         assert len(pieces) == 0
 
     def test_get_fen_type(self):
         # 初始局面
         title = get_fen_type(FULL_INIT_FEN)
-        assert title == '车马炮兵'
+        assert title == "车马炮兵"
 
         # 残局
-        endgame_fen = '4k4/9/9/9/9/9/9/9/9/4K4 w'
+        endgame_fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         title = get_fen_type(endgame_fen)
-        assert title == ''
+        assert title == ""
 
         # 只有车
-        rook_fen = '4k4/9/9/9/9/9/9/9/9/3K1R3 w'
+        rook_fen = "4k4/9/9/9/9/9/9/9/9/3K1R3 w"
         title = get_fen_type(rook_fen)
-        assert title == '车'
+        assert title == "车"
 
         # 车马
-        rook_knight_fen = '4k4/9/9/9/9/9/9/9/4N4/3K1R3 w'
+        rook_knight_fen = "4k4/9/9/9/9/9/9/9/4N4/3K1R3 w"
         title = get_fen_type(rook_knight_fen)
-        assert title == '车马'
+        assert title == "车马"
 
     def test_get_fen_type_detail(self):
         # 初始局面
         red_title, black_title = get_fen_type_detail(FULL_INIT_FEN)
-        assert '车' in red_title
-        assert '马' in red_title
-        assert '炮' in red_title
-        assert '兵' in red_title
-        assert '车' in black_title
-        assert '马' in black_title
-        assert '炮' in black_title
-        assert '卒' in black_title
+        assert "车" in red_title
+        assert "马" in red_title
+        assert "炮" in red_title
+        assert "兵" in red_title
+        assert "车" in black_title
+        assert "马" in black_title
+        assert "炮" in black_title
+        assert "卒" in black_title
 
         # 只有帅将
-        king_fen = '4k4/9/9/9/9/9/9/9/9/4K4 w'
+        king_fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
         red_title, black_title = get_fen_type_detail(king_fen)
-        assert red_title == '帅'
-        assert black_title == '将'
+        assert red_title == "帅"
+        assert black_title == "将"
 
         # 单子
-        single_fen = '4k4/9/9/9/9/9/9/9/9/3K1R3 w'
+        single_fen = "4k4/9/9/9/9/9/9/9/9/3K1R3 w"
         red_title, black_title = get_fen_type_detail(single_fen)
-        assert red_title == '单车'
-        assert black_title == '将'
+        assert red_title == "单车"
+        assert black_title == "将"
 
         # 双车
-        double_rook_fen = '4k4/9/9/9/9/9/9/9/9/3K1R1R3 w'
+        double_rook_fen = "4k4/9/9/9/9/9/9/9/9/3K1R1R3 w"
         red_title, black_title = get_fen_type_detail(double_rook_fen)
-        assert '双车' in red_title or '车' in red_title
+        assert "双车" in red_title or "车" in red_title

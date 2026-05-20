@@ -1519,18 +1519,18 @@ class TestBoard:
 
     def test_chess_player_next_no_color(self):
         """Test ChessPlayer.next with SIDE_ANY (line 97)."""
-        from cchess.common import SIDE_ANY, next_color
+        from cchess.common import SIDE_ANY, next_side
 
-        # 测试 next_color 函数
-        result = next_color(SIDE_ANY)
+        # 测试 next_side 函数
+        result = next_side(SIDE_ANY)
         assert result == SIDE_ANY
 
     def test_chess_player_opposite_no_color(self):
         """Test ChessPlayer.opposite with SIDE_ANY (lines 106-107)."""
-        from cchess.common import SIDE_ANY, next_color
+        from cchess.common import SIDE_ANY, next_side
 
-        # 测试 next_color 函数
-        result = next_color(SIDE_ANY)
+        # 测试 next_side 函数
+        result = next_side(SIDE_ANY)
         assert result == SIDE_ANY
 
     def test_board_eq_str(self):

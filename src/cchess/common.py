@@ -37,6 +37,13 @@ FEN_CHAR_SET = frozenset(("k", "a", "b", "n", "r", "c", "p"))
 # 比赛结果映射
 GAME_RESULT_MAP = {0: "*", 1: "1-0", 2: "0-1", 3: "1/2-1/2", 4: "1/2-1/2"}
 
+
+# ----------------------------------------------------#
+def next_side(color: int) -> int:
+    """切换到下一个走子方"""
+    return (3 - color) % 3
+
+
 # -----------------------------------------------------#
 # 中文数字映射常量（用于走法文本解析）
 _FULLWIDTH_TO_CHINESE = {
@@ -219,10 +226,9 @@ _DIRECTION_CHAR_TO_SYMBOL: dict[str, str] = {
     "平": "=",
 }
 
+
 # -----------------------------------------------------#
 # 走法文本解析辅助函数（被 move.py、piece.py 和 board.py 共用）
-
-
 def _detect_move_side_from_text(move_str):
     """根据着法字符串中的数字类型检测走子方。
 
@@ -419,11 +425,6 @@ def _get_target_x(digit_char):
     if digit_index is None:
         return None
     return digit_index
-
-
-def next_color(color: int) -> int:
-    """切换到下一个走子方，对应 ChessPlayer.next() 的逻辑。"""
-    return (3 - color) % 3
 
 
 # -----------------------------------------------------#
