@@ -167,7 +167,7 @@ class ChessBoard:
 
     def from_board(self, b: "ChessBoard") -> "ChessBoard":
         """从另一个ChessBoard Copy属性"""
-        self._board = b._board
+        self._board = [row[:] for row in b._board]
         self._move_side = b.move_side()
         # 复制攻击矩阵缓存（如果存在）
         if hasattr(b, "_red_attacks"):
@@ -629,28 +629,7 @@ class ChessBoard:
 
             if piece_fench in {"r", "c", "n", "p"}:
                 all_positions.sort(key=lambda p: p[1], reverse=True)
-
-                # WXF 符号限定词：+前/-中/.后
-                if qualifier == "+":
-                    return [all_positions[0]] if all_positions else []
-                elif qualifier == "-":
-                    return [all_positions[1]] if len(all_positions) > 1 else []
-                elif qualifier == ".":
-                    return [all_positions[-1]] if all_positions else []
-                # WXF 字母限定词：abcde 对应索引 01234
-                elif qualifier in {"a", "b", "c", "d", "e"}:
-                    idx = ord(qualifier) - ord("a")
-                    return [all_positions[idx]] if 0 <= idx < len(all_positions) else []
-                # 兼容旧格式：f/m/b
-                elif qualifier == "f":
-                    return [all_positions[0]] if all_positions else []
-                elif qualifier == "m":
-                    return [all_positions[1]] if len(all_positions) > 1 else []
-                elif qualifier == "b":
-                    return [all_positions[-1]] if all_positions else []
-                elif qualifier.isdigit():
-                    idx = int(qualifier) - 1
-                    return [all_positions[idx]] if 0 <= idx < len(all_positions) else []
+                return self._select_by_qualifier(all_positions, qualifier)
             return []
         else:
             positions = norm.get_fench_positions_v_line(fench, column)
@@ -659,6 +638,34 @@ class ChessBoard:
             if len(positions) > 1 and piece_fench not in {"a", "b"}:
                 return []
             return positions
+
+    @staticmethod
+    def _select_by_qualifier(positions, qualifier):
+        """根据限定词从已排序的位置列表中选择一个棋子。"""
+        dispatch = {
+            "+": lambda p: p[0] if p else None,
+            "-": lambda p: p[1] if len(p) > 1 else None,
+            ".": lambda p: p[-1] if p else None,
+            "f": lambda p: p[0] if p else None,
+            "m": lambda p: p[1] if len(p) > 1 else None,
+            "b": lambda p: p[-1] if p else None,
+        }
+        fn = dispatch.get(qualifier)
+        if fn:
+            result = fn(positions)
+            return [result] if result is not None else []
+
+        # WXF 字母限定词：abcde → 索引 0-4
+        if qualifier in "abcde":
+            idx = ord(qualifier) - ord("a")
+            return [positions[idx]] if 0 <= idx < len(positions) else []
+
+        # 数字限定词：1-9 → 索引 0-8
+        if qualifier.isdigit():
+            idx = int(qualifier) - 1
+            return [positions[idx]] if 0 <= idx < len(positions) else []
+
+        return []
 
     def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
         """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
@@ -888,7 +895,7 @@ class ChessBoard:
         fen = fen.strip()
         if fen == "":
             self.clear()
-            return True
+            return self
 
         parts = fen.split(" ")
         fen0 = parts[0]
@@ -1075,11 +1082,13 @@ class ChessBoardOneHot(ChessBoard):
         :return: 一个列表，将棋子进行独热编码后的棋盘
         """
         one_hot_board = []
-        for x in self._board.copy():
+        for row in self._board.copy():
             temp = []
-            for y in x:
+            for cell in row:
                 temp.append(
-                    self.__chess_dict.get(y, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                    self.__chess_dict.get(
+                        cell, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    )
                 )
             one_hot_board.append(temp)
         return one_hot_board

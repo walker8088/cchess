@@ -270,13 +270,13 @@ def _convert_digit_format(digit_char, move_side):
         half_digit = int(digit_char)
         if half_digit == 0 or half_digit > 9:
             return None
-        if move_side == 1:  # SIDE_RED: 半角转中文
+        if move_side == SIDE_RED:
             return _HALF_TO_ZH[half_digit]
         return chr(0xFF10 + half_digit)
 
     # 中文数字（仅用于红方）
     if digit_char in _ZH_TO_HALF:
-        if move_side == 1:  # SIDE_RED: 保持中文
+        if move_side == SIDE_RED:
             return _HALF_TO_ZH[_ZH_TO_HALF[digit_char]]
         # SIDE_BLACK 不接受中文数字，返回 None
         return None
@@ -490,13 +490,13 @@ _FENCH_TXT_NAME_DICT = {
 
 
 # -----------------------------------------------------#
-def fench_to_txt_name(fench):
+def fench_to_txt_name(fench: str) -> str | None:
     if fench not in _FENCH_TXT_NAME_DICT:
         return None
     return _FENCH_TXT_NAME_DICT[fench]
 
 
-def fench_to_text(fench):
+def fench_to_text(fench: str) -> str:
     return _FENCH_NAME_DICT[fench]
 
 
@@ -521,28 +521,28 @@ def swap_fench(fench: str) -> str:
     return fench.upper() if fench.islower() else fench.lower()
 
 
-def fench_to_species(fen_ch):
+def fench_to_species(fench: str) -> tuple[str, int]:
     """从 FEN 字符返回 (species, color) 元组。
 
     参数:
-        fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
+        fench: FEN 字符（如 'K', 'k', 'R', 'r' 等）
 
     返回:
         tuple: (species, color)，其中 species 是小写棋子类型，color 是 SIDE_RED 或 SIDE_BLACK
     """
-    return (fen_ch.lower(), SIDE_BLACK if fen_ch.islower() else SIDE_RED)
+    return (fench.lower(), SIDE_BLACK if fench.islower() else SIDE_RED)
 
 
-def get_fench_color(fen_ch):
+def get_fench_color(fench: str) -> int:
     """从 FEN 字符返回棋子颜色。
 
     参数:
-        fen_ch: FEN 字符（如 'K', 'k', 'R', 'r' 等）
+        fench: FEN 字符（如 'K', 'k', 'R', 'r' 等）
 
     返回:
         int: SIDE_RED 或 SIDE_BLACK
     """
-    return SIDE_BLACK if fen_ch.islower() else SIDE_RED
+    return SIDE_BLACK if fench.islower() else SIDE_RED
 
 
 # -----------------------------------------------------#
@@ -554,17 +554,11 @@ def fen_move_color(fen):
 # -----------------------------------------------------#
 # 全角半角数字转换映射表
 _DIGIT_MAP_FULL_TO_HALF = str.maketrans("１２３４５６７８９", "123456789")
-# _DIGIT_MAP_HALF_TO_FULL = str.maketrans("123456789", "１２３４５６７８９")
 
 
 def full2half(text):
     """将全角数字转换为半角数字。"""
     return text.translate(_DIGIT_MAP_FULL_TO_HALF)
-
-
-# def half2full(text):
-#    """将半角数字转换为全角数字。"""
-#    return text.translate(_DIGIT_MAP_HALF_TO_FULL)
 
 
 # -----------------------------------------------------#
@@ -616,13 +610,11 @@ def get_fen_type(fen):
             pieces.pop(ch)
 
     title = ""
-    p_count = 0
     for fench in ["R", "N", "C", "P"]:
         if fench not in pieces:
             continue
 
         title += p_dict[f"{fench}"]
-        p_count += 1
 
     return title
 
@@ -632,12 +624,10 @@ def get_fen_type_detail(fen):
     pieces = get_fen_pieces(fen)
 
     title_red = ""
-    p_count = 0
     for fench in ["R", "N", "C", "P", "A", "B"]:
         if fench not in pieces:
             continue
         title_red += p_count_dict[f"{fench}{pieces[fench]}"]
-        p_count += 1
 
     title_red = title_red.replace("双仕双相", "仕相全")
     if title_red in ["车", "马", "炮", "兵", "仕", "相"]:
@@ -646,14 +636,12 @@ def get_fen_type_detail(fen):
     if title_red == "":
         title_red = "帅"
 
-    p_count = 0
     title_black = ""
     for fench in ["r", "n", "c", "p", "a", "b"]:
         if fench not in pieces:
             continue
         ch_upper = fench.upper()
         title_black += p_count_dict[f"{ch_upper}{pieces[fench]}"]
-        p_count += 1
 
     title_black = title_black.replace("兵", "卒")
     title_black = title_black.replace("仕", "士")

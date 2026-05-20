@@ -1552,7 +1552,7 @@ class TestBoard:
         """Test ChessBoard.from_fen with empty string (lines 473-474)."""
         board = ChessBoard(FULL_INIT_FEN)
         result = board.from_fen("")
-        assert result is True
+        assert result is board
         assert board.to_fen() == "9/9/9/9/9/9/9/9/9/9 w"
 
     def test_board_from_fen_invalid_turn(self):

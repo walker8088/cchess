@@ -579,6 +579,13 @@ class Move:
         """返回当前走子的分支（变招）数量。"""
         return len(self.variations_all)
 
+    def make_branchs_tag(self, branch_id, depth):
+        """为走子树递归生成分支编号标记。
+
+        当前为桩实现，预留接口供未来扩展。
+        """
+        pass
+
     def get_variations(self, include_me=False):
         """返回当前走子的所有分支（变招），可选择是否包含自身。"""
         if include_me:
@@ -788,7 +795,7 @@ class Move:
             if m == self:
                 txts.append(f"{m.to_text(fmt=fmt, traditional=traditional)}")
             else:
-                txts.append("*")  # m.to_text())
+                txts.append("*")
 
         return f"[{','.join(txts)}]"
 
