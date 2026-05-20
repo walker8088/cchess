@@ -58,14 +58,13 @@ from .common import (
 from .exception import CChessError
 from .move import Move, MoveInfo, MoveNotation
 from .piece import (
-    Piece,
-    text_move_to_pos,
-)
-from .piece import (
     create_moves as piece_create_moves,
 )
 from .piece import (
     is_valid_move as piece_is_valid_move,
+)
+from .piece import (
+    text_move_to_pos,
 )
 from .zhash_data import Z_HASH_C90, Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY
 
@@ -361,46 +360,25 @@ class ChessBoard:
         return positions
 
     def get_piece(self, pos):
-        """返回指定位置的 `Piece` 实例（若有棋子），否则返回 None。
+        """返回指定位置的棋子字符（fench），若无棋子则返回 None。
 
-        注意：此方法保留用于向后兼容，建议改用 get_fench() 获取棋子字符。
+        注意：原先返回 Piece 对象，现已改为返回棋子字符。
         """
-        fench = self.get_fench(pos)
-        return Piece.create(self, fench, pos) if fench else None
+        return self.get_fench(pos)
 
     def get_all_pieces(self, color=None):
-        """生成器：遍历棋盘并产出 `Piece` 对象。
+        """生成器：遍历棋盘并产出 (fench, pos) 元组。
 
-        参数:
-            color (int|None): 若指定，仅返回该颜色的棋子。
-
-        注意：此方法保留用于向后兼容，建议改用 get_all_fench_positions()。
+        注意：原先返回 Piece 对象，现已改为返回 (fench, pos) 元组。
         """
-        for x in range(9):
-            for y in range(10):
-                fench = self._board[y][x]
-                if not fench:
-                    continue
-                if color is None:
-                    yield Piece.create(self, fench, (x, y))
-                else:
-                    p_color = get_fench_color(fench)
-                    if color == p_color:
-                        yield Piece.create(self, fench, (x, y))
+        return self.get_all_fench_positions(color)
 
     def get_king(self, color):
-        """查找并返回指定颜色的王 `Piece`，找不到返回 None。
+        """查找并返回指定颜色的王的坐标，找不到返回 None。
 
-        参数:
-            color (int): 指定要查找的颜色。
-
-        注意：此方法保留用于向后兼容，建议改用 get_king_pos()。
+        注意：原先返回 Piece 对象，现已改为返回坐标元组。
         """
-        pos = self.get_king_pos(color)
-        if pos is None:
-            return None
-        fench = self._board[pos[1]][pos[0]]
-        return Piece.create(self, fench, pos)
+        return self.get_king_pos(color)
 
     def get_king_pos(self, color):
         """查找并返回指定颜色的王的坐标，找不到返回 None。

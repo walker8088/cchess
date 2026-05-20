@@ -44,7 +44,6 @@ from cchess.engine import (
 )
 from cchess.exception import EngineError
 from cchess.game import Game
-from cchess.piece import Cannon, Knight, Pawn, Piece, Rook
 
 # ============================================================
 # move.py tests
@@ -1434,77 +1433,6 @@ class TestCommon:
 
 
 # ============================================================
-# piece.py tests
-# ============================================================
-
-
-class TestPiece:
-    """Tests for piece.py uncovered lines."""
-
-    def test_piece_create_unknown_type(self):
-        """Test Piece.create with unknown type returns None (line 92)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        result = Piece.create(board, "x", (4, 4))
-        assert result is None
-
-    def test_piece_is_valid_move_base(self):
-        """Test Piece.is_valid_move base class returns True (line 66)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        piece = Piece(board, "K", (4, 0))
-        assert piece.is_valid_move((4, 1)) is True
-
-    def test_piece_get_color_fench_lower(self):
-        """Test Piece.get_color_fench with lowercase (lines 70-72)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        piece = Piece(board, "k", (4, 9))
-        assert piece.get_color_fench() == "bk"
-
-    def test_piece_get_color_fench_upper(self):
-        """Test Piece.get_color_fench with uppercase."""
-        board = ChessBoard(FULL_INIT_FEN)
-        piece = Piece(board, "K", (4, 0))
-        assert piece.get_color_fench() == "rk"
-
-    def test_knight_is_valid_move_not_day_shape(self):
-        """Test Knight.is_valid_move when not day shape (line 241)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        knight = Knight(board, "N", (2, 0))
-        assert knight.is_valid_move((2, 1)) is False  # Not a day shape
-
-    def test_rook_is_valid_move_diagonal(self):
-        """Test Rook.is_valid_move diagonal returns False (lines 268-269)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        rook = Rook(board, "R", (0, 0))
-        assert rook.is_valid_move((1, 1)) is False
-
-    def test_cannon_is_valid_move_diagonal(self):
-        """Test Cannon.is_valid_move diagonal returns False (lines 299-301)."""
-        board = ChessBoard(FULL_INIT_FEN)
-        cannon = Cannon(board, "C", (1, 2))
-        assert cannon.is_valid_move((2, 3)) is False
-
-    def test_pawn_is_valid_move_backward(self):
-        """Test Pawn.is_valid_move backward returns False (lines 356-360)."""
-        board = ChessBoard("4k4/9/9/9/4P4/9/9/9/9/4K4 w")
-        pawn = Pawn(board, "P", (4, 4))
-        assert pawn.is_valid_move((4, 3)) is False
-
-    def test_pawn_is_valid_pos_red_too_far_back(self):
-        """Test Pawn.is_valid_pos red pawn too far back (lines 339-340)."""
-        board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
-        pawn = Pawn(board, "P", (4, 4))
-        assert pawn.is_valid_pos((4, 5)) is True
-        assert pawn.is_valid_pos((4, 2)) is False
-
-    def test_pawn_is_valid_pos_black_too_far_back(self):
-        """Test Pawn.is_valid_pos black pawn too far back (lines 342-343)."""
-        board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 b")
-        pawn = Pawn(board, "p", (4, 5))
-        assert pawn.is_valid_pos((4, 4)) is True
-        assert pawn.is_valid_pos((4, 8)) is False
-
-
-# ============================================================
 # board.py tests
 # ============================================================
 
@@ -1670,25 +1598,24 @@ class TestBoard:
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
         assert board.has_no_legal_moves() is True
 
-    def test_board_get_king_no_king(self):
-        """Test ChessBoard.get_king when no king exists (line 296)."""
+    def test_board_get_king_pos_no_king(self):
+        """Test ChessBoard.get_king_pos when no king exists."""
         board = ChessBoard("9/9/9/9/9/9/9/9/9/9 w")
-        assert board.get_king(SIDE_RED) is None
+        assert board.get_king_pos(SIDE_RED) is None
 
-    def test_board_get_all_pieces_with_chess_player(self):
-        """Test ChessBoard.get_all_pieces with ChessPlayer color (lines 264-265)."""
+    def test_board_get_all_fench_positions_with_color(self):
+        """Test ChessBoard.get_all_fench_positions with color filter."""
         board = ChessBoard(FULL_INIT_FEN)
-        # 现在直接使用整数颜色值
-        pieces = list(board.get_all_pieces(color=SIDE_RED))
-        assert len(pieces) == 16
+        positions = list(board.get_all_fench_positions(SIDE_RED))
+        assert len(positions) == 16
 
-    def test_board_get_king_with_chess_player(self):
-        """Test ChessBoard.get_king with ChessPlayer (lines 285-286)."""
+    def test_board_get_king_pos_with_color(self):
+        """Test ChessBoard.get_king_pos with color."""
         board = ChessBoard(FULL_INIT_FEN)
-        # 现在直接使用整数颜色值
-        king = board.get_king(SIDE_RED)
-        assert king is not None
-        assert king.fench == "K"
+        king_pos = board.get_king_pos(SIDE_RED)
+        assert king_pos is not None
+        fench = board.get_fench(king_pos)
+        assert fench == "K"
 
     def test_chess_board_one_hot(self):
         """Test ChessBoardOneHot."""

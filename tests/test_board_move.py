@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import pytest
 
 from cchess import (
-    SIDE_BLACK,
     FULL_INIT_FEN,
+    SIDE_BLACK,
     SIDE_RED,
     CChessError,
     ChessBoard,
@@ -39,8 +39,8 @@ class TestBoard:
         board = ChessBoard("")
         assert "9/9/9/9/9/9/9/9/9/9 w" == board.to_fen()
 
-        assert board.get_king(SIDE_RED) is None
-        assert board.get_king(SIDE_BLACK) is None
+        assert board.get_king_pos(SIDE_RED) is None
+        assert board.get_king_pos(SIDE_BLACK) is None
         assert board.is_checking() is False
         assert board.has_no_legal_moves() is True
         assert board.is_mirror() is True
@@ -69,11 +69,11 @@ class TestBoard:
         board = board.swap()
         assert board.to_fen() == fen
 
-        assert board.get_king(SIDE_RED) is not None
-        assert (board.get_king(SIDE_RED).x, board.get_king(SIDE_RED).y) == (4, 0)
+        assert board.get_king_pos(SIDE_RED) is not None
+        assert board.get_king_pos(SIDE_RED) == (4, 0)
 
-        assert board.get_king(SIDE_BLACK) is not None
-        assert (board.get_king(SIDE_BLACK).x, board.get_king(SIDE_BLACK).y) == (4, 9)
+        assert board.get_king_pos(SIDE_BLACK) is not None
+        assert board.get_king_pos(SIDE_BLACK) == (4, 9)
         assert len(list(board.create_moves())) == 44
 
         assert board.is_checking() is False
@@ -107,11 +107,11 @@ class TestBoard:
         board.swap()
         assert board.to_fen() == fen2
 
-        k = board.get_king(SIDE_RED)
-        assert (k.x, k.y) == (4, 0)
+        k = board.get_king_pos(SIDE_RED)
+        assert k == (4, 0)
 
-        k = board.get_king(SIDE_BLACK)
-        assert (k.x, k.y) == (4, 9)
+        k = board.get_king_pos(SIDE_BLACK)
+        assert k == (4, 9)
 
         assert board.is_checking() is False
         assert board.has_no_legal_moves() is False

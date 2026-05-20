@@ -47,16 +47,6 @@ from .engine_async import AsyncEngine, analyse_position, play_move
 from .exception import CChessError, EngineError
 from .game import Game
 from .move import Move
-from .piece import (
-    Advisor,
-    Bishop,
-    Cannon,
-    King,
-    Knight,
-    Pawn,
-    Piece,
-    Rook,
-)
 
 __all__ = [
     # exception
@@ -85,15 +75,6 @@ __all__ = [
     "FULL_INIT_FEN",
     "EMPTY_BOARD",
     "EMPTY_FEN",
-    # piece
-    "Piece",
-    "King",
-    "Advisor",
-    "Bishop",
-    "Knight",
-    "Rook",
-    "Cannon",
-    "Pawn",
     # board
     "ChessBoard",
     # move

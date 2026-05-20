@@ -10,9 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from cchess import SIDE_BLACK, FULL_INIT_FEN, SIDE_RED, ChessBoard
+from cchess import FULL_INIT_FEN, SIDE_BLACK, SIDE_RED, ChessBoard
 from cchess.common import fench_to_species
-from cchess.piece import Piece
 
 
 @dataclass
@@ -104,11 +103,11 @@ class Benchmark:
 # -----------------------------------------------------#
 
 
-def benchmark_get_pieces():
-    """测试 get_all_pieces() 性能"""
+def benchmark_get_all_fench_positions():
+    """测试 get_all_fench_positions() 性能"""
     board = ChessBoard(FULL_INIT_FEN)
-    bench = Benchmark("get_all_pieces", iterations=1000)
-    return bench.run(lambda: list(board.get_all_pieces()))
+    bench = Benchmark("get_all_fench_positions", iterations=1000)
+    return bench.run(lambda: list(board.get_all_fench_positions(SIDE_RED)))
 
 
 def benchmark_create_moves():
@@ -185,7 +184,7 @@ def run_all_benchmarks():
     print("=" * 60)
 
     benchmarks = [
-        ("get_pieces", benchmark_get_pieces),
+        ("get_all_fench_positions", benchmark_get_all_fench_positions),
         ("create_moves", benchmark_create_moves),
         ("is_valid_move", benchmark_is_valid_move),
         ("fench_to_species", benchmark_fench_to_species),
