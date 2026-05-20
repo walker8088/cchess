@@ -66,7 +66,6 @@ class Game:
         """返回游戏信息的字符串表示（通常用于调试）。"""
         return str(self.info)
 
-    # 当第一步走法就有变招的时候，需多次调用这个函数
     def _ensure_first_move(self, chess_move):
         """将 `chess_move` 设为首步并初始化初始棋盘。"""
         chess_move.parent = self
@@ -74,6 +73,7 @@ class Game:
         self.init_board = chess_move.board_before().copy()
         self.last_move = self.first_move
 
+    # 当第一步走法就有变招的时候，需多次调用这个函数
     def append_first_move(self, chess_move):
         """将 `chess_move` 添加为游戏的第一个走子节点或作为分支加入。
 
