@@ -38,9 +38,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from typing import Iterator, List, Optional, Tuple
 
 from .common import (
-    _HALF_TO_ZH,
-    COLUMN_MAP,
-    DIRECTION_MAP,
     FEN_CHAR_SET,
     FEN_NUM_SET,
     SIDE_ANY,

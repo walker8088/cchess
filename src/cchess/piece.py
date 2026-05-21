@@ -34,8 +34,6 @@ from __future__ import annotations
 from .common import (
     SIDE_BLACK,
     SIDE_RED,
-    _get_target_x,
-    _get_v_index,
     get_fench_color,
     next_side,
 )
