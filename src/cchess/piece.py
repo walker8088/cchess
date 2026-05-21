@@ -103,19 +103,21 @@ def _abs_diff(x, y):
     return (abs(x[0] - y[0]), abs(x[1] - y[1]))
 
 
-def _linear_piece_move(pos_from, move_str):
-    """解析王、车、炮、兵的走法（直线移动）。"""
-    if move_str[0] == "平":
-        new_x = _get_target_x(move_str[1])
-        return (new_x, pos_from[1]) if new_x is not None else None
+def _linear_piece_move(pos_from, direction, distance):
+    """解析王、车、炮、兵的走法（直线移动）。
 
-    step_digit = move_str[1:].strip()
-    diff = _get_v_index(step_digit)
-    if diff is None:
-        return None
-    if move_str[0] == "退":
-        diff = -diff
-    return (pos_from[0], pos_from[1] + diff)
+    参数:
+        pos_from: 起点坐标
+        direction: WXF 方向符号 ("+", "-", "=")
+        distance: 距离/目标列（整数）
+
+    返回:
+        tuple: 目标坐标 (x, y)，无法解析返回 None
+    """
+    if direction == "=":
+        return (distance, pos_from[1])
+    dy = distance if direction == "+" else -distance
+    return (pos_from[0], pos_from[1] + dy)
 
 
 # =====================================================
@@ -186,14 +188,11 @@ def _advisor_create_moves(board, fench, pos):
     return filter(board.is_valid_move_t, moves)
 
 
-def _advisor_text_move_to_pos(pos_from, move_str):
-    direction = move_str[0]
-    target_digit = move_str[1:].strip()
-    new_x = _get_target_x(target_digit)
-    if new_x is None or abs(new_x - pos_from[0]) != 1:
+def _advisor_text_move_to_pos(pos_from, direction, distance):
+    if abs(distance - pos_from[0]) != 1:
         return None
-    diff_y = 1 if direction == "进" else -1
-    return (new_x, pos_from[1] + diff_y)
+    diff_y = 1 if direction == "+" else -1
+    return (distance, pos_from[1] + diff_y)
 
 
 # --- 象 ---
@@ -226,14 +225,11 @@ def _bishop_create_moves(board, fench, pos):
     return filter(board.is_valid_move_t, moves)
 
 
-def _bishop_text_move_to_pos(pos_from, move_str):
-    direction = move_str[0]
-    target_digit = move_str[1:].strip()
-    new_x = _get_target_x(target_digit)
-    if new_x is None or abs(new_x - pos_from[0]) != 2:
+def _bishop_text_move_to_pos(pos_from, direction, distance):
+    if abs(distance - pos_from[0]) != 2:
         return None
-    diff_y = 2 if direction == "进" else -2
-    return (new_x, pos_from[1] + diff_y)
+    diff_y = 2 if direction == "+" else -2
+    return (distance, pos_from[1] + diff_y)
 
 
 # --- 马 ---
@@ -263,18 +259,13 @@ def _knight_create_moves(board, fench, pos):
     return moves
 
 
-def _knight_text_move_to_pos(pos_from, move_str):
-    direction = move_str[0]
-    target_digit = move_str[1:].strip()
-    new_x = _get_target_x(target_digit)
-    if new_x is None:
-        return None
-    diff_x = abs(pos_from[0] - new_x)
+def _knight_text_move_to_pos(pos_from, direction, distance):
+    diff_x = abs(pos_from[0] - distance)
     if diff_x not in (1, 2):
         return None
     diff_y_magnitude = 2 if diff_x == 1 else 1
-    diff_y = diff_y_magnitude if direction == "进" else -diff_y_magnitude
-    return (new_x, pos_from[1] + diff_y)
+    diff_y = diff_y_magnitude if direction == "+" else -diff_y_magnitude
+    return (distance, pos_from[1] + diff_y)
 
 
 # --- 车 ---
@@ -461,9 +452,9 @@ def create_moves(board, fench, pos):
     return handler(board, fench, pos) if handler else []
 
 
-def text_move_to_pos(piece_fench, pos_from, move_str):
+def text_move_to_pos(piece_fench, pos_from, direction, distance):
     handler = _TEXT_MOVE_TABLE.get(piece_fench)
-    return handler(pos_from, move_str) if handler else None
+    return handler(pos_from, direction, distance) if handler else None
 
 
 # =====================================================

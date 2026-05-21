@@ -574,18 +574,10 @@ class ChessBoard:
         if not positions:
             return None
 
-        # 构建走法字符串
-        direction_char = DIRECTION_MAP.get(direction, ("", ""))[0]
-        if direction == "=" or piece_fench in {"a", "b", "n"}:
-            distance_char = COLUMN_MAP[distance][0] if 0 <= distance <= 8 else ""
-        else:
-            distance_char = _HALF_TO_ZH[distance] if 1 <= distance <= 9 else ""
-        move_str_part = direction_char + distance_char
-
-        # 计算目标坐标（使用函数式 API）
+        # 计算目标坐标（使用函数式 API，直接传递 WXF 格式）
         moves = []
         for pos in positions:
-            pos_to = text_move_to_pos(piece_fench, pos, move_str_part)
+            pos_to = text_move_to_pos(piece_fench, pos, direction, distance)
             if pos_to:
                 moves.append((pos, pos_to))
 
