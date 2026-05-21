@@ -340,20 +340,6 @@ def _get_digit_index(digit_char):
     return _get_index(digit_char, use_v_index=False)
 
 
-def _get_v_index(step_digit):
-    """获取步数数字在垂直方向索引数组中的位置。
-
-    参数:
-        step_digit: 步数数字字符
-
-    返回:
-        int: v_index 位置 (0-9)，找不到返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析
-    """
-    return _get_index(step_digit, use_v_index=True)
-
-
 def _normalize_digit_char(digit_char, original_side, normalized_side=SIDE_RED):
     """将数字字符转换为规范局面下的格式。
 
@@ -408,23 +394,6 @@ def _normalize_move_str(move_str, original_side):
 
     # 如果原始是黑方，规范局面是红方，需要转换所有数字字符
     return "".join(_normalize_digit_char(c, original_side) for c in move_str)
-
-
-def _get_target_x(digit_char):
-    """获取目标列索引。
-
-    参数:
-        digit_char: 数字字符
-
-    返回:
-        int: 目标列索引 (0-8)，无法解析返回 None
-
-    注意：所有走法都在规范局面（红方视角）下解析
-    """
-    digit_index = _get_digit_index(digit_char)
-    if digit_index is None:
-        return None
-    return digit_index
 
 
 # -----------------------------------------------------#

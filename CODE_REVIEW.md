@@ -128,5 +128,5 @@ python tests/check_regression.py   # 检查性能回归
 A: 更新对应的 .md 文件，并确保 docstring 与代码同步。
 
 ---
-**最后更新**: 2024年
+**最后更新**: 2026年
 **维护者**: CChess 开发团队

@@ -356,27 +356,6 @@ class ChessBoard:
                 positions.append((x, y))
         return positions
 
-    def get_piece(self, pos):
-        """返回指定位置的棋子字符（fench），若无棋子则返回 None。
-
-        注意：原先返回 Piece 对象，现已改为返回棋子字符。
-        """
-        return self.get_fench(pos)
-
-    def get_all_pieces(self, color=None):
-        """生成器：遍历棋盘并产出 (fench, pos) 元组。
-
-        注意：原先返回 Piece 对象，现已改为返回 (fench, pos) 元组。
-        """
-        return self.get_all_fench_positions(color)
-
-    def get_king(self, color):
-        """查找并返回指定颜色的王的坐标，找不到返回 None。
-
-        注意：原先返回 Piece 对象，现已改为返回坐标元组。
-        """
-        return self.get_king_pos(color)
-
     def get_king_pos(self, color):
         """查找并返回指定颜色的王的坐标，找不到返回 None。
 
