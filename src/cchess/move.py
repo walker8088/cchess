@@ -107,7 +107,7 @@ class MoveNotation:
     def from_move(move):
         """从Move对象创建中间表示"""
         # 获取棋子信息
-        board = move.board_before()
+        board = move.board_before
         fench = board.get_fench(move.pos_from)
         species, color = fench_to_species(fench)
 
@@ -148,67 +148,7 @@ class MoveNotation:
                 distance = abs(diff)
 
         # 确定限定词
-        qualifier = ""
-
-        # 将/帅、士/仕、象/相没有限定词，无论有多少个
-        if species in ("k", "a", "b"):
-            qualifier = ""
-        else:
-            # 检查同列是否有多个相同棋子（车、马、炮、兵）
-            count = 0
-            positions = []
-            for y in range(10):
-                if board._board[y][move.pos_from[0]] == fench:
-                    positions.append((move.pos_from[0], y))
-                    count += 1
-
-            if count > 1:
-                # 排序位置（红方从下到上，黑方从上到下）
-                # 当y坐标相同时，按x坐标排序（红方从左到右，黑方从右到左）
-                if color == SIDE_RED:
-                    # 红方：从下到上，当y相同时从左到右
-                    positions.sort(key=lambda p: (p[1], p[0]), reverse=True)
-                else:
-                    # 黑方：从上到下，当y相同时从右到左
-                    positions.sort(key=lambda p: (p[1], -p[0]))
-
-                # 找到当前位置的索引
-                idx = positions.index(move.pos_from)
-
-                if count == 2:
-                    qualifier = "+" if idx == 0 else "."  # 前/后 (WXF: +/.)
-                elif count == 3:
-                    if idx == 0:
-                        qualifier = "+"  # 前 (WXF: +)
-                    elif idx == 1:
-                        qualifier = "-"  # 中 (WXF: -)
-                    else:
-                        qualifier = "."  # 后 (WXF: .)
-                elif count == 4:
-                    # 排序后：前(idx=0), 二(idx=1), 三(idx=2), 后(idx=3)
-                    if idx == 0:
-                        qualifier = "+"  # 前 (WXF: +)
-                    elif idx == 1:
-                        qualifier = "b"  # 二 (WXF: b)
-                    elif idx == 2:
-                        qualifier = "c"  # 三 (WXF: c)
-                    else:  # idx == 3
-                        qualifier = "."  # 后 (WXF: .)
-                elif count == 5:
-                    if idx == 0:
-                        qualifier = "+"  # 前 (WXF: +)
-                    elif idx == count - 1:
-                        qualifier = "."  # 后 (WXF: .)
-                    else:
-                        # 使用字母限定词：二三四→bcd (WXF)
-                        qualifier = chr(ord("a") + idx)  # idx=1→b, idx=2→c, idx=3→d
-                elif count > 5:
-                    if idx == 0:
-                        qualifier = "+"  # 前 (WXF: +)
-                    elif idx == count - 1:
-                        qualifier = "."  # 后 (WXF: .)
-                    else:
-                        qualifier = chr(ord("a") + idx)  # 字母限定词 (WXF)
+        qualifier = MoveNotation._compute_qualifier(board, fench, move.pos_from, color)
 
         return MoveNotation(
             piece_type,
@@ -221,6 +161,51 @@ class MoveNotation:
             is_checkmate=move.is_checkmate,
             piece_color=color,
         )
+
+    @staticmethod
+    def _compute_qualifier(board, fench, pos, color):
+        """根据同列相同棋子数量计算限定词（前/中/后/字母）。
+
+        将/帅、士/仕、象/相没有限定词。
+        车、马、炮、兵根据同列数量分配限定词。
+        """
+        if fench.lower() in ("k", "a", "b"):
+            return ""
+
+        # 收集同列相同棋子位置
+        positions = []
+        for y in range(10):
+            if board._board[y][pos[0]] == fench:
+                positions.append((pos[0], y))
+
+        count = len(positions)
+        if count <= 1:
+            return ""
+
+        # 排序位置（红方从下到上，黑方从上到下）
+        if color == SIDE_RED:
+            positions.sort(key=lambda p: (p[1], p[0]), reverse=True)
+        else:
+            positions.sort(key=lambda p: (p[1], -p[0]))
+
+        # 找到当前位置的索引
+        idx = positions.index(pos)
+
+        # 根据数量分配限定词
+        if count == 2:
+            return "+" if idx == 0 else "."  # 前/后
+        elif count == 3:
+            return {0: "+", 1: "-", 2: "."}[idx]  # 前/中/后
+        elif count == 4:
+            # 前(idx=0), 二(idx=1), 三(idx=2), 后(idx=3)
+            return {0: "+", 1: "b", 2: "c", 3: "."}[idx]
+        else:
+            # count >= 5: 前(idx=0), 后(idx=count-1), 中间用字母
+            if idx == 0:
+                return "+"
+            if idx == count - 1:
+                return "."
+            return chr(ord("a") + idx)  # 字母限定词
 
     @staticmethod
     def from_text(text):
@@ -479,10 +464,12 @@ class Move:
         # 设置被吃棋子
         self.captured = move_info.captured_fench
 
+    @property
     def board_before(self):
         """移动前的棋盘状态"""
         return self._board_cache
 
+    @property
     def board_after(self):
         """移动后的棋盘状态"""
         return self._board_done_cache
@@ -505,8 +492,8 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        # 直接使用 board_before() 获取实例，避免延迟导入
-        mirrored_board = self.board_before().mirror()
+        # 直接使用 board_before 获取实例，避免延迟导入
+        mirrored_board = self.board_before.mirror()
         self.move_info.board_before = mirrored_board._board
 
         self.pos_from = (8 - self.pos_from[0], self.pos_from[1])
@@ -527,8 +514,8 @@ class Move:
         `next_move` 链进行相同处理。该操作会修改当前 `Move` 实例
         及其子节点。
         """
-        # 直接使用 board_before() 获取实例，避免延迟导入
-        flipped_board = self.board_before().flip()
+        # 直接使用 board_before 获取实例，避免延迟导入
+        flipped_board = self.board_before.flip()
         self.move_info.board_before = flipped_board._board
 
         self.pos_from = (self.pos_from[0], 9 - self.pos_from[1])
@@ -548,8 +535,8 @@ class Move:
         对当前走子、`board_done` 及所有分支和 `next_move` 做视角
         交换，使之从另一方视角表示。
         """
-        # 直接使用 board_before() 获取实例，避免延迟导入
-        swapped_board = self.board_before().swap()
+        # 直接使用 board_before 获取实例，避免延迟导入
+        swapped_board = self.board_before.swap()
         self.move_info.board_before = swapped_board._board
 
         self.move_info.moving_fench = swap_fench(self.move_info.moving_fench)
@@ -806,13 +793,13 @@ class Move:
         根据历史拼接 moves 列表以便向引擎发送完整走子序列。
         """
         if self.captured:
-            # 吃子移动：使用 board_before() 的副本生成走子后的 FEN
-            temp_board = self.board_before().copy()
+            # 吃子移动：使用 board_before 的副本生成走子后的 FEN
+            temp_board = self.board_before.copy()
 
             # 应用移动
             moving_fench = temp_board._board[self.pos_from[1]][self.pos_from[0]]
             temp_board._board[self.pos_to[1]][self.pos_to[0]] = moving_fench
-            temp_board._board[self.pos_from[1]][self.pos_from[0]] = None
+            temp_board._board[self.pos_from[1]][self.pos_from[0]] = "."
             temp_board.set_move_side(move_side)
 
             self.fen_for_engine = temp_board.to_fen()
@@ -821,7 +808,7 @@ class Move:
             # 未吃子移动
             if not history:
                 # 历史为空
-                self.fen_for_engine = self.board_before().to_fen()
+                self.fen_for_engine = self.board_before.to_fen()
                 self.move_list_for_engine = [self.to_iccs()]
             else:
                 # 历史不为空，向后追加

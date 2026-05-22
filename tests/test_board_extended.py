@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from cchess import SIDE_ANY, SIDE_BLACK, FULL_INIT_FEN, SIDE_RED, ChessBoard
+from cchess import FULL_INIT_FEN, SIDE_ANY, SIDE_BLACK, SIDE_RED, ChessBoard
 
 
 class TestBoardExtended:
@@ -40,7 +40,7 @@ class TestBoardExtended:
         # 移除棋子
         fench = board.pop_fench((0, 0))
         assert fench == "R"
-        assert board.get_fench((0, 0)) is None
+        assert board.get_fench((0, 0)) == "."
 
     def test_put_fench_chain_calls(self):
         """测试 put_fench 的链式调用功能"""
@@ -58,11 +58,11 @@ class TestBoardExtended:
         assert board.get_fench((0, 9)) == "r"
 
         # 链式调用移除棋子
-        board.put_fench(None, (0, 0)).put_fench(None, (0, 9))
+        board.put_fench(".", (0, 0)).put_fench(".", (0, 9))
 
         # 验证棋子已移除
-        assert board.get_fench((0, 0)) is None
-        assert board.get_fench((0, 9)) is None
+        assert board.get_fench((0, 0)) == "."
+        assert board.get_fench((0, 9)) == "."
 
         # 验证其他棋子仍然存在
         assert board.get_fench((4, 0)) == "K"
@@ -105,17 +105,17 @@ class TestBoardExtended:
         # 移除棋子并验证返回值
         removed_fench = board.pop_fench((0, 0))
         assert removed_fench == "R"
-        assert board.get_fench((0, 0)) is None
+        assert board.get_fench((0, 0)) == "."
 
         # 移除另一个棋子
         removed_fench = board.pop_fench((4, 9))
         assert removed_fench == "k"
-        assert board.get_fench((4, 9)) is None
+        assert board.get_fench((4, 9)) == "."
 
         # 移除不存在的棋子
         removed_fench = board.pop_fench((1, 1))
-        assert removed_fench is None
-        assert board.get_fench((1, 1)) is None
+        assert removed_fench == "."
+        assert board.get_fench((1, 1)) == "."
 
     def test_clear_chain_calls(self):
         """测试 clear 方法的链式调用"""
@@ -131,8 +131,8 @@ class TestBoardExtended:
         board.clear().put_fench("K", (4, 0)).put_fench("r", (0, 9))
 
         # 验证旧棋子已清除
-        assert board.get_fench((0, 0)) is None
-        assert board.get_fench((4, 9)) is None
+        assert board.get_fench((0, 0)) == "."
+        assert board.get_fench((4, 9)) == "."
 
         # 验证新棋子已放置
         assert board.get_fench((4, 0)) == "K"

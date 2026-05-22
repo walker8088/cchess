@@ -763,3 +763,19 @@ def is_int(s: str) -> bool:
 
     # 其余部分必须全为数字
     return s.isdigit()
+
+
+def is_enemy_fench(fench_from: str, fench_to: str) -> bool:
+    """判断目标棋子是否为敌方。
+
+    Args:
+        fench_from: 源棋子字符（如 'R', 'r'）
+        fench_to: 目标棋子字符（如 'r', 'R', '.'）
+
+    Returns:
+        bool: 目标棋子是否为敌方（非己方且非空）
+    """
+    if fench_to == ".":
+        return False
+    color_from = get_fench_color(fench_from)
+    return fench_to.isupper() != (color_from == SIDE_RED)

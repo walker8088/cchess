@@ -1500,7 +1500,7 @@ class TestBoard:
         board = ChessBoard(FULL_INIT_FEN)
         fench = board.pop_fench((0, 0))
         assert fench == "R"
-        assert board.get_fench((0, 0)) is None
+        assert board.get_fench((0, 0)) == "."
 
     def test_board_occupied_color(self):
         """Test ChessBoard.occupied for color checking."""
@@ -1538,7 +1538,7 @@ class TestBoard:
         board = ChessBoard(FULL_INIT_FEN)
         new_board = board.copy()
         # Move king far away - invalid
-        new_board._board[0][4] = None
+        new_board._board[0][4] = "."
         new_board._board[0][8] = "K"
         result = board.create_move_from_board(new_board)
         assert result is None

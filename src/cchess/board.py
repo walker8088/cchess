@@ -122,9 +122,7 @@ class ChessBoard:
             fen: 初始局面 FEN（缺省为空表示默认空棋盘或初始局面）。
         """
         # 初始化所有实例属性
-        self._board: List[List[Optional[str]]] = [
-            [None for _ in range(9)] for _ in range(10)
-        ]
+        self._board: List[List[str]] = [["." for _ in range(9)] for _ in range(10)]
         self._move_side = SIDE_ANY
         # 攻击矩阵缓存
         self._red_attacks: List[List[bool]] = [
@@ -144,7 +142,7 @@ class ChessBoard:
         # 重置棋盘
         for y in range(10):
             for x in range(9):
-                self._board[y][x] = None
+                self._board[y][x] = "."
 
         # 重置走子方
         self._move_side = SIDE_ANY
@@ -183,7 +181,7 @@ class ChessBoard:
     def from_board(self, b: "ChessBoard") -> "ChessBoard":
         """从另一个ChessBoard Copy属性"""
         self._board = [row[:] for row in b._board]
-        self._move_side = b.move_side()
+        self._move_side = b._move_side
         # 复制攻击矩阵缓存（如果存在）
         if hasattr(b, "_red_attacks"):
             self._red_attacks = b._red_attacks
@@ -220,13 +218,13 @@ class ChessBoard:
         b = self.copy()
         b._board = [
             [
-                swap_fench(self._board[y][x]) if self._board[y][x] is not None else None
+                swap_fench(self._board[y][x]) if self._board[y][x] != "." else "."
                 for x in range(9)
             ]
             for y in range(10)
         ]
 
-        b.set_move_side(next_side(b.move_side()))
+        b.set_move_side(next_side(b._move_side))
         b._attack_matrix_dirty = True
 
         return b
@@ -240,7 +238,7 @@ class ChessBoard:
                 left_fench = row[x]
                 right_fench = row[8 - x]
 
-                # 简化判断逻辑：直接比较棋子是否相等（None == None 为 True）
+                # 简化判断逻辑：直接比较棋子是否相等（'.' == '.' 为 True）
                 if left_fench != right_fench:
                     return False
         return True
@@ -291,7 +289,7 @@ class ChessBoard:
         """在指定位置放置棋子（不做合法性检查）。
 
         参数:
-            fench (str|None): 棋子字符，例如 'K' 或 'p'，None 表示移除棋子
+            fench (str): 棋子字符，例如 'K' 或 'p'，'.' 表示移除棋子
             pos (tuple): 目标坐标 (x, y)
 
         返回:
@@ -306,7 +304,7 @@ class ChessBoard:
         """移除并返回指定位置的棋子（若为空则返回 None）。"""
         self._validate_pos(pos)
         fench = self._board[pos[1]][pos[0]]
-        self._board[pos[1]][pos[0]] = None
+        self._board[pos[1]][pos[0]] = "."
         self._attack_matrix_dirty = True
         return fench
 
@@ -335,7 +333,7 @@ class ChessBoard:
                 print("空位")
         """
         fench = self._board[pos[1]][pos[0]]
-        if fench is None:
+        if fench == ".":
             return None
         return SIDE_RED if fench.isupper() else SIDE_BLACK
 
@@ -369,7 +367,7 @@ class ChessBoard:
         for x in (3, 4, 5):
             for y in limit_y[color]:
                 fench = self._board[y][x]
-                if fench and fench.lower() == "k":
+                if fench != "." and fench.lower() == "k":
                     return (x, y)
         return None
 
@@ -385,7 +383,7 @@ class ChessBoard:
         for x in range(9):
             for y in range(10):
                 fench = self._board[y][x]
-                if not fench:
+                if fench == ".":
                     continue
                 if color is None:
                     yield (fench, (x, y))
@@ -419,7 +417,7 @@ class ChessBoard:
             return False
 
         fench_from = self._board[pos_from[1]][pos_from[0]]
-        if not fench_from:
+        if fench_from == ".":
             return False
 
         from_color = get_fench_color(fench_from)
@@ -428,7 +426,7 @@ class ChessBoard:
             return False
 
         fench_to = self._board[pos_to[1]][pos_to[0]]
-        if fench_to:
+        if fench_to != ".":
             to_color = get_fench_color(fench_to)
             if from_color == to_color:
                 return False
@@ -443,7 +441,7 @@ class ChessBoard:
         moving_fench = self._board[pos_from[1]][pos_from[0]]
         captured_fench = self._board[pos_to[1]][pos_to[0]]
         self._board[pos_to[1]][pos_to[0]] = moving_fench
-        self._board[pos_from[1]][pos_from[0]] = None
+        self._board[pos_from[1]][pos_from[0]] = "."
         self._attack_matrix_dirty = True
 
         return (moving_fench, captured_fench)
@@ -464,6 +462,8 @@ class ChessBoard:
         prev_move_side = self._move_side
         moving_fench = self._board[pos_from[1]][pos_from[0]]
         captured_fench = self._board[pos_to[1]][pos_to[0]]
+        if captured_fench == ".":
+            captured_fench = None
 
         # 2. 执行移动
         self._move_piece(pos_from, pos_to)
@@ -561,7 +561,7 @@ class ChessBoard:
             return None
 
         # 反规范化
-        if self.move_side() == SIDE_BLACK:
+        if self._move_side == SIDE_BLACK:
             return [
                 (self.denormalize_pos(f), self.denormalize_pos(t)) for f, t in moves
             ]
@@ -655,7 +655,7 @@ class ChessBoard:
         使用规范局面：将黑方走子转换为红方视角处理，简化逻辑。
         """
         fench = self.get_fench(pos)
-        if not fench:
+        if fench == ".":
             return
 
         piece_color = get_fench_color(fench)
@@ -805,11 +805,11 @@ class ChessBoard:
 
     def count_x_line_in(self, y: int, x_from: int, x_to: int) -> int:
         """统计同一行 y 上 x_from 与 x_to 之间（不含端点）被占用的格子数。"""
-        return sum(1 for f in self.x_line_in(y, x_from, x_to) if f)
+        return sum(1 for f in self.x_line_in(y, x_from, x_to) if f != ".")
 
     def count_y_line_in(self, x: int, y_from: int, y_to: int) -> int:
         """统计同一列 x 上 y_from 与 y_to 之间（不含端点）被占用的格子数。"""
-        return sum(1 for f in self.y_line_in(x, y_from, y_to) if f)
+        return sum(1 for f in self.y_line_in(x, y_from, y_to) if f != ".")
 
     def x_line_in(self, y: int, x_from: int, x_to: int) -> List[Optional[str]]:
         """返回水平方向上两个 x 之间（不含端点）的格子内容列表。"""
@@ -878,7 +878,7 @@ class ChessBoard:
         for y in range(9, -1, -1):
             for x in range(9):
                 fench = self._board[y][x]
-                if fench:
+                if fench != ".":
                     if count != 0:
                         fen += str(count)
                         count = 0
@@ -939,7 +939,7 @@ class ChessBoard:
                 if p_old == p_new:
                     continue
                 # move from
-                if p_new is None:
+                if p_new == ".":
                     p_from.append((x, y))
                 # move_to
                 else:
@@ -959,6 +959,10 @@ class ChessBoard:
         return None
 
     def text_view(self):
+        """棋盘文字显示, 空位置显示为'.'"""
+        return "\n".join(self._board)
+
+    def print_view(self):
         """将棋盘渲染为文本画板（返回字符串列表）。"""
         board_str = _text_board[:]
 
@@ -966,7 +970,7 @@ class ChessBoard:
         for line in self._board:
             x = 8
             for ch in line[::-1]:
-                if ch:
+                if ch != ".":
                     pos = _pos_to_text_board_pos((x, y))
                     new_text = (
                         board_str[pos[1]][: pos[0]]
@@ -978,12 +982,6 @@ class ChessBoard:
             y += 1
 
         return board_str
-
-    def print_board(self):
-        """在标准输出打印棋盘的文本表示，便于调试。"""
-        print("")
-        for s in self.text_view():
-            print(s)
 
     def __str__(self):
         """__str__ 方法。"""

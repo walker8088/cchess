@@ -35,6 +35,7 @@ from .common import (
     SIDE_BLACK,
     SIDE_RED,
     get_fench_color,
+    is_enemy_fench,
     next_side,
 )
 
@@ -86,14 +87,6 @@ _KNIGHT_MOVES = (
 def _is_on_board(pos):
     """检查坐标是否在棋盘范围内。"""
     return 0 <= pos[0] <= 8 and 0 <= pos[1] <= 9
-
-
-def _is_enemy_fench(fench_from, fench_to):
-    """判断目标棋子是否为敌方。"""
-    if fench_to is None:
-        return False
-    color_from = get_fench_color(fench_from)
-    return fench_to.isupper() != (color_from == SIDE_RED)
 
 
 def _abs_diff(x, y):
@@ -205,7 +198,7 @@ def _bishop_valid_move(board, fench, pos_from, pos_to):
         return False
     eye_x = (pos_from[0] + pos_to[0]) // 2
     eye_y = (pos_from[1] + pos_to[1]) // 2
-    if board.get_fench((eye_x, eye_y)) is not None:
+    if board.get_fench((eye_x, eye_y)) != ".":
         return False
     color = get_fench_color(fench)
     min_y, max_y = _PIECE_CONSTANTS["b"]["y_range"][color]
@@ -234,7 +227,7 @@ def _bishop_text_move_to_pos(pos_from, direction, distance):
 def _knight_valid_move(board, fench, pos_from, pos_to):
     for (dx, dy), (bx, by) in _KNIGHT_MOVES:
         if pos_from[0] + dx == pos_to[0] and pos_from[1] + dy == pos_to[1]:
-            return board.get_fench((pos_from[0] + bx, pos_from[1] + by)) is None
+            return board.get_fench((pos_from[0] + bx, pos_from[1] + by)) == "."
     return False
 
 
@@ -248,10 +241,10 @@ def _knight_create_moves(board, fench, pos):
         nx, ny = x + dx, y + dy
         if not (0 <= nx <= 8 and 0 <= ny <= 9):
             continue
-        if board_arr[y + by][x + bx] is not None:
+        if board_arr[y + by][x + bx] != ".":
             continue
         target_fench = board_arr[ny][nx]
-        if target_fench is not None and target_fench.isupper() == (color == SIDE_RED):
+        if target_fench != "." and target_fench.isupper() == (color == SIDE_RED):
             continue
         moves.append((curr_pos, (nx, ny)))
     return moves
@@ -284,7 +277,7 @@ def _cannon_valid_move(board, fench, pos_from, pos_to):
     else:
         count = board.count_y_line_in(pos_from[0], pos_from[1], pos_to[1])
     target = board.get_fench(pos_to)
-    return (count == 0 and target is None) or (count == 1 and target is not None)
+    return (count == 0 and target == ".") or (count == 1 and target != ".")
 
 
 # --- 兵 ---
@@ -328,21 +321,21 @@ def _create_sliding_moves(board, fench, pos, directions, is_cannon=False):
         while 0 <= nx <= 8 and 0 <= ny <= 9:
             target = board_arr[ny][nx]
             if not is_cannon:
-                if target is None:
+                if target == ".":
                     moves.append((curr_pos, (nx, ny)))
                 else:
-                    if _is_enemy_fench(fench, target):
+                    if is_enemy_fench(fench, target):
                         moves.append((curr_pos, (nx, ny)))
                     break
             else:
                 if not screen_found:
-                    if target is None:
+                    if target == ".":
                         moves.append((curr_pos, (nx, ny)))
                     else:
                         screen_found = True
                 else:
-                    if target is not None:
-                        if _is_enemy_fench(fench, target):
+                    if target != ".":
+                        if is_enemy_fench(fench, target):
                             moves.append((curr_pos, (nx, ny)))
                         break
             nx += dx
@@ -423,36 +416,30 @@ _PIECE_RULES = {
     },
 }
 
-# 派生分发表（保持现有 API 兼容）
-_VALID_POS_TABLE = {
-    k: v["valid_pos"] for k, v in _PIECE_RULES.items() if "valid_pos" in v
-}
-_VALID_MOVE_TABLE = {k: v["valid_move"] for k, v in _PIECE_RULES.items()}
-_CREATE_MOVES_TABLE = {k: v["create_moves"] for k, v in _PIECE_RULES.items()}
-_TEXT_MOVE_TABLE = {k: v["text_move"] for k, v in _PIECE_RULES.items()}
 
-
-# =====================================================
-# 公共 API 函数
-# =====================================================
+# 公共 API 函数（直接查询 _PIECE_RULES，消除派生表）
 def is_valid_pos(fench, pos):
-    handler = _VALID_POS_TABLE.get(fench.lower())
-    return handler(fench, pos) if handler else _is_on_board(pos)
+    rules = _PIECE_RULES.get(fench.lower())
+    return (
+        rules["valid_pos"](fench, pos)
+        if rules and "valid_pos" in rules
+        else _is_on_board(pos)
+    )
 
 
 def is_valid_move(board, fench, pos_from, pos_to):
-    handler = _VALID_MOVE_TABLE.get(fench.lower())
-    return handler(board, fench, pos_from, pos_to) if handler else False
+    rules = _PIECE_RULES.get(fench.lower())
+    return rules["valid_move"](board, fench, pos_from, pos_to) if rules else False
 
 
 def create_moves(board, fench, pos):
-    handler = _CREATE_MOVES_TABLE.get(fench.lower())
-    return handler(board, fench, pos) if handler else []
+    rules = _PIECE_RULES.get(fench.lower())
+    return rules["create_moves"](board, fench, pos) if rules else []
 
 
 def text_move_to_pos(piece_fench, pos_from, direction, distance):
-    handler = _TEXT_MOVE_TABLE.get(piece_fench)
-    return handler(pos_from, direction, distance) if handler else None
+    rules = _PIECE_RULES.get(piece_fench)
+    return rules["text_move"](pos_from, direction, distance) if rules else None
 
 
 # =====================================================

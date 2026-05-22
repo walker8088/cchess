@@ -315,7 +315,7 @@ def _read_steps(buff_decoder, version, keys, game, parent_move, board):
 
     good_move = parent_move
     fench = board.get_fench(move_from)
-    if fench:
+    if fench != ".":
         # pylint: disable=duplicate-code
         piece_color = get_fench_color(fench)
         board.set_move_side(piece_color)
@@ -558,11 +558,11 @@ def read_from_xqf(full_file_name, game_class, _read_annotation=True):
     )
 
     if game.first_move:
-        game.init_board.set_move_side(game.first_move.board_before().move_side())
+        game.init_board.set_move_side(game.first_move.board_before._move_side)
     else:
         game.init_board.set_move_side(SIDE_RED)
 
-    game.info["move_side"] = str(game.init_board.move_side())
+    game.info["move_side"] = str(game.init_board._move_side)
 
     return game
 
@@ -671,61 +671,91 @@ class XQFWriter:
 
         self._set_bytes(0x0010, bytes(position))
 
-    def set_result(self, result: int):
-        """设置棋局结果
-        0x00-未知, 0x01-红胜, 0x02-黑胜, 0x03-和棋
+    # XQF 头字段配置：field_name → (offset, max_length)
+    _HEADER_FIELDS = {
+        "result": (0x0033, 1, "int"),
+        "game_type": (0x0040, 1, "int"),
+        "title": (0x0050, 63, "str"),
+        "event": (0x00D0, 63, "str"),
+        "date": (0x0110, 15, "str"),
+        "location": (0x0120, 15, "str"),
+        "red_player": (0x0130, 15, "str"),
+        "black_player": (0x0140, 15, "str"),
+        "time_rule": (0x0150, 63, "str"),
+        "red_time": (0x0190, 15, "str"),
+        "black_time": (0x01A0, 15, "str"),
+        "commentator": (0x01D0, 15, "str"),
+        "author": (0x01E0, 15, "str"),
+    }
+
+    def set_field(self, field_name: str, value) -> None:
+        """通用头字段设置方法。
+
+        Args:
+            field_name: 字段名（如 'title', 'event' 等）
+            value: 字段值（字符串或整数）
         """
-        self.header[0x0033] = result
+        if field_name not in self._HEADER_FIELDS:
+            raise ValueError(f"Unknown header field: {field_name}")
+
+        offset, max_length, field_type = self._HEADER_FIELDS[field_name]
+        if field_type == "int":
+            self.header[offset] = value
+        else:
+            self._set_string(offset, value, max_length)
+
+    # 向后兼容的薄包装（委托给 set_field）
+    def set_result(self, result: int):
+        """设置棋局结果"""
+        self.set_field("result", result)
 
     def set_game_type(self, game_type: int):
-        """设置棋局类型
-        0x00-全局文件, 0x01-布局文件, 0x02-中局文件, 0x03-残局文件
-        """
-        self.header[0x0040] = game_type
+        """设置棋局类型"""
+        self.set_field("game_type", game_type)
 
     def set_title(self, title: str):
         """设置标题"""
-        self._set_string(0x0050, title, 63)
+        self.set_field("title", title)
 
     def set_event(self, event: str):
         """设置比赛名称"""
-        self._set_string(0x00D0, event, 63)
+        self.set_field("event", event)
 
     def set_date(self, date: str):
         """设置比赛日期"""
-        self._set_string(0x0110, date, 15)
+        self.set_field("date", date)
 
     def set_location(self, location: str):
         """设置比赛地点"""
-        self._set_string(0x0120, location, 15)
+        self.set_field("location", location)
 
     def set_red_player(self, player: str):
         """设置红方棋手"""
-        self._set_string(0x0130, player, 15)
+        self.set_field("red_player", player)
 
     def set_black_player(self, player: str):
         """设置黑方棋手"""
-        self._set_string(0x0140, player, 15)
+        self.set_field("black_player", player)
 
     def set_time_rule(self, rule: str):
         """设置用时规则"""
-        self._set_string(0x0150, rule, 63)
+        self.set_field("time_rule", rule)
 
     def set_red_time(self, time_str: str):
         """设置红方用时"""
-        self._set_string(0x0190, time_str, 15)
+        self.set_field("red_time", time_str)
 
     def set_black_time(self, time_str: str):
         """设置黑方用时"""
-        self._set_string(0x01A0, time_str, 15)
+        self.set_field("black_time", time_str)
 
     def set_commentator(self, commentator: str):
         """设置棋谱讲评人"""
-        self._set_string(0x01D0, commentator, 15)
+        self.set_field("commentator", commentator)
 
     def set_author(self, author: str):
         """设置文件作者"""
-        self._set_string(0x01E0, author, 15)
+        self.set_field("author", author)
 
     def _encode_move(self, move: XQMove, is_last) -> Tuple[bytes, bytes]:
         """编码一步棋为XQF格式"""
