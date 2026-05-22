@@ -66,6 +66,9 @@ from .piece import (
 from .zhash_data import Z_HASH_C90, Z_HASH_TABLE, Z_MAP_PIECES, Z_RED_KEY
 
 # -----------------------------------------------------#
+_limit_king_y = {SIDE_ANY: (), SIDE_RED: (0, 1, 2), SIDE_BLACK: (7, 8, 9)}
+
+# -----------------------------------------------------#
 _text_board = [
     #'  1   2   3   4   5   6   7   8   9 ',
     "9 ┌───┬───┬───┬───┬───┬───┬───┬───┐ ",
@@ -169,29 +172,24 @@ class ChessBoard:
         return self
 
     def copy(self) -> "ChessBoard":
-        """返回棋盘的快照（独立副本）。"""
+        """返回棋盘的副本。"""
         b = self.__class__()
         b._board = [row[:] for row in self._board]
-        b.set_move_side(self._move_side)
         b._red_attacks = [row[:] for row in self._red_attacks]
         b._black_attacks = [row[:] for row in self._black_attacks]
         b._attack_matrix_dirty = self._attack_matrix_dirty
+        b.set_move_side(self._move_side)
         return b
 
     def from_board(self, b: "ChessBoard") -> "ChessBoard":
         """从另一个ChessBoard Copy属性"""
         self._board = [row[:] for row in b._board]
         self._move_side = b._move_side
-        # 复制攻击矩阵缓存（如果存在）
-        if hasattr(b, "_red_attacks"):
-            self._red_attacks = b._red_attacks
-            self._black_attacks = b._black_attacks
-            self._attack_matrix_dirty = b._attack_matrix_dirty
-        else:
-            # 旧版本棋盘没有这些属性，标记为脏
-            self._red_attacks = [[False for _ in range(9)] for _ in range(10)]
-            self._black_attacks = [[False for _ in range(9)] for _ in range(10)]
-            self._attack_matrix_dirty = True
+        # 复制攻击矩阵缓存
+        self._red_attacks = b._red_attacks
+        self._black_attacks = b._black_attacks
+        self._attack_matrix_dirty = b._attack_matrix_dirty
+
         return self
 
     def mirror(self) -> "ChessBoard":
@@ -217,14 +215,10 @@ class ChessBoard:
 
         b = self.copy()
         b._board = [
-            [
-                swap_fench(self._board[y][x]) if self._board[y][x] != "." else "."
-                for x in range(9)
-            ]
-            for y in range(10)
+            [swap_fench(self._board[y][x]) for x in range(9)] for y in range(10)
         ]
 
-        b.set_move_side(next_side(b._move_side))
+        b._move_side = next_side(self._move_side)
         b._attack_matrix_dirty = True
 
         return b
@@ -354,23 +348,6 @@ class ChessBoard:
                 positions.append((x, y))
         return positions
 
-    def get_king_pos(self, color):
-        """查找并返回指定颜色的王的坐标，找不到返回 None。
-
-        参数:
-            color (int): 指定要查找的颜色。
-
-        返回:
-            tuple: 王的坐标 (x, y)，找不到返回 None
-        """
-        limit_y = ((), (0, 1, 2), (7, 8, 9))
-        for x in (3, 4, 5):
-            for y in limit_y[color]:
-                fench = self._board[y][x]
-                if fench != "." and fench.lower() == "k":
-                    return (x, y)
-        return None
-
     def get_all_fench_positions(self, color=None):
         """生成器：遍历棋盘并产出 (fench, pos) 元组。
 
@@ -391,11 +368,24 @@ class ChessBoard:
                     if get_fench_color(fench) == color:
                         yield (fench, (x, y))
 
-    # Move 相关
-    def is_valid_move_t(self, move_t):
-        """便捷方法：接受 (from, to) 的元组并验证其是否合法。"""
-        return self.is_valid_move(move_t[0], move_t[1])
+    def get_king_pos(self, color):
+        """查找并返回指定颜色的王的坐标，找不到返回 None。
 
+        参数:
+            color (int): 指定要查找的颜色。
+
+        返回:
+            tuple: 王的坐标 (x, y)，找不到返回 None
+        """
+
+        for x in (3, 4, 5):
+            for y in _limit_king_y[color]:
+                fench = self._board[y][x]
+                if fench != "." and fench.lower() == "k":
+                    return (x, y)
+        return None
+
+    # Move 相关
     def is_valid_iccs_move(self, iccs: str) -> bool:
         """接受 ICCS 格式字符串并判定是否为合法走子。"""
         move_from, move_to = iccs2pos(iccs)
@@ -797,7 +787,7 @@ class ChessBoard:
 
         for fench, pos in self.get_all_fench_positions(self._move_side):
             for move_it in piece_create_moves(self, fench, pos):
-                if self.is_valid_move_t(move_it):
+                if self.is_valid_move(move_it[0], move_it[1]):
                     if not self.is_checked_move(move_it[0], move_it[1]):
                         return False
 

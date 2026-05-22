@@ -34,8 +34,10 @@ from __future__ import annotations
 from .common import (
     SIDE_BLACK,
     SIDE_RED,
+    abs_diff,
     get_fench_color,
     is_enemy_fench,
+    is_on_board,
     next_side,
 )
 
@@ -84,14 +86,6 @@ _KNIGHT_MOVES = (
 # -----------------------------------------------------#
 # 内部辅助函数（纯函数，无外部依赖）
 # -----------------------------------------------------#
-def _is_on_board(pos):
-    """检查坐标是否在棋盘范围内。"""
-    return 0 <= pos[0] <= 8 and 0 <= pos[1] <= 9
-
-
-def _abs_diff(x, y):
-    """返回两点坐标在各维度上的绝对差值元组。"""
-    return (abs(x[0] - y[0]), abs(x[1] - y[1]))
 
 
 def _linear_piece_move(pos_from, direction, distance):
@@ -118,7 +112,7 @@ def _linear_piece_move(pos_from, direction, distance):
 
 # --- 王 ---
 def _king_valid_pos(fench, pos):
-    if not _is_on_board(pos):
+    if not is_on_board(pos):
         return False
     color = get_fench_color(fench)
     cfg = _PIECE_CONSTANTS["k"]
@@ -136,7 +130,7 @@ def _king_valid_move(board, fench, pos_from, pos_to):
                 return True
     if not _king_valid_pos(fench, pos_to):
         return False
-    diff = _abs_diff(pos_from, pos_to)
+    diff = abs_diff(pos_from, pos_to)
     return (diff[0] + diff[1]) == 1
 
 
@@ -151,13 +145,13 @@ def _king_create_moves(board, fench, pos):
     return (
         (curr_pos, to_pos)
         for to_pos in positions
-        if board.is_valid_move_t((curr_pos, to_pos))
+        if board.is_valid_move(curr_pos, to_pos)
     )
 
 
 # --- 士 ---
 def _advisor_valid_pos(fench, pos):
-    if not _is_on_board(pos):
+    if not is_on_board(pos):
         return False
     return pos in _PIECE_CONSTANTS["a"]["positions"][get_fench_color(fench)]
 
@@ -165,7 +159,7 @@ def _advisor_valid_pos(fench, pos):
 def _advisor_valid_move(board, fench, pos_from, pos_to):
     if not _advisor_valid_pos(fench, pos_to):
         return False
-    return _abs_diff(pos_from, pos_to) == (1, 1)
+    return abs_diff(pos_from, pos_to) == (1, 1)
 
 
 def _advisor_create_moves(board, fench, pos):
@@ -176,7 +170,7 @@ def _advisor_create_moves(board, fench, pos):
         nx, ny = x + dx, y + dy
         if 0 <= nx <= 8 and 0 <= ny <= 9:
             moves.append((curr_pos, (nx, ny)))
-    return filter(board.is_valid_move_t, moves)
+    return [m for m in moves if board.is_valid_move(m[0], m[1])]
 
 
 def _advisor_text_move_to_pos(pos_from, direction, distance):
@@ -188,13 +182,13 @@ def _advisor_text_move_to_pos(pos_from, direction, distance):
 
 # --- 象 ---
 def _bishop_valid_pos(fench, pos):
-    if not _is_on_board(pos):
+    if not is_on_board(pos):
         return False
     return pos in _PIECE_CONSTANTS["b"]["positions"][get_fench_color(fench)]
 
 
 def _bishop_valid_move(board, fench, pos_from, pos_to):
-    if _abs_diff(pos_from, pos_to) != (2, 2):
+    if abs_diff(pos_from, pos_to) != (2, 2):
         return False
     eye_x = (pos_from[0] + pos_to[0]) // 2
     eye_y = (pos_from[1] + pos_to[1]) // 2
@@ -213,7 +207,7 @@ def _bishop_create_moves(board, fench, pos):
         nx, ny = x + dx, y + dy
         if 0 <= nx <= 8 and 0 <= ny <= 9:
             moves.append((curr_pos, (nx, ny)))
-    return filter(board.is_valid_move_t, moves)
+    return [m for m in moves if board.is_valid_move(m[0], m[1])]
 
 
 def _bishop_text_move_to_pos(pos_from, direction, distance):
@@ -282,7 +276,7 @@ def _cannon_valid_move(board, fench, pos_from, pos_to):
 
 # --- 兵 ---
 def _pawn_valid_pos(fench, pos):
-    if not _is_on_board(pos):
+    if not is_on_board(pos):
         return False
     color = get_fench_color(fench)
     min_y, max_y = _PIECE_CONSTANTS["p"]["y_range"][color]
@@ -368,7 +362,7 @@ def _pawn_create_moves(board, fench, pos):
             moves.append((curr_pos, (lx, y)))
         if rx <= 8:
             moves.append((curr_pos, (rx, y)))
-    return filter(board.is_valid_move_t, moves)
+    return [m for m in moves if board.is_valid_move(m[0], m[1])]
 
 
 # =====================================================
@@ -423,7 +417,7 @@ def is_valid_pos(fench, pos):
     return (
         rules["valid_pos"](fench, pos)
         if rules and "valid_pos" in rules
-        else _is_on_board(pos)
+        else is_on_board(pos)
     )
 
 

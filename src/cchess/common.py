@@ -47,7 +47,6 @@ def next_side(color: int) -> int:
 # -----------------------------------------------------#
 # 中文数字映射常量（用于走法文本解析）
 _FULLWIDTH_TO_CHINESE = {
-    "０": "零",
     "１": "一",
     "２": "二",
     "３": "三",
@@ -57,7 +56,6 @@ _FULLWIDTH_TO_CHINESE = {
     "７": "七",
     "８": "八",
     "９": "九",
-    "0": "零",
     "1": "一",
     "2": "二",
     "3": "三",
@@ -68,8 +66,8 @@ _FULLWIDTH_TO_CHINESE = {
     "8": "八",
     "9": "九",
 }
+
 _CHINESE_TO_FULLWIDTH = {
-    "零": "０",
     "一": "１",
     "二": "２",
     "三": "３",
@@ -121,7 +119,6 @@ for _fen, (_simp, _trad) in PIECE_MAP.items():
     REVERSE_PIECE_MAP[_simp] = _fen
     if _trad != _simp:
         REVERSE_PIECE_MAP[_trad] = _fen
-
 
 # 列数字映射（红方视角，从右到左）
 COLUMN_MAP = {
@@ -184,6 +181,7 @@ QUALIFIER_MAP = {
 # 从 QUALIFIER_MAP 自动生成逆向映射（中文 → WXF 符号）
 # WXF 格式键优先于旧格式键（如 "前" → "+" 而非 "f"）
 _WXF_QUALIFIER_KEYS = {"+", "-", ".", "a", "b", "c", "d", "e"}
+
 PRE_NUM_MAP: dict[str, str] = {}
 for _key, (_simp, _trad) in QUALIFIER_MAP.items():
     # 对每个中文值，映射回 WXF 符号（优先保留已有映射的 WXF 键）
@@ -407,6 +405,17 @@ def _h_mirror(c: str) -> str:
 def _v_mirror(c: str) -> str:
     """垂直翻转行数字（0↔9, 1↔8, ...）"""
     return str(9 - int(c))
+
+
+# -----------------------------------------------------#
+def is_on_board(pos):
+    """检查坐标是否在棋盘范围内。"""
+    return 0 <= pos[0] <= 8 and 0 <= pos[1] <= 9
+
+
+def abs_diff(x, y):
+    """返回两点坐标在各维度上的绝对差值元组。"""
+    return (abs(x[0] - y[0]), abs(x[1] - y[1]))
 
 
 # -----------------------------------------------------#
