@@ -497,121 +497,6 @@ class ChessBoard:
         move_from, move_to = iccs2pos(move_str)
         return self.move(move_from, move_to, check)
 
-    def _parse_move_text(self, move_str: str) -> Optional[list]:
-        """解析中文走法文本，返回坐标列表 [(from_pos, to_pos), ...]
-
-        内部实现，直接在 board 上操作，避免额外类实例化。
-        """
-        move_str = move_str.replace(" ", "")
-        text_side = _detect_move_side_from_text(move_str)
-        norm = self.normalized()
-
-        norm_move_str = (
-            _normalize_move_str(move_str, SIDE_BLACK)
-            if text_side == SIDE_BLACK
-            else move_str
-        )
-
-        # 词法解析：从中文走法文本解析中间表示
-        notation = MoveNotation.from_text(norm_move_str)
-        if not notation:
-            return None
-
-        piece_type = notation.piece_type
-        column = notation.column
-        direction = notation.direction
-        distance = notation.distance
-        qualifier = notation.qualifier
-        fench = piece_type.upper()
-        piece_fench = fench.lower()
-
-        if fench not in {"K", "A", "B", "N", "R", "C", "P"}:
-            return None
-
-        # 查找候选棋子
-        positions = self._find_piece_positions(
-            norm, fench, piece_fench, column, qualifier
-        )
-        if not positions:
-            return None
-
-        # 计算目标坐标（使用函数式 API，直接传递 WXF 格式）
-        moves = []
-        for pos in positions:
-            pos_to = text_move_to_pos(piece_fench, pos, direction, distance)
-            if pos_to:
-                moves.append((pos, pos_to))
-
-        if not moves:
-            return None
-
-        # 反规范化
-        if self._move_side == SIDE_BLACK:
-            return [
-                (self.denormalize_pos(f), self.denormalize_pos(t)) for f, t in moves
-            ]
-        return moves
-
-    def _find_piece_positions(self, norm, fench, piece_fench, column, qualifier):
-        """根据限定词和列查找候选棋子位置（支持 WXF 格式）"""
-        if qualifier:
-            all_positions = norm.get_fench_positions(fench)
-            if not all_positions:
-                return []
-
-            if piece_fench in {"r", "c", "n", "p"}:
-                all_positions.sort(key=lambda p: p[1], reverse=True)
-                return self._select_by_qualifier(all_positions, qualifier)
-            return []
-        else:
-            positions = norm.get_fench_positions_v_line(fench, column)
-            if not positions:
-                return []
-            if len(positions) > 1 and piece_fench not in {"a", "b"}:
-                return []
-            return positions
-
-    @staticmethod
-    def _select_by_qualifier(positions, qualifier):
-        """根据限定词从已排序的位置列表中选择一个棋子。"""
-        dispatch = {
-            "+": lambda p: p[0] if p else None,
-            "-": lambda p: p[1] if len(p) > 1 else None,
-            ".": lambda p: p[-1] if p else None,
-            "f": lambda p: p[0] if p else None,
-            "m": lambda p: p[1] if len(p) > 1 else None,
-            "b": lambda p: p[-1] if p else None,
-        }
-        fn = dispatch.get(qualifier)
-        if fn:
-            result = fn(positions)
-            return [result] if result is not None else []
-
-        # WXF 字母限定词：abcde → 索引 0-4
-        if qualifier in "abcde":
-            idx = ord(qualifier) - ord("a")
-            return [positions[idx]] if 0 <= idx < len(positions) else []
-
-        # 数字限定词：1-9 → 索引 0-8
-        if qualifier.isdigit():
-            idx = int(qualifier) - 1
-            return [positions[idx]] if 0 <= idx < len(positions) else []
-
-        return []
-
-    def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
-        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
-        moves = self._parse_move_text(move_str)
-        if not moves:
-            return None
-
-        for from_pos, to_pos in moves:
-            move = self.move(from_pos, to_pos, check)
-            if move is not None:
-                return move
-
-        return None
-
     def next_turn(self):
         """切换到下一个走子方并返回新的颜色值（工具方法）。"""
         self._move_side = next_side(self._move_side)
@@ -888,6 +773,121 @@ class ChessBoard:
     def to_full_fen(self) -> str:
         """返回包含占位信息的完整 FEN（方便外部工具兼容）。"""
         return self.to_fen() + " - - 0 1"
+
+    def _parse_move_text(self, move_str: str) -> Optional[list]:
+        """解析中文走法文本，返回坐标列表 [(from_pos, to_pos), ...]
+
+        内部实现，直接在 board 上操作，避免额外类实例化。
+        """
+        move_str = move_str.replace(" ", "")
+        text_side = _detect_move_side_from_text(move_str)
+        norm = self.normalized()
+
+        norm_move_str = (
+            _normalize_move_str(move_str, SIDE_BLACK)
+            if text_side == SIDE_BLACK
+            else move_str
+        )
+
+        # 词法解析：从中文走法文本解析中间表示
+        notation = MoveNotation.from_text(norm_move_str)
+        if not notation:
+            return None
+
+        piece_type = notation.piece_type
+        column = notation.column
+        direction = notation.direction
+        distance = notation.distance
+        qualifier = notation.qualifier
+        fench = piece_type.upper()
+        piece_fench = fench.lower()
+
+        if fench not in {"K", "A", "B", "N", "R", "C", "P"}:
+            return None
+
+        # 查找候选棋子
+        positions = self._find_piece_positions(
+            norm, fench, piece_fench, column, qualifier
+        )
+        if not positions:
+            return None
+
+        # 计算目标坐标（使用函数式 API，直接传递 WXF 格式）
+        moves = []
+        for pos in positions:
+            pos_to = text_move_to_pos(piece_fench, pos, direction, distance)
+            if pos_to:
+                moves.append((pos, pos_to))
+
+        if not moves:
+            return None
+
+        # 反规范化
+        if self._move_side == SIDE_BLACK:
+            return [
+                (self.denormalize_pos(f), self.denormalize_pos(t)) for f, t in moves
+            ]
+        return moves
+
+    def _find_piece_positions(self, norm, fench, piece_fench, column, qualifier):
+        """根据限定词和列查找候选棋子位置（支持 WXF 格式）"""
+        if qualifier:
+            all_positions = norm.get_fench_positions(fench)
+            if not all_positions:
+                return []
+
+            if piece_fench in {"r", "c", "n", "p"}:
+                all_positions.sort(key=lambda p: p[1], reverse=True)
+                return self._select_by_qualifier(all_positions, qualifier)
+            return []
+        else:
+            positions = norm.get_fench_positions_v_line(fench, column)
+            if not positions:
+                return []
+            if len(positions) > 1 and piece_fench not in {"a", "b"}:
+                return []
+            return positions
+
+    @staticmethod
+    def _select_by_qualifier(positions, qualifier):
+        """根据限定词从已排序的位置列表中选择一个棋子。"""
+        dispatch = {
+            "+": lambda p: p[0] if p else None,
+            "-": lambda p: p[1] if len(p) > 1 else None,
+            ".": lambda p: p[-1] if p else None,
+            "f": lambda p: p[0] if p else None,
+            "m": lambda p: p[1] if len(p) > 1 else None,
+            "b": lambda p: p[-1] if p else None,
+        }
+        fn = dispatch.get(qualifier)
+        if fn:
+            result = fn(positions)
+            return [result] if result is not None else []
+
+        # WXF 字母限定词：abcde → 索引 0-4
+        if qualifier in "abcde":
+            idx = ord(qualifier) - ord("a")
+            return [positions[idx]] if 0 <= idx < len(positions) else []
+
+        # 数字限定词：1-9 → 索引 0-8
+        if qualifier.isdigit():
+            idx = int(qualifier) - 1
+            return [positions[idx]] if 0 <= idx < len(positions) else []
+
+        return []
+
+    def move_text(self, move_str: str, check: bool = True) -> Optional[Move]:
+        """根据中文棋谱文本解析并执行走子，返回 `Move` 或 None。"""
+        moves = self._parse_move_text(move_str)
+        if not moves:
+            return None
+
+        for from_pos, to_pos in moves:
+            move = self.move(from_pos, to_pos, check)
+            if move is not None:
+                return move
+
+        return None
 
     def zhash(self, fen: Optional[str] = None) -> int:
         """计算当前棋盘的 Zobrist 哈希值。

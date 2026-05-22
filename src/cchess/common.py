@@ -46,7 +46,9 @@ def next_side(color: int) -> int:
 
 # -----------------------------------------------------#
 # 中文数字映射常量（用于走法文本解析）
-_FULLWIDTH_TO_CHINESE = {
+
+# 全角数字到中文数字映射
+_FULLWIDTH_TO_ZH = {
     "１": "一",
     "２": "二",
     "３": "三",
@@ -56,30 +58,6 @@ _FULLWIDTH_TO_CHINESE = {
     "７": "七",
     "８": "八",
     "９": "九",
-    "1": "一",
-    "2": "二",
-    "3": "三",
-    "4": "四",
-    "5": "五",
-    "6": "六",
-    "7": "七",
-    "8": "八",
-    "9": "九",
-}
-
-_CHINESE_TO_FULLWIDTH = {
-    "一": "１",
-    "二": "２",
-    "三": "３",
-    "四": "４",
-    "五": "５",
-    "六": "６",
-    "七": "７",
-    "八": "８",
-    "九": "九",
-    "前": "前",
-    "中": "中",
-    "后": "后",
 }
 
 # 列索引数组：规范局面下使用红方索引（中文数字，从右到左）
@@ -91,6 +69,9 @@ _HALF_TO_ZH = (None, "一", "二", "三", "四", "五", "六", "七", "八", "�
 
 # 中文数字到半角数字映射（反向自动生成）
 _ZH_TO_HALF = {zh: i for i, zh in enumerate(_HALF_TO_ZH) if zh}
+
+# 中文数字到全角数字映射（从 _HALF_TO_ZH 派生）
+_ZH_TO_FULLWIDTH = {zh: chr(0xFF10 + i) for i, zh in enumerate(_HALF_TO_ZH) if zh}
 
 # -----------------------------------------------------#
 # 走法记谱常量（被 move.py 共用）
@@ -133,18 +114,8 @@ COLUMN_MAP = {
     8: ("一", "１"),
 }
 
-# 全角数字映射（黑方使用）
-FULLWIDTH_NUM_MAP = {
-    0: "９",
-    1: "８",
-    2: "７",
-    3: "６",
-    4: "５",
-    5: "４",
-    6: "３",
-    7: "２",
-    8: "１",
-}
+# 全角数字映射（黑方使用，从 COLUMN_MAP 派生）
+FULLWIDTH_NUM_MAP = {idx: fw for idx, (_, fw) in COLUMN_MAP.items()}
 
 # 方向映射
 DIRECTION_MAP = {
@@ -190,10 +161,10 @@ for _key, (_simp, _trad) in QUALIFIER_MAP.items():
     if _trad not in PRE_NUM_MAP or _key in _WXF_QUALIFIER_KEYS:
         PRE_NUM_MAP[_trad] = _key
 
-# 限定词数字映射（红方中文数字，黑方全角数字）
+# 限定词数字映射（从 _H_LEVEL_INDEX 派生，黑方用全角数字）
 _QUALIFIER_DIGIT_MAP = {
-    SIDE_RED: ("一", "二", "三", "四", "五", "六", "七", "八", "九"),
-    SIDE_BLACK: ("１", "２", "３", "４", "５", "６", "７", "８", "９"),
+    SIDE_RED: _H_LEVEL_INDEX[::-1],  # ("一","二",...,"九")
+    SIDE_BLACK: tuple(chr(0xFF10 + i) for i in range(1, 10)),  # ("１","２",...,"９")
 }
 
 # 反向查找：列号字符 -> 列索引
@@ -202,18 +173,10 @@ for _idx, (_c, _f) in COLUMN_MAP.items():
     _COLUMN_CHAR_TO_IDX[_c] = _idx
     _COLUMN_CHAR_TO_IDX[_f] = _idx
 
-# 反向查找：中文数字/全角数字 -> 整数
+# 中文数字/全角数字到整数的统一映射
 _CHINESE_NUM_TO_INT: dict[str, int] = {
     **_ZH_TO_HALF,
-    "１": 1,
-    "２": 2,
-    "３": 3,
-    "４": 4,
-    "５": 5,
-    "６": 6,
-    "７": 7,
-    "８": 8,
-    "９": 9,
+    **{chr(0xFF10 + i): i for i in range(1, 10)},
 }
 
 # 方向字符 -> 符号映射
@@ -355,13 +318,18 @@ def _normalize_digit_char(digit_char, original_side, normalized_side=SIDE_RED):
     if original_side == normalized_side:
         return digit_char
 
-    # 如果原始是黑方，规范局面是红方，需要将全角数字转换为中文数字
+    # 如果原始是黑方，规范局面是红方，需要将数字转换为中文数字
     if original_side == SIDE_BLACK and normalized_side == SIDE_RED:
-        return _FULLWIDTH_TO_CHINESE.get(digit_char, digit_char)
+        if digit_char in _FULLWIDTH_TO_ZH:
+            return _FULLWIDTH_TO_ZH[digit_char]
+        # 处理半角数字
+        if digit_char.isdigit() and digit_char != "0":
+            return _HALF_TO_ZH[int(digit_char)]
+        return digit_char
 
     # 如果原始是红方，规范局面是黑方（理论上不会发生，因为规范局面总是红方）
     if original_side == SIDE_RED and normalized_side == SIDE_BLACK:
-        return _CHINESE_TO_FULLWIDTH.get(digit_char, digit_char)
+        return _ZH_TO_FULLWIDTH.get(digit_char, digit_char)
 
     return digit_char
 
@@ -449,36 +417,19 @@ def iccs_list_mirror(iccs_list):
 # -----------------------------------------------------#
 # 从 PIECE_MAP 自动派生的映射（避免手工维护重复数据）
 
-# FEN → 简体中文名称
+# FEN → 简体中文名称（从 PIECE_MAP 派生）
 _FENCH_NAME_DICT = {k: v[0] for k, v in PIECE_MAP.items()}
-
-# 简体中文名称 → FEN
-_NAME_FENCH_DICT = {v[0]: k for k, v in PIECE_MAP.items()}
-
-# 特殊字体名称映射（含异体字：砗/碼/砲，用于文本棋盘显示）
-_FENCH_TXT_NAME_DICT = {
-    "K": "帅",
-    "A": "仕",
-    "B": "相",
-    "R": "车",
-    "N": "马",
-    "C": "炮",
-    "P": "兵",
-    "k": "将",
-    "a": "士",
-    "b": "象",
-    "r": "砗",
-    "n": "碼",
-    "c": "砲",
-    "p": "卒",
-}
 
 
 # -----------------------------------------------------#
 def fench_to_txt_name(fench: str) -> str | None:
-    if fench not in _FENCH_TXT_NAME_DICT:
+    """返回棋子的文本显示名称（含特殊字体：砗/碼/砲）。"""
+    base = _FENCH_NAME_DICT.get(fench)
+    if base is None:
         return None
-    return _FENCH_TXT_NAME_DICT[fench]
+    # 特殊字体映射（仅 r, n, c 与普通名称不同）
+    special = {"r": "砗", "n": "碼", "c": "砲"}
+    return special.get(fench, base)
 
 
 def fench_to_text(fench: str) -> str:
@@ -486,10 +437,11 @@ def fench_to_text(fench: str) -> str:
 
 
 def text_to_fench(text, color):
-    if text not in _NAME_FENCH_DICT:
-        return None
-    fench = _NAME_FENCH_DICT[text]
-    return fench.lower() if color == SIDE_BLACK else fench.upper()
+    # 从 PIECE_MAP 构建反向查找
+    for _fen, (_simp, _trad) in PIECE_MAP.items():
+        if text in (_simp, _trad):
+            return _fen.lower() if color == SIDE_BLACK else _fen.upper()
+    return None
 
 
 def swap_fench(fench: str) -> str:
