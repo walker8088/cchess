@@ -386,11 +386,6 @@ class ChessBoard:
         return None
 
     # Move 相关
-    def is_valid_iccs_move(self, iccs: str) -> bool:
-        """接受 ICCS 格式字符串并判定是否为合法走子。"""
-        move_from, move_to = iccs2pos(iccs)
-        return self.is_valid_move(move_from, move_to)
-
     def is_valid_move(self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]) -> bool:
         """只进行最基本的走子规则检查，不对每个子的规则进行检查，以加快文件加载之类的速度。"""
 

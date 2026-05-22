@@ -149,8 +149,6 @@ class TestBoard:
             == "rnbakabnr/9/1c5c1/p3p1p1p/2p6/9/P1P1P1P1P/1C2B2C1/9/RNBAKA1NR w"
         )
 
-        assert board.is_valid_iccs_move("b0d1") is True
-        assert board.copy().is_valid_iccs_move("b0d1") is True
         assert board.is_valid_move((1, 0), (3, 1)) is True
         move_it = board.move((1, 0), (3, 1))
         assert move_it.to_text() == "马八进六"
