@@ -66,13 +66,6 @@ class Game:
         """返回游戏信息的字符串表示（通常用于调试）。"""
         return str(self.info)
 
-    def _ensure_first_move(self, chess_move):
-        """将 `chess_move` 设为首步并初始化初始棋盘。"""
-        chess_move.parent = self
-        self.first_move = chess_move
-        self.init_board = chess_move.board_before().copy()
-        self.last_move = self.first_move
-
     # 当第一步走法就有变招的时候，需多次调用这个函数
     def append_first_move(self, chess_move):
         """将 `chess_move` 添加为游戏的第一个走子节点或作为分支加入。
@@ -82,7 +75,9 @@ class Game:
         """
         chess_move.parent = self
         if not self.first_move:
-            self._ensure_first_move(chess_move)
+            self.first_move = chess_move
+            self.init_board = chess_move.board_before.copy()
+            self.last_move = self.first_move
         else:
             self.first_move.add_variation(chess_move)
 
@@ -97,7 +92,10 @@ class Game:
         便于链式调用。
         """
         if not self.first_move:
-            self._ensure_first_move(chess_move)
+            chess_move.parent = self
+            self.first_move = chess_move
+            self.init_board = chess_move.board_before.copy()
+            self.last_move = self.first_move
         else:
             self.last_move.append_next_move(chess_move)
             self.last_move = chess_move
@@ -160,7 +158,7 @@ class Game:
 
     def dump_init_board(self):
         """返回初始棋盘的文本视图（用于打印）。"""
-        return self.init_board.text_view()
+        return self.init_board.print_view()
 
     def dump_moves(self, is_tree_mode=False):
         """序列化游戏中记录的所有走子线路。
@@ -190,7 +188,7 @@ class Game:
     def dump_fen_iccs_moves(self):
         """返回每一步的 (FEN, ICCS) 对，便于调试或分析。"""
         return [
-            [[move.board_before().to_fen(), str(move)] for move in move_line["moves"]]
+            [[move.board_before.to_fen(), str(move)] for move in move_line["moves"]]
             for move_line in self.dump_moves()
         ]
 
@@ -240,7 +238,7 @@ class Game:
 
     def print_init_board(self):
         """将初始棋盘的文本视图打印到标准输出。"""
-        for line in self.init_board.text_view():
+        for line in self.init_board.print_view():
             print(line)
 
     def print_text_moves(self, steps_per_line=2, show_annote=False):

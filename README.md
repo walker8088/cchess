@@ -13,7 +13,7 @@ board.from_fen('rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - 
 
 ##棋盘显示
 ```python
-board_strs = board.text_view()
+board_strs = board.print_view()
 print()
 for s in board_strs:
     print(s)
@@ -82,7 +82,7 @@ from cchess import Game
 
 game = Game.read_from("WildHouse.xqf")
 game.init_board.print_board()
-board_strs = game.init_board.text_view()
+board_strs = game.init_board.print_view()
 print()
 for s in board_strs:
     print(s)
@@ -94,7 +94,7 @@ game.print_text_moves()
 ```python
 game = Game.read_from("WildHouse.cbr")
 game.init_board.print_board()
-board_strs = game.init_board.text_view()
+board_strs = game.init_board.print_view()
 print()
 for s in board_strs:
     print(s)
@@ -107,7 +107,7 @@ game.print_text_moves()
 lib = Game.read_from_lib("WildHouse.cbl")
 for game in lib['games']:
     game.init_board.print_board()
-    board_strs = game.init_board.text_view()
+    board_strs = game.init_board.print_view()
     print()
     for s in board_strs:
         print(s)

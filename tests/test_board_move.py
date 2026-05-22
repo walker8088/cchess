@@ -459,7 +459,7 @@ class TestBoard:
         assert move.move_side == SIDE_RED
         assert move.to_iccs() == "a0a1"
         assert str(move) == "a0a1"
-        assert move.board_before().is_valid_move(move.pos_from, move.pos_to) is True
+        assert move.board_before.is_valid_move(move.pos_from, move.pos_to) is True
 
         assert iccs2pos("a0a1") == ((0, 0), (0, 1))
         assert pos2iccs((0, 0), (0, 1)) == "a0a1"
@@ -478,7 +478,7 @@ class TestBoard:
 
     def test_board_text(self):
         board = ChessBoard(FULL_INIT_FEN)
-        board_txt = board.text_view()
+        board_txt = board.print_view()
         good_txt = [
             "9 砗──碼──象──士──将──士──象──碼──砗",
             "  │   │   │   │ ＼│／ │   │   │   │ ",
