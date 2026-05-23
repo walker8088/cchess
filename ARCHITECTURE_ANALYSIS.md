@@ -203,7 +203,7 @@ class AsyncEngine:
 ├── 集成测试层（模块协作）
 │   ├── test_io_pgn_txt.py    # 文件IO测试
 │   ├── test_read_xqf.py      # XQF格式测试
-│   └── test_game.py          # 游戏流程测试
+│   └── test_book.py          # 棋谱流程测试
 │
 ├── 覆盖率测试层
 │   └── test_coverage.py      # 全面覆盖测试（300+测试）

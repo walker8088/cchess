@@ -15,6 +15,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from .board import ChessBoard, fen_flip, fen_mirror, fen_swap
+from .book import (
+    BLACK_WIN,
+    BOOK_ALL,
+    BOOK_BEGIN,
+    BOOK_END,
+    BOOK_MIDDLE,
+    BOOK_UNKNOWN,
+    PEACE,
+    RED_WIN,
+    UNKNOWN,
+    Book,
+    book_result_str,
+    book_type_str,
+)
 from .common import (
     EMPTY_BOARD,
     EMPTY_FEN,
@@ -46,20 +60,6 @@ from .engine import (
 from .engine_async import AsyncEngine, analyse_position, play_move
 from .exception import CChessError, EngineError
 from .move import Move
-from .book import Book
-from .book import (
-    BOOK_ALL,
-    BOOK_BEGIN,
-    BOOK_END,
-    BOOK_MIDDLE,
-    BOOK_UNKNOWN,
-    BLACK_WIN,
-    PEACE,
-    RED_WIN,
-    UNKNOWN,
-    book_result_str,
-    book_type_str,
-)
 
 __all__ = [
     # exception
@@ -119,4 +119,4 @@ __all__ = [
     "__version__",
 ]
 
-__version__ = "1.26.2"
+__version__ = "2.27.0"

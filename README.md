@@ -78,41 +78,41 @@ print(board.has_no_legal_moves())  # True
 
 ##读取xqf文件, 显示棋谱
 ```python
-from cchess import Game
+from cchess import Book
 
-game = Game.read_from("WildHouse.xqf")
-game.init_board.print_board()
-board_strs = game.init_board.print_view()
+book = Book.read_from("WildHouse.xqf")
+book.init_board.print_board()
+board_strs = book.init_board.print_view()
 print()
 for s in board_strs:
     print(s)
 
-game.print_text_moves()
+book.print_text_moves()
 ```
 
 ##读取cbr文件, 显示棋谱
 ```python
-game = Game.read_from("WildHouse.cbr")
-game.init_board.print_board()
-board_strs = game.init_board.print_view()
+book = Book.read_from("WildHouse.cbr")
+book.init_board.print_board()
+board_strs = book.init_board.print_view()
 print()
 for s in board_strs:
     print(s)
 
-game.print_text_moves()
+book.print_text_moves()
 ```
 
 ##读取cbl文件, 显示所有棋谱
 ```python
-lib = Game.read_from_lib("WildHouse.cbl")
-for game in lib['games']:
-    game.init_board.print_board()
-    board_strs = game.init_board.print_view()
+lib = Book.read_from_lib("WildHouse.cbl")
+for book in lib['games']:
+    book.init_board.print_board()
+    board_strs = book.init_board.print_view()
     print()
     for s in board_strs:
         print(s)
 
-    game.print_text_moves()
+    book.print_text_moves()
 ```
 
 ##加载引擎进行对弈

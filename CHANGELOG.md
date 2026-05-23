@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.0] - 2026-5-23
+
+### Added
+- `Book` 类替代 `Game` 类，统一棋谱对象命名
+- `append_move_to_book()` 函数（由 `_append_move_to_game()` 重命名）
+
+### Changed
+- 重命名 `game.py` → `book.py`，`Game` → `Book`
+- 所有 read/write 模块：`game_class` 参数 → `book_class`
+- `PGNWriter`/`XQFWriter`：`self.game` → `self.book`
+- README 代码示例更新为 `Book` 用法
+- `__init__.py` 导入顺序优化
+
+### Fixed
+- 修复 `read_from_cbl_progressing()` 中 `book_index` 未初始化 bug
+
+### Performance
+- 保持 2.26.x 版本的性能指标
+
 ## [1.27.0] - 2026-4-17
 
 ### Added
