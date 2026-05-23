@@ -81,24 +81,14 @@ print(board.has_no_legal_moves())  # True
 from cchess import Book
 
 book = Book.read_from("WildHouse.xqf")
-book.init_board.print_board()
-board_strs = book.init_board.print_view()
-print()
-for s in board_strs:
-    print(s)
-
+book.print_init_board()
 book.print_text_moves()
 ```
 
 ##读取cbr文件, 显示棋谱
 ```python
 book = Book.read_from("WildHouse.cbr")
-book.init_board.print_board()
-board_strs = book.init_board.print_view()
-print()
-for s in board_strs:
-    print(s)
-
+book.print_init_board()
 book.print_text_moves()
 ```
 
@@ -106,12 +96,7 @@ book.print_text_moves()
 ```python
 lib = Book.read_from_lib("WildHouse.cbl")
 for book in lib['games']:
-    book.init_board.print_board()
-    board_strs = book.init_board.print_view()
-    print()
-    for s in board_strs:
-        print(s)
-
+    book.print_init_board()
     book.print_text_moves()
 ```
 
