@@ -20,7 +20,7 @@ import struct
 from typing import Tuple
 
 from .board import ChessBoard
-from .common import GAME_RESULT_MAP, SIDE_RED, append_move_to_game, get_fench_color
+from .common import GAME_RESULT_MAP, SIDE_RED, append_move_to_book, get_fench_color
 
 # XQF 协议常量
 _XQF_HEADER_SIZE = 0x400  # XQF 文件头大小 (1024 字节)
@@ -286,11 +286,11 @@ def _parse_step_info_high_version(step_info, buff_decoder, keys):
     return has_next_step, has_var_step, annote_len
 
 
-def _read_steps(buff_decoder, version, keys, game, parent_move, board):
-    """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。
+def _read_steps(buff_decoder, version, keys, book, parent_move, board):
+    """递归读取走子数据块并将走子构造为 `Book` 中的 `Move` 链。
 
     解析单个走子记录，根据版本与 keys 解码起点/终点、注释和分支标志，
-    对合法走子调用 `board.move` 并插入到游戏树；若检测到变招或后续走
+    对合法走子调用 `board.move` 并插入到走子树；若检测到变招或后续走
     子，则递归读取相应子区块(深度优先遍历)。
     """
     step_info = buff_decoder.read_bytes(4)
@@ -322,14 +322,14 @@ def _read_steps(buff_decoder, version, keys, game, parent_move, board):
         if board.is_valid_move(move_from, move_to):
             curr_move = board.move(move_from, move_to)
             curr_move.annote = annote
-            good_move = append_move_to_game(game, curr_move, parent_move)
+            good_move = append_move_to_book(book, curr_move, parent_move)
 
     if has_next_step:
-        _read_steps(buff_decoder, version, keys, game, good_move, board)
+        _read_steps(buff_decoder, version, keys, book, good_move, board)
 
     if has_var_step:
-        _read_steps(buff_decoder, version, keys, game, parent_move, board_bak)
-        game.info["branchs"] += 1
+        _read_steps(buff_decoder, version, keys, book, parent_move, board_bak)
+        book.info["branchs"] += 1
 
 
 # -----------------------------------------------------#
@@ -517,19 +517,19 @@ def _build_xqf_board(chess_mans):
 
 
 # -----------------------------------------------------#
-def read_from_xqf(full_file_name, game_class, _read_annotation=True):
-    """从 `.xqf` 文件读取并解析为 `Game` 对象。
+def read_from_xqf(full_file_name, book_class, _read_annotation=True):
+    """从 `.xqf` 文件读取并解析为 `Book` 对象。
 
     该函数负责读取文件头、根据版本决定是否需要解密、构造初始棋盘，
-    读取游戏注释并递归解析走子数据块，最终返回填充完毕的 `Game`。
+    读取棋谱注释并递归解析走子数据块，最终返回填充完毕的 `Book`。
 
     参数:
         full_file_name (str): XQF 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
         read_annotation (bool): 是否读取注释
 
     返回:
-        Game | None: 成功返回 `Game`，若文件格式不匹配返回 None
+        Book | None: 成功返回 `Book`，若文件格式不匹配返回 None
     """
     with open(full_file_name, "rb") as f:
         contents = f.read()
@@ -544,27 +544,27 @@ def read_from_xqf(full_file_name, game_class, _read_annotation=True):
         header["step_base_buff"], header["version"], header["keys"]
     )
 
-    game = game_class(board, game_annotation)
+    book = book_class(board, game_annotation)
 
-    game.info.update(header["game_info"])
+    book.info.update(header["game_info"])
 
     _read_steps(
         header["step_base_buff"],
         header["version"],
         header["keys"],
-        game,
+        book,
         None,
         board,
     )
 
-    if game.first_move:
-        game.init_board.set_move_side(game.first_move.board_before._move_side)
+    if book.first_move:
+        book.init_board.set_move_side(book.first_move.board_before._move_side)
     else:
-        game.init_board.set_move_side(SIDE_RED)
+        book.init_board.set_move_side(SIDE_RED)
 
-    game.info["move_side"] = str(game.init_board._move_side)
+    book.info["move_side"] = str(book.init_board._move_side)
 
-    return game
+    return book
 
 
 # -----------------------------------------------------#
@@ -591,10 +591,10 @@ class XQMove:
 
 # -----------------------------------------------------#
 class XQFWriter:
-    """从 `Game` 对象写入 XQF 格式文件的写入器。"""
+    """从 `Book` 对象写入 XQF 格式文件的写入器。"""
 
-    def __init__(self, game):
-        self.game = game
+    def __init__(self, book):
+        self.book = book
         self.header = bytearray(b"\x00" * 1024)  # 头部固定1024字节
 
         # 设置文件标记和版本
@@ -609,13 +609,13 @@ class XQFWriter:
         self.set_game_type(0x00)  # 默认全局文件
 
         # 设置棋局信息
-        self.set_title(game.info["title"])
-        self.set_event(game.info["event"])
-        self.set_date(game.info["date"])
-        self.set_location(game.info["location"])
-        self.set_red_player(game.info["red_player"])
-        self.set_black_player(game.info["black_player"])
-        self.set_commentator(game.info["commentator"])
+        self.set_title(book.info["title"])
+        self.set_event(book.info["event"])
+        self.set_date(book.info["date"])
+        self.set_location(book.info["location"])
+        self.set_red_player(book.info["red_player"])
+        self.set_black_player(book.info["black_player"])
+        self.set_commentator(book.info["commentator"])
         self.set_author("cchess")
 
     def _set_bytes(self, offset: int, data: bytes):
@@ -650,7 +650,7 @@ class XQFWriter:
         ]
         """
         position = bytearray(32)
-        board = self.game.init_board
+        board = self.book.init_board
         pieces_dict = {}
         for key in ["R", "N", "B", "A", "K", "C", "P"]:
             pieces_dict[key] = board.get_fench_positions(key)
@@ -791,10 +791,10 @@ class XQFWriter:
         return bytes(move_record + annote_data)
 
     def save(self, file_name):
-        """将Game数据序列化并保存到指定 XQF 文件。"""
+        """将 Book 数据序列化并保存到指定 XQF 文件。"""
         with open(file_name, "wb") as f:
             move_lines = []
-            lines = self.game.dump_moves(is_tree_mode=True)
+            lines = self.book.dump_moves(is_tree_mode=True)
             for line in lines:
                 w_line = []
                 for _index, move in enumerate(line["moves"]):

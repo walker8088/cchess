@@ -46,8 +46,8 @@ class TestReaderXQF:
         with patch.object(sys, "argv", testargs):
             rt_main.main()
         assert out_file.exists()
-        game = rt_main.Game.read_from(str(out_file))
-        moves = game.dump_text_moves()
+        book = rt_main.Book.read_from(str(out_file))
+        moves = book.dump_text_moves()
         assert len(moves[0]) == 25
         os.remove(out_file)
 
@@ -72,8 +72,8 @@ class TestReaderXQF:
         with patch.object(sys, "argv", testargs):
             rt_main.main()
         assert out_file.exists()
-        game = rt_main.Game.read_from(str(out_file))
-        moves = game.dump_text_moves()
+        book = rt_main.Book.read_from(str(out_file))
+        moves = book.dump_text_moves()
         assert len(moves) >= 1
         os.remove(out_file)
 

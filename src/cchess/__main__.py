@@ -18,25 +18,25 @@ import argparse
 import pathlib
 import sys
 
-from .game import Game
+from .book import Book
 
 
 # -----------------------------------------------------#
-def print_game(game):
-    """将棋局信息、初始盘面和走子文本打印到标准输出。"""
+def print_book(book):
+    """将棋谱信息、初始盘面和走子文本打印到标准输出。"""
 
     print("\n=====================================")
-    for key, v in game.info.items():
+    for key, v in book.info.items():
         if v:
             print(f"{key} : {v}")
 
-    game.print_init_board()
+    book.print_init_board()
     print("-------------------------------------")
-    if game.annote:
-        print(game.annote)
+    if book.annote:
+        print(book.annote)
         print("-------------------------------------")
 
-    game.print_text_moves(steps_per_line=5, show_annote=True)
+    book.print_text_moves(steps_per_line=5, show_annote=True)
 
 
 # -----------------------------------------------------#
@@ -63,7 +63,7 @@ def convert_format(input_file, output_file):
         sys.exit(-1)
 
     try:
-        game = Game.read_from(input_file)
+        book = Book.read_from(input_file)
     except (OSError, ValueError) as e:
         print(f"读取文件失败: {e}")
         sys.exit(-1)
@@ -71,10 +71,10 @@ def convert_format(input_file, output_file):
     if out_ext == ".xqf":
         from .io_xqf import XQFWriter
 
-        writer = XQFWriter(game)
+        writer = XQFWriter(book)
         writer.save(output_file)
     elif out_ext == ".pgn":
-        game.save_to(output_file)
+        book.save_to(output_file)
 
     print(f"转换成功: {input_file} ({in_ext[1:]}) -> {output_file} ({out_ext[1:]})")
 
@@ -96,17 +96,17 @@ def main():
     if file_name:
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".cbl":
-            lib = Game.read_from_lib(file_name)
+            lib = Book.read_from_lib(file_name)
             print(lib["name"])
-            for game in lib["games"]:
-                print_game(game)
+            for book in lib["games"]:
+                print_book(book)
         else:
             try:
-                game = Game.read_from(file_name)
+                book = Book.read_from(file_name)
             except (OSError, ValueError) as e:
                 print(e)
                 sys.exit(-1)
-            print_game(game)
+            print_book(book)
 
 
 # -----------------------------------------------------#

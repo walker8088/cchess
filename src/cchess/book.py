@@ -27,7 +27,7 @@ from .read_txt import read_from_ubb_dhtml
 # -----------------------------------------------------#
 # # 比赛结果
 UNKNOWN, RED_WIN, BLACK_WIN, PEACE = range(4)
-result_str = ("未知", "红胜", "黑胜", "平局")
+book_result_str = ("未知", "红胜", "黑胜", "平局")
 
 # 存储类型
 BOOK_UNKNOWN, BOOK_ALL, BOOK_BEGIN, BOOK_MIDDLE, BOOK_END = range(5)
@@ -35,11 +35,11 @@ book_type_str = ("未知", "全局", "开局", "中局", "残局")
 
 
 # -----------------------------------------------------#
-class Game:
-    """棋局对象，维护初始棋盘、走子树及元信息。"""
+class Book:
+    """棋谱对象，维护初始棋盘、走子树及元信息。"""
 
     def __init__(self, board=None, annote=None):
-        """创建一个 `Game` 实例。
+        """创建一个 `Book` 实例。
 
         参数:
             board (ChessBoard|None): 初始棋盘；若为 None 则使用默认初始棋盘。
@@ -274,32 +274,32 @@ class Game:
 
     @staticmethod
     def from_ubb_dhtml(txt):
-        """从 UBB 格式的 DHTML 文本中读取并返回 Game 对象（静态方法）。"""
-        return read_from_ubb_dhtml(txt, Game)
+        """从 UBB 格式的 DHTML 文本中读取并返回 Book 对象（静态方法）。"""
+        return read_from_ubb_dhtml(txt, Book)
 
     @staticmethod
     def read_from(file_name):
-        """从文件中读取棋谱并返回 Game 对象，自动根据文件后缀选择解析器。
+        """从文件中读取棋谱并返回 Book 对象，自动根据文件后缀选择解析器。
 
         支持的后缀包括 .xqf, .pgn, .cbf, .cbr。
         """
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".xqf":
-            return read_from_xqf(file_name, Game)
+            return read_from_xqf(file_name, Book)
         if ext == ".pgn":
-            return read_from_pgn(file_name, Game)
+            return read_from_pgn(file_name, Book)
         if ext == ".cbf":
-            return read_from_cbf(file_name, Game)
+            return read_from_cbf(file_name, Book)
         if ext == ".cbr":
-            return read_from_cbr(file_name, Game)
+            return read_from_cbr(file_name, Book)
         raise ValueError(f"Unknown file format:{file_name}")
 
     @staticmethod
     def read_from_lib(file_name):
-        """从库文件读取（如 .cbl）并返回 Game 对象（静态方法）。"""
+        """从库文件读取（如 .cbl）并返回 Book 对象（静态方法）。"""
         ext = pathlib.Path(file_name).suffix.lower()
         if ext == ".cbl":
-            return read_from_cbl(file_name, Game)
+            return read_from_cbl(file_name, Book)
         raise ValueError(f"Unknown lib file format:{file_name}")
 
     def save_to(self, file_name):

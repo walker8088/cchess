@@ -21,7 +21,7 @@ from .common import (
     GAME_RESULT_MAP,
     SIDE_BLACK,
     SIDE_RED,
-    append_move_to_game,
+    append_move_to_book,
     get_fench_color,
 )
 from .exception import CChessError
@@ -158,32 +158,32 @@ def _find_and_validate_cbl_records(contents, buff_start):
 
 # -----------------------------------------------------#
 def _parse_cbl_games(
-    contents, buff_start, game_buffer_index, game_buffer_len, game_class
+    contents, buff_start, game_buffer_index, game_buffer_len, book_class
 ):
-    """解析 CBL 文件中的游戏列表
+    """解析 CBL 文件中的棋谱列表
 
     Args:
         contents: 文件内容
         buff_start: 数据区起始位置
         game_buffer_index: 游戏缓冲区索引
         game_buffer_len: 游戏缓冲区长度
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
 
     Yields:
-        tuple: (game, game_index) 或 None
+        tuple: (book, book_index) 或 None
     """
     game_buffer = contents[buff_start:]
-    game_index = 0
+    book_index = 0
     count = 0
 
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
-            game = read_from_cbr_buffer(book_buffer, game_class)
-            if game is not None:
-                game.info["index"] = game_index
-                yield game, game_index
-                game_index += 1
+            book = read_from_cbr_buffer(book_buffer, book_class)
+            if book is not None:
+                book.info["index"] = book_index
+                yield book, book_index
+                book_index += 1
         except (struct.error, KeyError, IndexError, CChessError) as e:
             raise CChessError(
                 f"{count}, {game_buffer_index} {len(contents)}, {len(book_buffer)}, {e}"
@@ -249,8 +249,8 @@ def _cbr_read_init_info(buff_decoder):
 
 
 # -----------------------------------------------------#
-def _cbr_read_steps(buff_decoder, game, parent_move, board):
-    """递归读取走子数据块并将走子构造为 `Game` 中的 `Move` 链。"""
+def _cbr_read_steps(buff_decoder, book, parent_move, board):
+    """递归读取走子数据块并将走子构造为 `Book` 中的 `Move` 链。"""
     if buff_decoder.is_end():
         return
 
@@ -294,24 +294,24 @@ def _cbr_read_steps(buff_decoder, game, parent_move, board):
     if board.is_valid_move(move_from, move_to):
         curr_move = board.move(move_from, move_to)
         curr_move.annote = annote
-        good_move = append_move_to_game(game, curr_move, parent_move)
+        good_move = append_move_to_book(book, curr_move, parent_move)
     else:
         return
 
     if has_next_move:
-        _cbr_read_steps(buff_decoder, game, good_move, board)
+        _cbr_read_steps(buff_decoder, book, good_move, board)
 
     if has_var_step:
-        _cbr_read_steps(buff_decoder, game, parent_move, board_bak)
+        _cbr_read_steps(buff_decoder, book, parent_move, board_bak)
 
 
 # -----------------------------------------------------#
-def read_from_cbr_buffer(contents, game_class):
-    """从 CBR 文件的字节内容解析并返回 `Game` 对象。
+def read_from_cbr_buffer(contents, book_class):
+    """从 CBR 文件的字节内容解析并返回 `Book` 对象。
 
     Args:
         contents: 文件内容字节
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
     (
         magic,
@@ -359,52 +359,52 @@ def read_from_cbr_buffer(contents, game_class):
                 board.put_fench(_cbr_piece_dict[v], (x, 9 - y))
 
     buff_decoder = CbrBuffDecoder(contents[2214:], CODING_PAGE_CBR)
-    game_annote = _cbr_read_init_info(buff_decoder)
-    game = game_class(board, game_annote)
-    game.info = game_info
+    book_annote = _cbr_read_init_info(buff_decoder)
+    book = book_class(board, book_annote)
+    book.info = game_info
 
     if not buff_decoder.is_end():
-        _cbr_read_steps(buff_decoder, game, None, board)
+        _cbr_read_steps(buff_decoder, book, None, board)
 
-    return game
+    return book
 
 
 # -----------------------------------------------------#
-def read_from_cbr(file_name, game_class):
-    """从 `.cbr` 文件读取并解析为 `Game` 对象。
+def read_from_cbr(file_name, book_class):
+    """从 `.cbr` 文件读取并解析为 `Book` 对象。
 
     Args:
         file_name: 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
     with open(file_name, "rb") as f:
         contents = f.read()
 
-    return read_from_cbr_buffer(contents, game_class)
+    return read_from_cbr_buffer(contents, book_class)
 
 
 # -----------------------------------------------------#
-def read_from_cbl(file_name, game_class, verify=True):  # pylint: disable=unused-argument
-    """从 `.cbl` 棋谱库文件读取并返回包含多个 `Game` 的字典。
+def read_from_cbl(file_name, book_class, verify=True):  # pylint: disable=unused-argument
+    """从 `.cbl` 棋谱库文件读取并返回包含多个 `Book` 的字典。
 
     Args:
         file_name: 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
         verify: 验证标志
     """
     # 复用 read_from_cbl_progressing 获取最终结果
     lib_info = {}
-    for result in read_from_cbl_progressing(file_name, game_class):
+    for result in read_from_cbl_progressing(file_name, book_class):
         lib_info = result
     return lib_info
 
 
-def read_from_cbl_progressing(file_name, game_class):
+def read_from_cbl_progressing(file_name, book_class):
     """从 `.cbl` 棋谱库文件逐步读取并 yield 中间结果（用于进度显示）。
 
     Args:
         file_name: 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
 
     with open(file_name, "rb") as f:
@@ -429,16 +429,16 @@ def read_from_cbl_progressing(file_name, game_class):
         yield lib_info
         return
 
-    game_index = 0
+    book_index = 0
     count = 0
     while game_buffer_index < game_buffer_len:
         book_buffer = game_buffer[game_buffer_index:]
         try:
-            game = read_from_cbr_buffer(book_buffer, game_class)
-            if game is not None:
-                game.info["index"] = game_index
-                lib_info["games"].append(game)
-                game_index += 1
+            book = read_from_cbr_buffer(book_buffer, book_class)
+            if book is not None:
+                book.info["index"] = book_index
+                lib_info["games"].append(book)
+                book_index += 1
         except (struct.error, KeyError, IndexError, CChessError) as e:
             raise CChessError(
                 f"{game_buffer_index}/{count}, {len(contents)}, {len(book_buffer)}, {e}"

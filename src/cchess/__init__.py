@@ -45,8 +45,21 @@ from .engine import (
 )
 from .engine_async import AsyncEngine, analyse_position, play_move
 from .exception import CChessError, EngineError
-from .game import Game
 from .move import Move
+from .book import Book
+from .book import (
+    BOOK_ALL,
+    BOOK_BEGIN,
+    BOOK_END,
+    BOOK_MIDDLE,
+    BOOK_UNKNOWN,
+    BLACK_WIN,
+    PEACE,
+    RED_WIN,
+    UNKNOWN,
+    book_result_str,
+    book_type_str,
+)
 
 __all__ = [
     # exception
@@ -79,8 +92,20 @@ __all__ = [
     "ChessBoard",
     # move
     "Move",
-    # game
-    "Game",
+    # book
+    "Book",
+    # book constants
+    "UNKNOWN",
+    "RED_WIN",
+    "BLACK_WIN",
+    "PEACE",
+    "BOOK_UNKNOWN",
+    "BOOK_ALL",
+    "BOOK_BEGIN",
+    "BOOK_MIDDLE",
+    "BOOK_END",
+    "book_result_str",
+    "book_type_str",
     # engine
     "EngineStatus",
     "UcciEngine",

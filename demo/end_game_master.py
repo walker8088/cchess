@@ -27,7 +27,7 @@ import pygame
 from pygame.locals import *
 
 import cchess
-from cchess import ChessBoard, Game, UcciEngine, UciEngine
+from cchess import Book, ChessBoard, UcciEngine, UciEngine
 
 
 class Pos:

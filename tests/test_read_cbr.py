@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from cchess import Game
+from cchess import Book
 
 # lib = cchess.read_from_cbl('D:\\01_MyRepos\\cchess\\tests\\data\\1956年全国象棋锦标赛93局.CBL')
 
@@ -14,18 +14,18 @@ class TestReaderCbr:
         pass
 
     def test_read_cbr(self):
-        game = Game.read_from(Path("tests", "data", "test2.cbr"))
+        game = Book.read_from(Path("tests", "data", "test2.cbr"))
         moves = ",".join(game.dump_text_moves()[0])
         assert moves == "炮二平五,炮８平５"
 
     def test_read_cbl1(self):
-        lib = Game.read_from_lib(
+        lib = Book.read_from_lib(
             Path("tests", "data", "1989年龙化杯象棋名师邀请赛35局.CBL")
         )
         assert lib["name"] == "1989年龙化杯象棋名师邀请赛35局"
         assert len(lib["games"]) == 38
 
     def test_read_cbl2(self):
-        lib = Game.read_from_lib(Path("tests", "data", "1956年全国象棋锦标赛93局.CBL"))
+        lib = Book.read_from_lib(Path("tests", "data", "1956年全国象棋锦标赛93局.CBL"))
         assert lib["name"] == "1956年全国象棋锦标赛93局"
         assert len(lib["games"]) == 93

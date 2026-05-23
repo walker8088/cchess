@@ -594,11 +594,11 @@ def get_fen_type_detail(fen):
     return (title_red, title_black)
 
 
-def append_move_to_game(game, curr_move, parent_move):
-    """将走子添加到游戏树中。
+def append_move_to_book(book, curr_move, parent_move):
+    """将走子添加到 Book 树中。
 
     Args:
-        game: Game 对象
+        book: Book 对象
         curr_move: 当前走子
         parent_move: 父节点走子
 
@@ -608,7 +608,7 @@ def append_move_to_game(game, curr_move, parent_move):
     if parent_move:
         parent_move.append_next_move(curr_move)
     else:
-        game.append_first_move(curr_move)
+        book.append_first_move(curr_move)
     return curr_move
 
 

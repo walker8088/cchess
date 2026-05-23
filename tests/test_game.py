@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from pathlib import Path
 
-from cchess import Game
+from cchess import Book
 from cchess.io_xqf import read_from_xqf
 
 # result_dict = {'红胜': RED_WIN, '黑胜': BLACK_WIN, '和棋': PEACE}
@@ -44,23 +44,23 @@ class TestReaderXQF:
 
     """
     def test_base(self):
-        game = read_from_xqf(Path("data", "WildHouse.xqf"))
-        moves = game.dump_moves()
+        book = read_from_xqf(Path("data", "WildHouse.xqf"))
+        moves = book.dump_moves()
         #assert moves == ''
     """
 
     def test_base(self):
-        read_from_xqf(Path("tests", "data", "game_test.xqf"), Game)
+        read_from_xqf(Path("tests", "data", "game_test.xqf"), Book)
         # assert moves == ''
 
     def test_k1(self):
         fen, moves, result = load_move_txt(Path("tests", "data", "test1_move.txt"))
-        game = read_from_xqf(Path("tests", "data", "test1.xqf"), Game)
-        assert game.init_board.to_fen() == fen
-        assert game.info["result"] == result
+        book = read_from_xqf(Path("tests", "data", "test1.xqf"), Book)
+        assert book.init_board.to_fen() == fen
+        assert book.info["result"] == result
 
-        # game.print_init_board()
-        m = game.dump_text_moves()[0]
+        # book.print_init_board()
+        m = book.dump_text_moves()[0]
         assert len(m) == len(moves)
         for i in range(len(m)):
             assert m[i] == moves[i]

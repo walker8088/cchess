@@ -43,7 +43,7 @@ from cchess.engine import (
     parse_engine_info_to_dict,
 )
 from cchess.exception import EngineError
-from cchess.game import Game
+from cchess import Book
 
 # ============================================================
 # move.py tests
@@ -353,7 +353,7 @@ class TestMoveMisc:
         board.next_turn()
         move2 = board.copy().move((0, 9), (0, 8))
         move1.append_next_move(move2)
-        game = Game(board)
+        game = Book(board)
         game.first_move = move1
         game.last_move = move2
         moves = game.dump_moves(is_tree_mode=True)
@@ -365,7 +365,7 @@ class TestMoveMisc:
         board.next_turn()
         move2 = board.copy().move((0, 9), (0, 8))
         move1.append_next_move(move2)
-        game = Game(board)
+        game = Book(board)
         game.first_move = move1
         game.last_move = move2
         moves = game.dump_moves(is_tree_mode=False)
@@ -383,7 +383,7 @@ class TestMoveMisc:
         if move3:
             move3.parent = None
             move1.add_variation(move3)
-            game = Game(board)
+            game = Book(board)
             game.first_move = move1
             game.last_move = move2
             moves = game.dump_moves(is_tree_mode=False)
@@ -654,7 +654,7 @@ class TestReadPGN:
 
     def test_gbk_fallback_encoding(self):
         """Test GBK encoding fallback (lines 49-54)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         # Create a temp file with GBK-encoded content
@@ -663,14 +663,14 @@ class TestReadPGN:
             f.write(content.encode("gbk"))
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game is not None
         finally:
             os.unlink(tmp_path)
 
     def test_chardet_fallback(self):
         """Test chardet-based encoding fallback (lines 50-54)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         # Create a file with content that fails both utf-8 and gbk decode
@@ -680,14 +680,14 @@ class TestReadPGN:
             f.write(raw)
             tmp_path = f.name
         try:
-            read_from_pgn(tmp_path, Game)
+            read_from_pgn(tmp_path, Book)
             # Should not crash even with bad encoding
         finally:
             os.unlink(tmp_path)
 
     def test_get_headers_all_lines_are_headers(self):
         """Test when all lines are headers, returns empty list (line 105)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Red "Player"]\n[Black "Player2"]\n'
@@ -697,7 +697,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game is not None
             assert game.info.get("red") == "Player"
         finally:
@@ -705,7 +705,7 @@ class TestReadPGN:
 
     def test_get_steps_iccs_format(self):
         """Test ICCS format step parsing (lines 149-154)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0a1 i9i8\n *\n'
@@ -715,7 +715,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
             # assert game.first_move is not None
@@ -724,7 +724,7 @@ class TestReadPGN:
 
     def test_get_steps_iccs_5char(self):
         """Test ICCS 5-character format (line 151)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n[Format "ICCS"]\n\n1. a0-a1 i9-i8\n *\n'
@@ -734,7 +734,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
         finally:
@@ -742,7 +742,7 @@ class TestReadPGN:
 
     def test_get_steps_game_result(self):
         """Test game result markers in steps (lines 141-146)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n\n1. a0a1 i9i8 1-0\n'
@@ -752,7 +752,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game is not None
             # 暂时不检查棋步，因为read_from_pgn目前只处理头信息
         finally:
@@ -760,7 +760,7 @@ class TestReadPGN:
 
     def test_get_steps_move_none_returns_game(self):
         """Test when board.move_text returns None, returns game (line 158)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         content = '[Game "Chinese Chess"]\n\n1. 非法走法\n *\n'
@@ -770,14 +770,14 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            read_from_pgn(tmp_path, Game)
+            read_from_pgn(tmp_path, Book)
             # Should return game object, not crash
         finally:
             os.unlink(tmp_path)
 
     def test_get_steps_fen_header(self):
         """Test FEN header creates custom init board (line 94)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.io_pgn import read_from_pgn
 
         fen = "4k4/9/9/9/9/9/9/9/9/4K4 w"
@@ -788,7 +788,7 @@ class TestReadPGN:
             f.write(content)
             tmp_path = f.name
         try:
-            game = read_from_pgn(tmp_path, Game)
+            game = read_from_pgn(tmp_path, Book)
             assert game.init_board.to_fen() == fen
         finally:
             os.unlink(tmp_path)
@@ -836,18 +836,18 @@ class TestReadCBR:
 
     def test_read_from_cbr_buffer_bad_magic(self):
         """Test read_from_cbr_buffer with bad magic returns None (line 211)."""
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbr_buffer
 
         bad_data = b"\x00" * 2214
-        result = read_from_cbr_buffer(bad_data, Game)
+        result = read_from_cbr_buffer(bad_data, Book)
         assert result is None
 
     def test_read_from_cbr_buffer_move_side_black(self):
         """Test read_from_cbr_buffer with black to move (line 225)."""
         import struct
 
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbr_buffer
 
         # Build a minimal valid CBR buffer
@@ -883,14 +883,14 @@ class TestReadCBR:
         # Pad to at least 2214
         full_data = full_data.ljust(2214, b"\x00")
         full_data += b"\x00\x00\x00\x00"  # step info terminator
-        result = read_from_cbr_buffer(full_data, Game)
+        result = read_from_cbr_buffer(full_data, Book)
         assert result is not None
 
     def test_read_from_cbr_invalid_fench_returns(self):
         """Test __read_steps when fench is None returns early (line 162)."""
         import struct
 
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -923,7 +923,7 @@ class TestReadCBR:
         # Add init info (annote_len = 0) + step terminator
         full_data += b"\x00\x00\x00\x00"  # a_len = 0
         full_data += b"\x00\x00\x00\x00"  # step_info all zeros
-        result = read_from_cbr_buffer(full_data, Game)
+        result = read_from_cbr_buffer(full_data, Book)
         # Should not crash
         assert result is not None
 
@@ -931,7 +931,7 @@ class TestReadCBR:
         """Test read_from_cbl when no CBR magic found (line 274)."""
         import struct
 
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbl
 
         magic = b"CCBridgeLibrary\x00"
@@ -942,7 +942,7 @@ class TestReadCBR:
             f.write(data)
             tmp_path = f.name
         try:
-            result = read_from_cbl(tmp_path, Game)
+            result = read_from_cbl(tmp_path, Book)
             assert result is not None
             assert len(result["games"]) == 0
         finally:
@@ -961,7 +961,7 @@ class TestReadCBR:
             f.write(data)
             tmp_path = f.name
         try:
-            results = list(read_from_cbl_progressing(tmp_path, Game))
+            results = list(read_from_cbl_progressing(tmp_path, Book))
             assert len(results) >= 1
         finally:
             os.unlink(tmp_path)
@@ -974,7 +974,7 @@ class TestReadCBR:
             f.write(b"\x00" * 576)
             tmp_path = f.name
         try:
-            results = list(read_from_cbl_progressing(tmp_path, Game))
+            results = list(read_from_cbl_progressing(tmp_path, Book))
             assert len(results) == 0  # returns without yielding
         finally:
             os.unlink(tmp_path)
@@ -983,7 +983,7 @@ class TestReadCBR:
         """Test __read_steps with empty step_info (line 133)."""
         import struct
 
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -1016,14 +1016,14 @@ class TestReadCBR:
         # Add init info with annote_len = 0, then no step data
         full_data += b"\x00\x00\x00\x00"  # a_len = 0
         # No step data - decoder will hit end
-        result = read_from_cbr_buffer(full_data, Game)
+        result = read_from_cbr_buffer(full_data, Book)
         assert result is not None
 
     def test_read_cbr_step_mark_all_zero(self):
         """Test __read_steps with all-zero step_mark (line 136)."""
         import struct
 
-        from cchess.game import Game
+        from cchess import Book
         from cchess.read_cbr import read_from_cbr_buffer
 
         magic = b"CCBridge Record\x00"
@@ -1054,7 +1054,7 @@ class TestReadCBR:
         full_data = header[: 2214 - 90] + bytes(boards_data)
         full_data = full_data.ljust(2214, b"\x00")
         full_data += b"\x00\x00\x00\x00"
-        result = read_from_cbr_buffer(full_data, Game)
+        result = read_from_cbr_buffer(full_data, Book)
         assert result is not None
 
 
@@ -1063,91 +1063,91 @@ class TestReadCBR:
 # ============================================================
 
 
-class TestGame:
+class TestBook:
     """Tests for game.py uncovered lines."""
 
     def test_game_str(self):
-        """Test Game.__str__ (line 64)."""
+        """Test Book.__str__ (line 64)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
-        game.info["title"] = "Test Game"
+        game = Book(board)
+        game.info["title"] = "Test Book"
         result = str(game)
         assert "title" in result
 
     def test_game_get_children_no_moves(self):
-        """Test Game.get_children with no moves (line 104)."""
+        """Test Book.get_children with no moves (line 104)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         children = game.get_children()
         assert children == []
 
     def test_game_get_children_with_moves(self):
-        """Test Game.get_children with moves (lines 107-108)."""
+        """Test Book.get_children with moves (lines 107-108)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         children = game.get_children()
         assert len(children) == 1
 
     def test_game_dump_moves_no_first_move(self):
-        """Test Game.dump_moves with no first_move (lines 168-169)."""
+        """Test Book.dump_moves with no first_move (lines 168-169)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         moves = game.dump_moves()
         assert moves == []
 
     def test_game_dump_moves_line_no_first_move(self):
-        """Test Game.dump_moves_line with no first_move (lines 205-206)."""
+        """Test Book.dump_moves_line with no first_move (lines 205-206)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         lines = game.dump_moves_line()
         assert lines == []
 
     def test_game_move_line_to_list_no_move(self):
-        """Test Game.move_line_to_list with no move (lines 212-213)."""
+        """Test Book.move_line_to_list with no move (lines 212-213)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         line = game.move_line_to_list()
         assert line == []
 
     def test_game_move_line_to_list_with_move(self):
-        """Test Game.move_line_to_list with move (lines 215-220)."""
+        """Test Book.move_line_to_list with move (lines 215-220)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         line = game.move_line_to_list(move1)
         assert len(line) == 1
 
     def test_game_make_branchs_tag_no_first_move(self):
-        """Test Game.make_branchs_tag with no first_move (lines 224-225)."""
+        """Test Book.make_branchs_tag with no first_move (lines 224-225)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.make_branchs_tag()  # Should not crash
 
     def test_game_mirror_no_first_move(self):
-        """Test Game.mirror with no first_move (line 133)."""
+        """Test Book.mirror with no first_move (line 133)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.mirror()  # Should not crash
 
     def test_game_flip_no_first_move(self):
-        """Test Game.flip with no first_move (line 139)."""
+        """Test Book.flip with no first_move (line 139)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.flip()
 
     def test_game_swap_no_first_move(self):
-        """Test Game.swap with no first_move (line 145)."""
+        """Test Book.swap with no first_move (line 145)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.swap()
 
     def test_game_save_to_unknown_format(self):
-        """Test Game.save_to with unknown format (line 355)."""
+        """Test Book.save_to with unknown format (line 355)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as f:
             tmp_path = f.name
         try:
@@ -1157,31 +1157,31 @@ class TestGame:
             os.unlink(tmp_path)
 
     def test_game_read_from_unknown_format(self):
-        """Test Game.read_from with unknown format (line 293)."""
+        """Test Book.read_from with unknown format (line 293)."""
         with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as f:
             f.write(b"test")
             tmp_path = f.name
         try:
             with pytest.raises(ValueError, match="Unknown file format"):
-                Game.read_from(tmp_path)
+                Book.read_from(tmp_path)
         finally:
             os.unlink(tmp_path)
 
     def test_game_read_from_lib_unknown_format(self):
-        """Test Game.read_from_lib with unknown format (line 304)."""
+        """Test Book.read_from_lib with unknown format (line 304)."""
         with tempfile.NamedTemporaryFile(suffix=".xyz", delete=False) as f:
             f.write(b"test")
             tmp_path = f.name
         try:
             with pytest.raises(ValueError, match="Unknown lib file format"):
-                Game.read_from_lib(tmp_path)
+                Book.read_from_lib(tmp_path)
         finally:
             os.unlink(tmp_path)
 
     def test_game_dump_fen_iccs_moves(self):
-        """Test Game.dump_fen_iccs_moves (lines 187-189)."""
+        """Test Book.dump_fen_iccs_moves (lines 187-189)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         result = game.dump_fen_iccs_moves()
@@ -1190,18 +1190,18 @@ class TestGame:
         assert len(result[0][0]) == 2
 
     def test_game_dump_text_moves(self):
-        """Test Game.dump_text_moves (lines 193-196)."""
+        """Test Book.dump_text_moves (lines 193-196)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         result = game.dump_text_moves(show_branch=False)
         assert len(result) >= 1
 
     def test_game_dump_text_moves_with_annote(self):
-        """Test Game.dump_text_moves_with_annote (lines 200-201)."""
+        """Test Book.dump_text_moves_with_annote (lines 200-201)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         move.annote = "test annote"
         game.append_first_move(move)
@@ -1210,9 +1210,9 @@ class TestGame:
         assert result[0][0][1] == "test annote"
 
     def test_game_print_text_moves_multiple_branches(self):
-        """Test Game.print_text_moves with multiple branches (line 243)."""
+        """Test Book.print_text_moves with multiple branches (line 243)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         board2 = ChessBoard(FULL_INIT_FEN)
@@ -1222,42 +1222,42 @@ class TestGame:
         game.print_text_moves(steps_per_line=1)
 
     def test_game_print_text_moves_with_annote(self):
-        """Test Game.print_text_moves with annote (line 251)."""
+        """Test Book.print_text_moves with annote (line 251)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         move.annote = "good"
         game.append_first_move(move)
         game.print_text_moves(show_annote=True)
 
     def test_game_print_text_moves_line_move_printed(self):
-        """Test Game.print_text_moves line_move printed at end (line 257)."""
+        """Test Book.print_text_moves line_move printed at end (line 257)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         game.print_text_moves(steps_per_line=10)
 
     def test_game_dump_info(self):
-        """Test Game.dump_info (lines 261-262)."""
+        """Test Book.dump_info (lines 261-262)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.info["title"] = "Test"
         game.info["red"] = "Player"
         game.dump_info()
 
     def test_game_verify_moves(self):
-        """Test Game.verify_moves (lines 117-127)."""
+        """Test Book.verify_moves (lines 117-127)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
         assert game.verify_moves() is True
 
     def test_game_verify_moves_invalid(self):
-        """Test Game.verify_moves with invalid move (line 123)."""
+        """Test Book.verify_moves with invalid move (line 123)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         # Create a move that won't be valid when replayed
         move = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move)
@@ -1268,9 +1268,9 @@ class TestGame:
             game.verify_moves()
 
     def test_game_iter_moves(self):
-        """Test Game.iter_moves (lines 152-156)."""
+        """Test Book.iter_moves (lines 152-156)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         board.next_turn()
@@ -1280,9 +1280,9 @@ class TestGame:
         assert len(moves) == 2
 
     def test_game_iter_moves_with_start(self):
-        """Test Game.iter_moves with start move."""
+        """Test Book.iter_moves with start move."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         board.next_turn()
@@ -1292,9 +1292,9 @@ class TestGame:
         assert len(moves) == 1
 
     def test_game_append_first_move_with_existing(self):
-        """Test Game.append_first_move when first_move already exists (line 79)."""
+        """Test Book.append_first_move when first_move already exists (line 79)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         move2 = board.copy().move((8, 0), (8, 1))
@@ -1302,9 +1302,9 @@ class TestGame:
         assert game.first_move.len_variations() == 2
 
     def test_game_save_to_with_annote(self):
-        """Test Game.save_to with annote (lines 321-322)."""
+        """Test Book.save_to with annote (lines 321-322)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         game.annote = "Test annotation"
         move = board.copy().move((0, 0), (0, 1))
         move.annote = "Move note"
@@ -1320,9 +1320,9 @@ class TestGame:
             os.unlink(tmp_path)
 
     def test_game_save_to_no_moves(self):
-        """Test Game.save_to with no moves."""
+        """Test Book.save_to with no moves."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:
@@ -1339,9 +1339,9 @@ class TestGame:
             os.unlink(tmp_path)
 
     def test_game_save_to_odd_index(self):
-        """Test Game.save_to with odd index (line 331)."""
+        """Test Book.save_to with odd index (line 331)."""
         board = ChessBoard(FULL_INIT_FEN)
-        game = Game(board)
+        game = Book(board)
         move1 = board.copy().move((0, 0), (0, 1))
         game.append_first_move(move1)
         board.next_turn()
@@ -1358,9 +1358,9 @@ class TestGame:
             os.unlink(tmp_path)
 
     def test_game_save_to_custom_fen(self):
-        """Test Game.save_to with non-default init fen (line 319)."""
+        """Test Book.save_to with non-default init fen (line 319)."""
         board = ChessBoard("4k4/9/9/9/9/9/9/9/9/4K4 w")
-        game = Game(board)
+        game = Book(board)
         with tempfile.NamedTemporaryFile(suffix=".pgn", delete=False, mode="w") as f:
             tmp_path = f.name
         try:

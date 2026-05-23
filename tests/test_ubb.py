@@ -1,4 +1,4 @@
-from cchess import Game
+from cchess import Book
 
 ubb_str = """
     [DhtmlXQHTML]
@@ -42,7 +42,7 @@ class TestReaderCbr:
         pass
 
     def test_read_ubb(self):
-        game = Game()
+        game = Book()
         game.from_ubb_dhtml(ubb_str)
 
         for k, v in game.info.items():

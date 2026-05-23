@@ -21,12 +21,12 @@ from .exception import CChessError
 
 
 # -----------------------------------------------------#
-def read_from_cbf(file_name, game_class):  # pylint: disable=too-many-locals
-    """从 CBF 文件读取棋局并转换为 `Game` 对象。
+def read_from_cbf(file_name, book_class):  # pylint: disable=too-many-locals
+    """从 CBF 文件读取棋局并转换为 `Book` 对象。
 
     Args:
         file_name: 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
 
     def decode_move(move_str):
@@ -53,8 +53,8 @@ def read_from_cbf(file_name, game_class):  # pylint: disable=too-many-locals
 
     move_list = list(root.find("MoveList"))  # .getchildren()
 
-    # 使用提供的game_class创建游戏实例
-    game = game_class(board)
+    # 使用提供的book_class创建棋谱实例
+    book = book_class(board)
 
     last_move = None
     step_no = 1
@@ -65,9 +65,9 @@ def read_from_cbf(file_name, game_class):  # pylint: disable=too-many-locals
             if last_move is not None:
                 last_move.append_next_move(new_move)
             else:
-                game.append_next_move(new_move)
+                book.append_next_move(new_move)
             last_move = new_move
         else:
             raise CChessError(f"bad move at {step_no} {move_from}, {move_to}")
         step_no += 1
-    return game
+    return book

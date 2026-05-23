@@ -18,88 +18,88 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 
-from cchess import FULL_INIT_FEN, ChessBoard, Game
+from cchess import FULL_INIT_FEN, ChessBoard, Book
 
 
 class TestGameExtended:
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
-    def test_game_mirror_flip_swap(self):
-        game = Game()
+    def test_book_mirror_flip_swap(self):
+        book = Book()
         test_fen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABN1 w"
-        game.init_board.from_fen(test_fen)
-        original_fen = game.init_board.to_fen()
+        book.init_board.from_fen(test_fen)
+        original_fen = book.init_board.to_fen()
 
         # mirror
-        game.mirror()
-        mirrored_fen = game.init_board.to_fen()
+        book.mirror()
+        mirrored_fen = book.init_board.to_fen()
         assert mirrored_fen != original_fen
-        game.mirror()  # 再次mirror应该恢复
-        assert game.init_board.to_fen() == original_fen
+        book.mirror()  # 再次mirror应该恢复
+        assert book.init_board.to_fen() == original_fen
 
         # flip
-        game.flip()
-        flipped_fen = game.init_board.to_fen()
+        book.flip()
+        flipped_fen = book.init_board.to_fen()
         assert flipped_fen != original_fen
-        game.flip()  # 再次flip应该恢复
-        assert game.init_board.to_fen() == original_fen
+        book.flip()  # 再次flip应该恢复
+        assert book.init_board.to_fen() == original_fen
 
         # swap
-        game.swap()
-        swapped_fen = game.init_board.to_fen()
+        book.swap()
+        swapped_fen = book.init_board.to_fen()
         assert swapped_fen != original_fen
-        game.swap()  # 再次swap应该恢复
-        assert game.init_board.to_fen() == original_fen
+        book.swap()  # 再次swap应该恢复
+        assert book.init_board.to_fen() == original_fen
 
     def test_iter_moves(self):
-        game = Game()
+        book = Book()
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.copy().move((0, 0), (0, 1))
         move2 = board.copy().move((1, 2), (1, 1))
         move1.append_next_move(move2)
 
-        game.append_first_move(move1)
+        book.append_first_move(move1)
 
-        moves = list(game.iter_moves())
+        moves = list(book.iter_moves())
         assert len(moves) >= 1
         assert moves[0] == move1
 
         # 测试从指定move开始迭代
-        moves_from_move2 = list(game.iter_moves(move2))
+        moves_from_move2 = list(book.iter_moves(move2))
         assert len(moves_from_move2) >= 0
 
     def test_dump_init_board(self):
-        game = Game()
-        game.init_board.from_fen(FULL_INIT_FEN)
-        board_dump = game.dump_init_board()
+        book = Book()
+        book.init_board.from_fen(FULL_INIT_FEN)
+        board_dump = book.dump_init_board()
         assert isinstance(board_dump, list)
         assert len(board_dump) == 22  # 棋盘有10行，打印出来22行数据
 
     def test_append_first_move(self):
-        game = Game()
+        book = Book()
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.copy().move_text("车九进一")
 
-        result = game.append_first_move(move1)
+        result = book.append_first_move(move1)
         assert result == move1
-        assert game.first_move == move1
-        assert game.last_move == move1
+        assert book.first_move == move1
+        assert book.last_move == move1
 
         # 添加第二个move作为分支
         move2 = board.copy().move_text("炮八退一")
-        game.append_first_move(move2)
-        assert len(game.first_move.variations_all) == 2
+        book.append_first_move(move2)
+        assert len(book.first_move.variations_all) == 2
 
     def test_append_next_move(self):
-        game = Game()
+        book = Book()
         board = ChessBoard(FULL_INIT_FEN)
         move1 = board.move_text("车九进一")
-        game.append_first_move(move1)
+        book.append_first_move(move1)
         # Note: move_text already switches turns, so no need to call next_turn()
         move2 = board.move_text("炮2平5")
-        game.append_next_move(move2)
+        book.append_next_move(move2)
 
-        assert game.first_move == move1
-        assert game.last_move == move2
-        assert game.first_move.next_move == move2
+        assert book.first_move == move1
+        assert book.last_move == move2
+        assert book.first_move.next_move == move2

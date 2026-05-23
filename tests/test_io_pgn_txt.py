@@ -22,8 +22,8 @@ from pathlib import Path
 import pytest
 
 from cchess.board import ChessBoard
+from cchess.book import Book
 from cchess.common import FULL_INIT_FEN
-from cchess.game import Game
 from cchess.io_pgn import MoveNode, PGNGame, PGNMove, PGNParser, PGNWriter
 from cchess.read_txt import (
     decode_txt_pos,
@@ -190,7 +190,7 @@ class TestPGNWriter:
     def setup_method(self):
         os.chdir(os.path.join(os.path.dirname(__file__), ".."))
         board = ChessBoard(FULL_INIT_FEN)
-        self.game = Game(board)
+        self.game = Book(board)
 
     def test_write_headers(self):
         writer = PGNWriter(self.game)
@@ -261,18 +261,18 @@ class TestReadTxt:
         assert pos == (0, 9)
 
     def test_read_from_txt_empty(self):
-        game = read_from_txt("", game_class=Game)
+        game = read_from_txt("", book_class=Book)
         assert game is not None
 
     def test_read_from_txt_with_pos(self):
         # 32 pieces × 2 chars = 64 chars, all 99 (no pieces)
         pos_txt = "99" * 32
-        game = read_from_txt("", Game, pos_txt)
+        game = read_from_txt("", Book, pos_txt)
         assert game is not None
 
     def test_read_from_txt_bad_pos(self):
         with pytest.raises(Exception):
-            read_from_txt("", Game, "short")
+            read_from_txt("", Book, "short")
 
     def test_txt_to_board_empty(self):
         board = txt_to_board("")
@@ -296,12 +296,12 @@ class TestReadTxt:
         ubb = """[DhtmlXQHTML]
 [DhtmlXQ_movelist]12345678[/DhtmlXQ_movelist]
 [DhtmlXQ_binit]4546474849505152539999999999999999999999999999999999999999999999[/DhtmlXQ_binit]
-[DhtmlXQ_title]Test Game[/DhtmlXQ_title]
+[DhtmlXQ_title]Test Book[/DhtmlXQ_title]
 [/DhtmlXQHTML]"""
         result = ubb_to_dict(ubb)
         assert result["movelist"] == "12345678"
         assert "binit" in result
-        assert result["title"] == "Test Game"
+        assert result["title"] == "Test Book"
 
     def test_txt_to_moves_empty(self):
         board = ChessBoard(FULL_INIT_FEN)
@@ -321,6 +321,6 @@ class TestReadTxt:
 [DhtmlXQ_binit]{binit}[/DhtmlXQ_binit]
 [DhtmlXQ_type]global[/DhtmlXQ_type]
 [/DhtmlXQHTML]"""
-        game = read_from_ubb_dhtml(ubb, Game)
+        game = read_from_ubb_dhtml(ubb, Book)
         assert game is not None
         assert len(game.info) > 0

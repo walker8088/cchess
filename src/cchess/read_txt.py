@@ -28,23 +28,23 @@ def decode_txt_pos(pos):
 
 
 # -----------------------------------------------------#
-def read_from_txt(moves_txt, game_class, pos_txt=None):
-    """从文本棋谱字符串读取并返回 `Game` 对象。
+def read_from_txt(moves_txt, book_class, pos_txt=None):
+    """从文本棋谱字符串读取并返回 `Book` 对象。
 
     Args:
         moves_txt: 走法文本
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
         pos_txt: 位置文本
     """
     board = txt_to_board(pos_txt)
-    game = game_class(board)
+    book = book_class(board)
 
     if moves_txt:
         moves = txt_to_moves(board, moves_txt)
         for move in moves:
-            game.append_next_move(move)
+            book.append_next_move(move)
 
-    return game
+    return book
 
 
 # -----------------------------------------------------#
@@ -123,22 +123,22 @@ def txt_to_moves(board, moves_txt):
 
 
 # -----------------------------------------------------#
-def read_from_ubb_dhtml(ubb_text, game_class):
-    """从 UBB DHTML 文本读取并返回 `Game` 对象。
+def read_from_ubb_dhtml(ubb_text, book_class):
+    """从 UBB DHTML 文本读取并返回 `Book` 对象。
 
     Args:
         ubb_text: UBB文本
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
 
     info = ubb_to_dict(ubb_text)
     board = txt_to_board(info["binit"])
     moves = txt_to_moves(board, info["movelist"])
 
-    game = game_class(board)
+    book = book_class(board)
 
-    game.info = info
+    book.info = info
     for move in moves:
-        game.append_next_move(move)
+        book.append_next_move(move)
 
-    return game
+    return book

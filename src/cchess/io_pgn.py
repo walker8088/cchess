@@ -345,10 +345,10 @@ class PGNTokenizer:
 class PGNWriter:
     """PGN写入器"""
 
-    def __init__(self, game):
+    def __init__(self, book):
         """__init__ 方法。"""
         self.indent_level = 0
-        self.game = game
+        self.book = book
 
     def write_headers(self):
         """写入头信息"""
@@ -358,20 +358,20 @@ class PGNWriter:
         lines.append('[Game "Chinese Chess"]')
         # 先写入标准头信息
         for header in standard_headers:
-            if header in self.game.info:
-                value = self.game.info[header]
+            if header in self.book.info:
+                value = self.book.info[header]
                 lines.append(f'[{header} "{value}"]')
 
         # 写入其他头信息
-        for header, value in self.game.info.items():
+        for header, value in self.book.info.items():
             if header not in standard_headers and header not in ["branchs"]:
                 lines.append(f'[{header} "{value}"]')
 
         # 写入初始局面
-        lines.append(f'[Fen "{self.game.init_board.to_fen()}"]')
+        lines.append(f'[Fen "{self.book.init_board.to_fen()}"]')
         # 写入棋局注释
-        if self.game.annote:
-            lines.append(f"{{{self.game.annote}}}")
+        if self.book.annote:
+            lines.append(f"{{{self.book.annote}}}")
 
         return "\n".join(lines)
 
@@ -418,12 +418,12 @@ class PGNWriter:
         lines.append(headers)
 
         # 写入棋步
-        moves_text = self.write_moves(self.game.first_move)
+        moves_text = self.write_moves(self.book.first_move)
         lines.append(moves_text)
 
         # 添加结果
-        if "result" in self.game.info:
-            lines.append(f"  {self.game.info['result']}")
+        if "result" in self.book.info:
+            lines.append(f"  {self.book.info['result']}")
             lines.append("  =========")
 
         return "\n".join(lines)
@@ -463,37 +463,37 @@ def _read_pgn_file(file_name):
             return raw.decode(encoding, errors="replace")
 
 
-def _parse_pgn_headers(pgn_game, game):
-    """解析 PGN 头信息并设置游戏信息
+def _parse_pgn_headers(pgn_game, book):
+    """解析 PGN 头信息并设置棋谱信息
 
     Args:
-        pgn_game: 解析后的 PGN 游戏对象
-        game: Game 对象
+        pgn_game: 解析后的 PGN 棋谱对象
+        book: Book 对象
 
     Returns:
         ChessBoard: 初始棋盘（可能被 FEN 头信息覆盖）
     """
-    board = game.init_board
+    board = book.init_board
 
     for key, value in pgn_game.headers.items():
         key_lower = key.lower()
         if key_lower == "fen":
             # 处理FEN头信息，设置初始棋盘
             board = ChessBoard(value)
-            game.init_board = board
+            book.init_board = board
         else:
-            game.info[key_lower] = value
+            book.info[key_lower] = value
 
     return board
 
 
-def _try_parse_and_apply_move(board, move_str, game, parent_move):
+def _try_parse_and_apply_move(board, move_str, book, parent_move):
     """尝试解析并应用一步走法
 
     Args:
         board: 棋盘对象
         move_str: 走法字符串
-        game: Game 对象
+        book: Book 对象
         parent_move: 父走法
 
     Returns:
@@ -506,32 +506,32 @@ def _try_parse_and_apply_move(board, move_str, game, parent_move):
 
     # move已经是Move对象，不需要再创建
 
-    # 添加走法到游戏
+    # 添加走法到棋谱
     if parent_move is None:
         # 第一个走法
-        game.append_next_move(move)
-        parent_move = game.first_move
+        book.append_next_move(move)
+        parent_move = book.first_move
     else:
         # 后续走法
-        if game.last_move:
-            game.last_move.append_next_move(move)
-            game.last_move = move
-            parent_move = game.last_move
+        if book.last_move:
+            book.last_move.append_next_move(move)
+            book.last_move = move
+            parent_move = book.last_move
         else:
             # 如果 last_move 不存在，重新设置
-            game.append_next_move(move)
-            parent_move = game.first_move
+            book.append_next_move(move)
+            parent_move = book.first_move
 
     return move, True
 
 
-def _process_pgn_moves(node, board, game, parent_move=None):
+def _process_pgn_moves(node, board, book, parent_move=None):
     """递归处理 PGN 棋步节点
 
     Args:
         node: 当前节点
         board: 棋盘状态
-        game: Game 对象
+        book: Book 对象
         parent_move: 父走法
     """
     while node:
@@ -539,20 +539,20 @@ def _process_pgn_moves(node, board, game, parent_move=None):
 
         # 跳过结果标记和非法走法字符串
         if move_str in ["1-0", "0-1", "1/2-1/2", "*"]:
-            game.info["result"] = move_str
+            book.info["result"] = move_str
             node = node.next_node
             continue
 
         try:
             move, success = _try_parse_and_apply_move(
-                board, move_str, game, parent_move
+                board, move_str, book, parent_move
             )
             if not success:
                 node = node.next_node
                 continue
 
             # 更新 parent_move 用于下一次循环
-            parent_move = game.last_move
+            parent_move = book.last_move
 
             # 处理变招
             for variation in node.move.variations:
@@ -560,7 +560,7 @@ def _process_pgn_moves(node, board, game, parent_move=None):
                 saved_board = board.copy()
 
                 # 递归处理变招
-                _process_pgn_moves(variation, saved_board, game, parent_move)
+                _process_pgn_moves(variation, saved_board, book, parent_move)
 
         except (ValueError, TypeError, AttributeError, KeyError, IndexError):
             # 走法解析或应用出错，继续处理下一个走法
@@ -570,16 +570,16 @@ def _process_pgn_moves(node, board, game, parent_move=None):
         node = node.next_node
 
 
-def read_from_pgn(file_name, game_class):
-    """从 PGN 文件读取并解析为 `Game` 对象。
+def read_from_pgn(file_name, book_class):
+    """从 PGN 文件读取并解析为 `Book` 对象。
 
     Args:
         file_name: 文件路径
-        game_class: Game类，用于创建游戏实例
+        book_class: Book 类，用于创建棋谱实例
     """
     board = ChessBoard(FULL_INIT_FEN)
 
-    game = game_class(board)
+    book = book_class(board)
 
     # 读取文件
     text = _read_pgn_file(file_name)
@@ -589,11 +589,11 @@ def read_from_pgn(file_name, game_class):
         pgn_game = parser.parse(text)
 
         # 解析头信息
-        current_board = _parse_pgn_headers(pgn_game, game)
+        current_board = _parse_pgn_headers(pgn_game, book)
 
         # 直接使用当前棋盘，不进行规范化
         # board.move_text() 内部已经使用规范局面处理
-        _process_pgn_moves(pgn_game.moves, current_board, game)
+        _process_pgn_moves(pgn_game.moves, current_board, book)
 
     except (
         FileNotFoundError,
@@ -606,4 +606,4 @@ def read_from_pgn(file_name, game_class):
     ) as e:
         print(f"解析PGN文件时出错: {e}")
 
-    return game
+    return book

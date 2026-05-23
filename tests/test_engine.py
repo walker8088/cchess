@@ -24,11 +24,11 @@ import pytest
 
 import cchess
 from cchess import (
+    Book,
     ChessBoard,
     EngineError,
     EngineManager,
     EngineStatus,
-    Game,
     UcciEngine,
     UciEngine,
 )
@@ -108,12 +108,12 @@ class TestUcci:
         assert self.engine.engine_status == EngineStatus.READY
 
         fen, moves, result = load_move_txt(Path("tests", "data", "ucci_test1_move.txt"))
-        game = Game.read_from(Path("tests", "data", "ucci_test1.xqf"))
-        game.init_board.set_move_side(cchess.SIDE_RED)
+        book = Book.read_from(Path("tests", "data", "ucci_test1.xqf"))
+        book.init_board.set_move_side(cchess.SIDE_RED)
 
-        assert game.init_board.to_fen() == fen
-        assert game.info["result"] == result
-        board = game.init_board.copy()
+        assert book.init_board.to_fen() == fen
+        assert book.info["result"] == result
+        board = book.init_board.copy()
 
         dead = False
         while not dead:
@@ -321,15 +321,15 @@ class TestEngineManager:
         go_params = {"depth": 6}
         self.mgr.load_uci("Engine\\pikafish_230408\\pikafish.exe", options, go_params)
         file_name = Path("tests", "data", "030-黄松轩先胜冯敬如.XQF")
-        game = Game.read_from(file_name)
-        assert game.info["branchs"] == 2
+        book = Book.read_from(file_name)
+        assert book.info["branchs"] == 2
 
-        moves = game.dump_moves(is_tree_mode=False)
+        moves = book.dump_moves(is_tree_mode=False)
         for m_line in moves:
             print(m_line["name"])
             print(",".join([x.to_text() for x in m_line["moves"]]))
 
-        moves = game.dump_fen_iccs_moves()
+        moves = book.dump_fen_iccs_moves()
         for branch, move_line in enumerate(moves):
             print(f"{file_name} 分支:{branch + 1}/{len(moves)}")
             for index, (fen, iccs) in enumerate(move_line):
