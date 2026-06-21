@@ -15,7 +15,8 @@
 - [ ] mypy 检查通过（可选）
 
 ### 测试
-- [ ] 所有单元测试通过 (`python -m pytest tests/ -x`)
+- [ ] 快速测试通过 (`python -m pytest tests/ -m "not slow" -x`)
+- [ ] 引擎集成测试通过（`python -m pytest tests/test_engine_async.py -m "slow" -v`）
 - [ ] 新增功能有对应测试
 - [ ] 性能测试通过 (`python tests/check_regression.py`)
 - [ ] 测试覆盖率 > 80%
@@ -24,7 +25,8 @@
 - [ ] 公共函数有 docstring
 - [ ] 复杂逻辑有注释说明
 - [ ] API 文档更新（如适用）
-- [ ] CHANGELOG.md 更新
+- [ ] ReleaseNote.txt 更新
+- [ ] README 验证通过 (`python verify_readme.py`)
 
 ### 性能
 - [ ] 无性能回归（< 10% 阈值）
@@ -124,9 +126,36 @@ python tests/benchmark.py          # 运行基准测试
 python tests/check_regression.py   # 检查性能回归
 ```
 
+### Q: 如何运行异步引擎测试？
+A: 异步引擎测试需要启动 eleeye 等真实引擎，默认标记为 `slow`：
+```bash
+# 只跑快速测试（不启动引擎，CI 默认）
+python -m pytest tests/ -m "not slow" -x -q
+
+# 跑全部 slow 测试（需要本地引擎）
+python -m pytest tests/test_engine_async.py -m "slow" -v
+
+# 跑某个测试类
+python -m pytest tests/test_engine_async.py::TestAsyncEngineBoundaryConditions -v
+```
+
+### Q: 如何验证 README 代码示例？
+A: 运行项目根目录的 `verify_readme.py` 脚本：
+```bash
+python verify_readme.py    # 校验 README 中 15 个代码示例
+```
+
 ### Q: 如何更新文档？
 A: 更新对应的 .md 文件，并确保 docstring 与代码同步。
 
 ---
-**最后更新**: 2026年
+**最后更新**: 2026-05
 **维护者**: CChess 开发团队
+
+## 参考资料
+
+- [AGENTS.md](AGENTS.md) - 项目规则与开发流程
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - 详细架构分析
+- [ReleaseNote.txt](ReleaseNote.txt) - 版本变更记录
+- [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) - 通用开发经验指南
+- [UPGRADE_GUIDE.md](UPGRADE_GUIDE.md) - 升级指南

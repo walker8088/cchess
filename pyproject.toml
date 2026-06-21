@@ -1,7 +1,7 @@
 
 [project]
 name = "cchess"
-version = "1.26.2"
+version = "2.26.1"
 description = "ChineseChess (AKA XiangQi) library"
 readme = "README.md"
 authors = [
@@ -63,6 +63,9 @@ explicit = true
 addopts = "--tb=short"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "slow: marks tests as slow (requiring engine execution)",
+]
 
 [tool.coverage.run]
 data_file = ".coverage_tmp"

@@ -112,24 +112,64 @@ class AsyncEngine:
                             await self._parse_id(line)
             elif self._protocol == "uci":
                 await self._send_line("uci")
-                while True:
-                    line = await self._read_line()
-                    if line == "uciok":
-                        break
-                    if line.startswith("option"):
-                        await self._parse_option(line)
-                    elif line.startswith("id"):
-                        await self._parse_id(line)
+                try:
+                    while True:
+                        line = await asyncio.wait_for(self._read_line(), timeout=5.0)
+                        if not line:
+                            # EOF - 引擎关闭了 stdout 或不识别协议
+                            logger.error(
+                                "UCI initialization failed: engine closed connection"
+                            )
+                            if self.process:
+                                self.process.kill()
+                                await self.process.wait()
+                            self.process = None
+                            return False
+                        if line == "uciok":
+                            break
+                        if line.startswith("option"):
+                            await self._parse_option(line)
+                        elif line.startswith("id"):
+                            await self._parse_id(line)
+                except asyncio.TimeoutError:
+                    logger.error(
+                        "UCI initialization timeout (engine may not support UCI)"
+                    )
+                    if self.process:
+                        self.process.kill()
+                        await self.process.wait()
+                    self.process = None
+                    return False
             else:  # ucci
                 await self._send_line("ucci")
-                while True:
-                    line = await self._read_line()
-                    if line == "ucciok":
-                        break
-                    if line.startswith("option"):
-                        await self._parse_option(line)
-                    elif line.startswith("id"):
-                        await self._parse_id(line)
+                try:
+                    while True:
+                        line = await asyncio.wait_for(self._read_line(), timeout=5.0)
+                        if not line:
+                            # EOF - 引擎关闭了 stdout 或不识别协议
+                            logger.error(
+                                "UCCI initialization failed: engine closed connection"
+                            )
+                            if self.process:
+                                self.process.kill()
+                                await self.process.wait()
+                            self.process = None
+                            return False
+                        if line == "ucciok":
+                            break
+                        if line.startswith("option"):
+                            await self._parse_option(line)
+                        elif line.startswith("id"):
+                            await self._parse_id(line)
+                except asyncio.TimeoutError:
+                    logger.error(
+                        "UCCI initialization timeout (engine may not support UCCI)"
+                    )
+                    if self.process:
+                        self.process.kill()
+                        await self.process.wait()
+                    self.process = None
+                    return False
 
             self._initialized = True
             logger.info("Engine initialized: %s", self._id.get("name", "Unknown"))
@@ -137,6 +177,13 @@ class AsyncEngine:
 
         except (RuntimeError, OSError) as e:
             logger.error("Failed to initialize engine: %s", e)
+            if self.process:
+                try:
+                    self.process.kill()
+                    await self.process.wait()
+                except Exception:
+                    pass
+                self.process = None
             return False
 
     async def _send_line(self, line: str) -> None:
@@ -147,12 +194,21 @@ class AsyncEngine:
             logger.debug(">> %s", line)
 
     async def _read_line(self) -> str:
-        """从引擎读取一行"""
+        """从引擎读取一行
+
+        返回空字符串表示 EOF（引擎关闭了 stdout）
+        """
         if self.process and self.process.stdout:
-            line_bytes = await self.process.stdout.readline()
-            line = line_bytes.decode().strip()
-            logger.debug("<< %s", line)
-            return line
+            try:
+                line_bytes = await self.process.stdout.readline()
+                if not line_bytes:  # EOF
+                    return ""
+                line = line_bytes.decode().strip()
+                logger.debug("<< %s", line)
+                return line
+            except Exception as e:
+                logger.debug("read_line error: %s", e)
+                return ""
         return ""
 
     async def _parse_option(self, line: str) -> None:
@@ -194,6 +250,7 @@ class AsyncEngine:
         depth: Optional[int] = None,
         time_limit: Optional[float] = None,
         ponder: bool = False,
+        timeout: Optional[float] = 60.0,
     ) -> Dict[str, Any]:
         """执行一步棋。
 
@@ -202,6 +259,7 @@ class AsyncEngine:
             depth: 搜索深度
             time_limit: 时间限制（秒）
             ponder: 是否 ponder
+            timeout: 整体超时（秒），默认 60 秒
 
         返回:
             dict: 包含 'move', 'score', 'pv' 等信息
@@ -216,8 +274,26 @@ class AsyncEngine:
         go_cmd = self._build_go_command(depth, time_limit, ponder)
         await self._send_line(go_cmd)
 
-        # 等待结果
-        return await self._wait_for_result()
+        # 等待结果（带超时保护）
+        try:
+            if timeout is not None:
+                return await asyncio.wait_for(self._wait_for_result(), timeout=timeout)
+            return await self._wait_for_result()
+        except asyncio.TimeoutError:
+            logger.warning("play() timed out after %s seconds", timeout)
+            # 超时后尝试停止引擎思考
+            await self._stop_thinking()
+            return {"move": None, "score": None, "pv": []}
+
+    async def _stop_thinking(self) -> None:
+        """停止引擎思考（发送 stop/quit 命令）"""
+        try:
+            if self._protocol == "ucci":
+                await self._send_line("quit")
+            else:
+                await self._send_line("stop")
+        except Exception as e:
+            logger.debug("Failed to stop thinking: %s", e)
 
     def _build_go_command(
         self,
@@ -238,8 +314,17 @@ class AsyncEngine:
     async def _wait_for_result(self) -> Dict[str, Any]:
         """等待引擎返回结果"""
         result = {"move": None, "score": None, "pv": []}
+        empty_line_count = 0
         while True:
             line = await self._read_line()
+            if not line:
+                # EOF 或连续空行
+                empty_line_count += 1
+                if empty_line_count > 5:
+                    logger.warning("Engine returned too many empty lines")
+                    break
+                continue
+            empty_line_count = 0
             if line.startswith("bestmove"):
                 parts = line.split()
                 if len(parts) >= 2:
@@ -261,6 +346,7 @@ class AsyncEngine:
         depth: Optional[int] = None,
         time_limit: Optional[float] = None,
         multipv: int = 1,
+        timeout: Optional[float] = 60.0,
     ) -> List[Dict[str, Any]]:
         """分析局面。
 
@@ -269,6 +355,7 @@ class AsyncEngine:
             depth: 搜索深度
             time_limit: 分析时间（秒）
             multipv: 分析多条线路的数量
+            timeout: 整体超时（秒），默认 60 秒
 
         返回:
             list: 分析结果列表
@@ -292,23 +379,57 @@ class AsyncEngine:
 
         await self._send_line(go_cmd)
 
-        # 收集分析结果
+        # 收集分析结果（带超时保护）
+        try:
+            return await self._collect_analysis_results(multipv, timeout)
+        except asyncio.TimeoutError:
+            logger.warning("analyse() timed out after %s seconds", timeout)
+            await self._stop_thinking()
+            return []
+
+    async def _collect_analysis_results(
+        self, multipv: int, timeout: Optional[float]
+    ) -> List[Dict[str, Any]]:
+        """收集分析结果
+
+        参数:
+            multipv: 期望的多线路数量
+            timeout: 超时秒数
+
+        返回:
+            list: 分析结果列表
+        """
         results: List[Dict[str, Any]] = []
         current_info: Dict[int, Dict[str, Any]] = {}
 
-        while True:
-            line = await self._read_line()
-            if line.startswith("bestmove"):
-                break
-            if line.startswith("info"):
-                info = self._parse_info(line)
-                multipv_num = info.get("multipv", 1)
-                current_info[multipv_num] = info
+        async def _collect():
+            empty_line_count = 0
+            while True:
+                line = await self._read_line()
+                if not line:
+                    # EOF 或连续空行
+                    empty_line_count += 1
+                    if empty_line_count > 5:
+                        logger.warning("Engine returned too many empty lines")
+                        break
+                    continue
+                empty_line_count = 0
+                if line.startswith("bestmove"):
+                    break
+                if line.startswith("info"):
+                    info = self._parse_info(line)
+                    multipv_num = info.get("multipv", 1)
+                    current_info[multipv_num] = info
 
-        # 整理结果
-        for i in range(1, multipv + 1):
-            if i in current_info:
-                results.append(current_info[i])
+            # 整理结果
+            for i in range(1, multipv + 1):
+                if i in current_info:
+                    results.append(current_info[i])
+
+        if timeout is not None:
+            await asyncio.wait_for(_collect(), timeout=timeout)
+        else:
+            await _collect()
 
         return results
 
@@ -337,20 +458,59 @@ class AsyncEngine:
             elif parts[i] == "multipv":
                 result["multipv"] = int(parts[i + 1])
                 i += 2
+            elif parts[i] == "seldepth":
+                result["seldepth"] = int(parts[i + 1]) if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "nodes":
+                result["nodes"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "nps":
+                result["nps"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "time":
+                result["time"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "currmove":
+                result["currmove"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "currmovenumber":
+                result["currmovenumber"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
+            elif parts[i] == "hashfull":
+                result["hashfull"] = parts[i + 1] if i + 1 < len(parts) else None
+                i += 2
             else:
                 i += 1
 
         return result
 
     async def quit(self) -> None:
-        """关闭引擎进程"""
+        """关闭引擎进程（总是确保进程被关闭）"""
         if self.process:
-            await self._send_line("quit")
             try:
-                await asyncio.wait_for(self.process.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
-                self.process.kill()
-                await self.process.wait()
+                # 先尝试正常退出
+                try:
+                    self.process.stdin.close()
+                except Exception:
+                    pass
+                await self._send_line("quit")
+                try:
+                    await asyncio.wait_for(self.process.wait(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    # 优雅退出超时，强制 kill
+                    try:
+                        self.process.kill()
+                        await self.process.wait()
+                    except Exception as e:
+                        logger.debug("Failed to kill process: %s", e)
+            except Exception as e:
+                # 出错时也确保进程被终止
+                logger.warning("Error during quit: %s, force killing", e)
+                try:
+                    self.process.kill()
+                    await self.process.wait()
+                except Exception:
+                    pass
 
             self.process = None
             self._initialized = False

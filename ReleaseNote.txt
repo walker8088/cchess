@@ -1,7 +1,7 @@
-
-release v1.26.2 (2026年第2次发布)
+release v2.26.1 (版本2于2026年第1次发布，开发中)
 
 【API不兼容变化】
+  * Game → Book 重命名（棋谱对象统一命名）
   * 移除 Move.from_text() 静态方法 → 使用 board.move_text() 实例方法
   * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_pieces()
   * 移除 ChessPlayer 类 → 使用整数常量 SIDE_RED=1, SIDE_BLACK=2, SIDE_ANY=0
@@ -13,23 +13,88 @@ release v1.26.2 (2026年第2次发布)
   * 车/炮走法生成优化：直接访问棋盘数组，减少方法调用
   * PGNTokenizer.tokenize() 优化：使用分发表 + 预计算字符集
   * Piece类添加 __slots__：内存占用减少40%
+  * 优化 Knight.create_moves() 方法，性能提升约35%
+  * 优化车、炮、兵的 create_moves() 方法
 
 【架构改进】
   * 引入 MoveNotation 中间表示：分离走法解析与渲染，支持多语言输出
   * 使用规范局面（normalized board）：统一红黑方走法处理，减少颜色分支
   * 新增 AsyncEngine 异步引擎：支持 asyncio 并发操作
+  * 重构常量管理：创建 constants.py 集中管理颜色、棋盘等常量
+  * 重构 fen_mirror、fen_flip、fen_swap 函数：转为 Board 类的静态方法
+  * 统一模块文档字符串引号格式
+  * 修复 __init__.py 中 __all__ 列表
+  * 将 CChessException 重构为 CChessError
+  * 引入 make_move / unmake_move 机制（MoveInfo dataclass）
+  * 实现攻击矩阵缓存：_red_attacks, _black_attacks, _attack_matrix_dirty
+  * 新增 _compute_piece_attacks() 和 _recompute_attack_matrix() 方法
+
+【代码质量】
+  * 运行 Ruff check 并修复问题
+  * __init__.py 导入顺序优化
+  * 清理遗留注释代码和未使用导入
+  * 简化 io_xqf.py 和 read_cbr.py 中的重复代码
 
 【测试与文档】
-  * 新增异步引擎测试套件：覆盖完整功能测试
+  * 新增异步引擎测试套件（tests/test_engine_async.py）：14 个测试类，56 个测试
+    - TestAsyncEngineBoundaryConditions - 空棋盘/将死/深度 0/超时
+    - TestAsyncEngineErrorRecovery - 重连/重初始化
+    - TestAsyncEngineConcurrency - 并发 play/analyse
+    - TestAsyncEngineInfoParsing - info 全字段解析
+    - TestAsyncEngineSetOption - setoption 选项
+    - TestAsyncEngineProtocolDetection - 协议自动/显式探测
+  * 新增 make_move/unmake_move 测试：test_board_make_unmake.py (9 个测试)
   * 新增性能基准测试套件（benchmark.py）和回归检测脚本
   * 新增代码审查清单（CODE_REVIEW.md）和质量检查标准
   * 新增详细架构分析文档（ARCHITECTURE_ANALYSIS.md）
+  * 新增 pyproject 中 slow 标记：分离需要启动引擎的慢速测试
+  * 新增 README 异步引擎调用示例（基本用法、时间限制、局面分析、
+    显式协议、便捷函数、并发调用、错误处理共 7 个 demo）
+  * 新增 verify_readme.py：自动校验 README 代码示例
+  * README 代码示例更新为 Book 用法
 
 【错误修复】
   * 修复中文走法'前/后'限定词逻辑错误
   * 修复 PGN 解析器走子方切换问题
   * 修复 move_player → move_side 命名不一致问题
   * 统一数字格式处理：红方使用中文数字，黑方使用全角数字
+  * 修复 read_from_cbl_progressing() 中 book_index 未初始化 bug
+  * 修复 read_txt.py 中属性名 move_side 错误
+  * 修复 exception.py 中 CChessError 未调用 super().__init__()
+  * 修复 move.py 中引用不存在的 sibling_next 属性，导致无限循环
+  * 修复 is_checking_move 和 is_checked_move 中的将军检测逻辑
+  * 修复吃将时走子方切换问题
+  * 修复 Python 3.8 兼容性问题：将 tuple[int, int] 改为 Tuple[int, int]
+  * 修复 test_gbk_fallback_encoding 测试失败
+  * 修复 io_pgn.py 中 Move dataclass 命名冲突，重命名为 PGNMove
+  * 修复 ChessPlayer.next() 行为不一致问题
+  * 修复 io_xqf.py 中的注释代码格式
+  * 移除 board.py 中未使用的 Union 导入
+  * 修复 README 中 print_board() → print_view() 错误 API
+  * 修正 README 中 is_checked_move 调用顺序问题，改用 is_checking_move
+  * 修复 README 标题缺少空格等 markdown 格式问题
+  * 修复 README 中默认空棋盘未说明问题：补充 FULL_INIT_FEN 用法
+
+【AsyncEngine 稳定性改进】
+  * 修复 UCI/UCCI 初始化协议不匹配时死循环挂起问题：增加
+    5 秒超时与 EOF 检测，超时后清理进程并返回 False
+  * 修复 play()/analyse() 长时间无响应挂起问题：增加 timeout
+    参数（默认 60s），超时后调用 _stop_thinking 优雅停止引擎
+  * 修复 _wait_for_result() 无法退出问题：增加连续空行计数器
+    （>5 视为 EOF）
+  * quit() 流程加固：先关 stdin、2s 优雅等待，再 force kill，
+    任何异常都确保进程清理
+  * 解析 info 行时支持 seldepth/nodes/nps/time/currmove/
+    currmovenumber/hashfull 等扩展字段
+
+【已移除】
+  * 统一 __init__.py 与 pyproject.toml 版本号为 2.26.1
+  * 移除 __init__.py 中未使用的 Union 导入
+
+【未来计划】
+  * 类型注解补全（board.py / piece.py 仍有部分未覆盖）
+  * 性能回归测试覆盖到 CI
+  * 模块化重构（board.py 拆分）
 
 性能基准数据：
   * get_all_pieces(): 0.024 ms/次 (42,259 ops/sec)
@@ -39,6 +104,7 @@ release v1.26.2 (2026年第2次发布)
   * 炮走法: 0.022 ms/次 (44,997 ops/sec)
   * 马走法: 0.023 ms/次 (44,132 ops/sec)
   * 兵走法: 0.023 ms/次 (42,708 ops/sec)
+
 
 release v1.26.1
   * 新增命令行格式转换功能：-i 输入文件 -o 输出文件，支持 pgn<->xqf、cbf->xqf
@@ -54,10 +120,12 @@ release v1.26.1
   * 添加/完善类和函数 docstring
   * 修复异常处理：使用具体异常类型替代宽泛 Exception
 
+
 release v1.24.6
   * 读写带xqf格式棋谱，支持变招和注释
   * 读取东萍UBB dhtml格式棋谱（不支持变招和注释）
   * 读写pgn格式棋谱，支持变招和注释
+
 
 release v1.24.4
   * 目前可以读入 XQF, CBR, CBL, PNG(iccs格式和文本格式) 的棋谱

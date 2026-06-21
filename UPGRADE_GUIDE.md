@@ -1,8 +1,8 @@
-# CChess v1.26.1 到当前版本升级指南
+# CChess v1.26.1 到 v2.26.1 升级指南
 
 ## 升级概述
 
-从 v1.26.1 升级到当前版本涉及多个不兼容的 API 变化。本文档提供详细的升级步骤和建议。
+从 v1.26.1 升级到 v2.26.1（开发中）涉及多个不兼容的 API 变化。本文档提供详细的升级步骤和建议。
 
 ## 升级步骤
 
@@ -381,6 +381,39 @@ print(f'create_moves x1000: {elapsed:.3f}s')
 3. **马走法优化**：性能提升约35%
 4. **规范局面处理**：减少红黑方分支代码
 
+## 新增功能：AsyncEngine 异步引擎
+
+本版本新增了异步引擎接口 `AsyncEngine`（`engine_async.py`），
+适用于 Web 服务、批量分析等需要非阻塞调用的场景。
+
+### 启用方式
+
+```python
+from cchess.engine_async import AsyncEngine, play_move, analyse_position
+import asyncio
+
+async def main():
+    async with AsyncEngine("Engine/eleeye/ELEEYE.EXE") as engine:
+        board = ChessBoard(FULL_INIT_FEN)
+        result = await engine.play(board, depth=10, timeout=30)
+        print(result["move"])
+
+asyncio.run(main())
+```
+
+### 主要特性
+
+- 支持 UCCI / UCI / auto 三种协议
+- `play()` / `analyse()` 带 `timeout` 参数（默认 60s）防止挂起
+- 上下文管理器（`async with`）保证进程自动清理
+- `play_move()` / `analyse_position()` 便捷函数
+
+### 依赖项
+
+`pytest-asyncio >= 0.23`（仅测试时需要）
+- `pyproject.toml` 中已配 `asyncio_mode = "auto"`
+- 需启动真实引擎的测试统一标记为 `@pytest.mark.slow`
+
 ## 联系支持
 
 如果在升级过程中遇到问题：
@@ -396,5 +429,27 @@ print(f'create_moves x1000: {elapsed:.3f}s')
 2. 更新 API 调用方式（Move.from_text -> board.move_text）
 3. 更新颜色处理（ChessPlayer -> 整数常量）
 4. 更新常量名（NO_COLOR -> SIDE_ANY）
+5. **可选**：采用新的 `AsyncEngine` 异步接口（需用 `async/await`）
 
 虽然涉及不兼容变化，但迁移工作相对直接，且能获得显著的性能改进。
+
+## 验证清单
+
+升级后逐项验证以下内容：
+
+- [ ] `from cchess import SIDE_RED, SIDE_BLACK, SIDE_ANY` 导入成功
+- [ ] `board.get_fench_positions()` / `board.get_all_pieces()` 调用成功
+- [ ] `board.move_text("炮二平五")` 返回 `Move` 对象
+- [ ] `board.move_side` 可正常读写
+- [ ] `python verify_readme.py` 全部 15 个验证通过
+- [ ] `uvx ruff check ./src` 无错误
+- [ ] `python -m pytest tests/ -m "not slow" -x -q` 全部快速测试通过
+- [ ] （可选）`python -m pytest tests/test_engine_async.py -m "slow" -v` 引擎集成测试通过
+
+## 相关文档
+
+- [API_CHANGES_ANALYSIS.md](API_CHANGES_ANALYSIS.md) - 详细的 API 变化分析
+- [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) - 架构分析
+- [ReleaseNote.txt](ReleaseNote.txt) - 版本变更记录
+- [AGENTS.md](AGENTS.md) - 项目开发规则
+- [CODE_REVIEW.md](CODE_REVIEW.md) - 代码审查清单

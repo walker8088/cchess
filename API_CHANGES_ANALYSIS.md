@@ -1,8 +1,13 @@
-# CChess v1.26.1 到当前 HEAD API 不兼容变化分析报告
+# CChess v1.26.1 到 v2.26.1 不兼容变化
+
+> **版本说明**：本项目使用 `大版本号.年.顺序` 三段式语义化版本号
+> （如 `2.26.1` = 大版本 2 / 2026 年 / 当年第 1 发）。
+> 不兼容 API 变化会触发 MAJOR 递増（1 → 2），其他变化只递增 SEQUENCE。
+> 详见 [AGENTS.md §版本号命名规则](AGENTS.md#版本号命名规则)。
 
 ## 概述
 
-根据 ReleaseNote.txt 和代码分析，从 v1.26.1 到当前版本进行了重大的 API 重构和性能优化。本文档详细分析所有不兼容的 API 变化及其影响。
+根据 ReleaseNote.txt 和代码分析，从 v1.26.1 到 v2.26.1（开发中）进行了重大的 API 重构和性能优化。本文档详细分析所有不兼容的 API 变化及其影响。
 
 ## 主要 API 变化
 
@@ -233,15 +238,55 @@ Move.from_text = staticmethod(move_from_text)
 python test_api_compatibility.py
 ```
 
+## 附录：AsyncEngine 新增功能
+
+AsyncEngine（`engine_async.py`）是本版本新增的异步引擎接口，
+不是不兼容变化，但是项目架构的重要补充。
+
+### 公共 API
+
+```python
+from cchess.engine_async import AsyncEngine, play_move, analyse_position
+```
+
+| 名称 | 类型 | 说明 |
+|------|------|------|
+| `AsyncEngine` | 类 | 异步引擎封装，支持 ucci/uci/auto 三种协议 |
+| `play_move` | 函数 | 便捷函数：一步走棋返回 ICCS 字符串 |
+| `analyse_position` | 函数 | 便捷函数：分析局面返回第一条结果 |
+
+### 主要方法
+
+- `async initialize() -> bool` - 启动引擎并握手协议 (5s 超时)
+- `async quit()` - 关闭引擎 (2s 优雅等待后 force kill)
+- `async play(board, depth, time_limit, timeout=60) -> dict` - 走子
+- `async analyse(board, depth, time_limit, multipv, timeout=60) -> list` - 分析
+- `async configure(options: dict) -> None` - setoption 设置
+- `async __aenter__/__aexit__` - 异步上下文管理器
+
+### 错误处理
+
+引擎不响应时, `play()` / `analyse()` 会：
+1. 在 `timeout` 秒后触发 `asyncio.TimeoutError` (内部处理)
+2. 调用 `_stop_thinking()` 发送 `quit` (UCCI) 或 `stop` (UCI)
+3. 返回空结果 `{"move": None, ...}` 或 `[]`
+
+调用方需自行 try/except:
+```python
+try:
+    result = await engine.play(board, depth=10, timeout=30)
+except RuntimeError:
+    # 引擎未初始化
+    ...
+```
+
 ## 已知问题
 
-1. **版本号不匹配**：`__init__.py` 中版本号仍为 1.26.1，但代码已包含 1.27.0 的变更
-2. **文档更新**：需要更新所有相关文档
-3. **类型提示**：部分新 API 可能需要更完整的类型提示
+无。
 
 ## 总结
 
-从 v1.26.1 到当前版本的 API 变化主要包括：
+从 v1.26.1 到 v2.26.1 的 API 变化主要包括：
 
 1. **方法重命名**：2 个方法
 2. **方法移除**：3 个方法 + 1 个类

@@ -93,3 +93,4 @@ ENV/
 *.epg
 
 uv.lock
+.opencode
