@@ -29,14 +29,8 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 实现攻击矩阵缓存：_red_attacks, _black_attacks, _attack_matrix_dirty
   * 新增 _compute_piece_attacks() 和 _recompute_attack_matrix() 方法
 
-【代码质量】
-  * 运行 Ruff check 并修复问题
-  * __init__.py 导入顺序优化
-  * 清理遗留注释代码和未使用导入
-  * 简化 io_xqf.py 和 read_cbr.py 中的重复代码
-
 【测试与文档】
-  * 新增异步引擎测试套件（tests/test_engine_async.py）：14 个测试类，56 个测试
+  * 新增异步引擎测试套件（tests/test_engine_async.py）：15 个测试类，56 个测试
     - TestAsyncEngineBoundaryConditions - 空棋盘/将死/深度 0/超时
     - TestAsyncEngineErrorRecovery - 重连/重初始化
     - TestAsyncEngineConcurrency - 并发 play/analyse

@@ -90,7 +90,7 @@ python -m pytest tests/test_coverage.py -x -q
 - 单元测试：`test_board_move.py`, `test_piece.py`
 - 覆盖率测试：`test_coverage.py` (300+ 测试)
 - 集成测试：`test_io_pgn_txt.py`, `test_read_xqf.py`
-- 异步引擎测试：`test_engine_async.py` (14 个测试类，56 个测试)
+- 异步引擎测试：`test_engine_async.py` (15 个测试类，56 个测试)
 - 性能测试：基准测试套件
 
 ### 异步引擎测试（`tests/test_engine_async.py`）
@@ -98,6 +98,7 @@ python -m pytest tests/test_coverage.py -x -q
 - `TestAsyncEngineInit` - 构造参数
 - `TestAsyncEngineLifecycle` - 启动 / 退出 / 上下文管理
 - `TestAsyncEnginePlay` / `TestAsyncEngineAnalyse` - 走子 / 分析
+- `TestAsyncEngineConfigure` / `TestAsyncEngineHelpers` / `TestAsyncEngineEndgame` - 选项/便捷函数/残局
 - `TestAsyncEngineGoCommand` / `TestAsyncEngineParseInfo` - 纯逻辑单测
 - `TestAsyncEngineBoundaryConditions` - 空棋盘 / 将死 / 深度 0 / 超时
 - `TestAsyncEngineErrorRecovery` - 多次 quit / 重连 / 失败初始化
