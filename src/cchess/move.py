@@ -570,7 +570,6 @@ class Move:
 
         当前为桩实现，预留接口供未来扩展。
         """
-        ...  # 桩实现占位
 
     def get_variations(self, include_me=False):
         """返回当前走子的所有分支（变招），可选择是否包含自身。"""

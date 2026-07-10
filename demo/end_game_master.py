@@ -15,6 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+# pylint: disable=import-error,no-member,not-callable,undefined-variable,wildcard-import
+# pylint: disable=missing-class-docstring,invalid-name,attribute-defined-outside-init
+# pylint: disable=redefined-builtin,anomalous-backslash-in-string,pointless-string-statement
+# pylint: disable=broad-exception-caught
 
 import logging
 import os
@@ -197,14 +201,14 @@ class GameTable:
         for x in range(9):
             for y in range(10):
                 key = (x, y)
-                piece = self.board.get_piece(key)
-                if not piece:
+                fench = self.board.get_fench(key)
+                if not fench or fench == ".":
                     continue
 
-                image = self.pieces_image[piece.fench.lower()]
+                image = self.pieces_image[fench.lower()]
                 board_pos = pos_to_screen(key)
 
-                if piece.color == cchess.SIDE_RED:
+                if fench.isupper():
                     offset = (0, 0, 52, 52)
                 else:
                     offset = (53, 0, 52, 52)
@@ -240,18 +244,18 @@ class GameTable:
 
             for x in range(9):
                 for y in range(10):
-                    key = Pos(x, y)
-                    piece = self.board.get_piece(key)
-                    if piece is None:
+                    key = (x, y)
+                    fench = self.board.get_fench(key)
+                    if fench is None or fench == ".":
                         continue
 
-                    board_pos = pos_to_screen(piece)
-                    image = self.pieces_image[piece.fench.lower()]
-                    offset = (int(piece.side) * 53, 0, 52, 52)
+                    board_pos = pos_to_screen(key)
+                    image = self.pieces_image[fench.lower()]
+                    offset = (0, 0, 52, 52) if fench.isupper() else (53, 0, 52, 52)
                     if key == p_from:
                         self.screen.blit(image, step(), offset)
                     else:
-                        self.screen.blit(image, board_pos(), offset)
+                        self.screen.blit(image, board_pos, offset)
 
             pygame.display.flip()
             pygame.event.pump()
@@ -310,7 +314,7 @@ class GameKeeper:
         self.flile_eplib = self.file + ".eplib"
 
     def load(self):
-        with open(self.file_src, "r") as f:
+        with open(self.file_src, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         for line in lines:
@@ -324,7 +328,7 @@ class GameKeeper:
 
         if os.path.isfile(self.file + ".eplib"):
             with open(self.flile_eplib, "rb") as f:
-                done_array = bytearray(open(self.flile_eplib, "rb").read())
+                done_array = bytearray(f.read())
             for i, it in enumerate(done_array):
                 if i >= len(self.games):
                     break
@@ -455,8 +459,8 @@ if __name__ == "__main__":
 
     fen_moves.sort(key=lambda x: x[0])
 
-    with open(f"{type_name}.csv", "w") as f:
-        f.write(f"title, old_name, hint, fen, moves\n")
+    with open(f"{type_name}.csv", "w", encoding="utf-8") as f:
+        f.write("title, old_name, hint, fen, moves\n")
         for move_len, old_name, fen, moves in fen_moves:
             steps = (move_len + 1) // 2
             f.write(f"{steps}步杀, {old_name}, {get_title_full(fen)}, {fen}, {moves}\n")
