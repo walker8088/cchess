@@ -68,19 +68,29 @@ print(board.is_checking())  # True (红车将军)
 print(board.is_checkmate())  # True
 ```
 
-## 走子被将军检测
+## 走子将军检测
+
+两个语义不同的方法，分别回答"该走子是否**将军对方**"与"该走子是否让**己方被将军**"：
+
+- `gives_check(from, to)` — 走子后是否对对方形成将军
+- `leaves_king_in_check(from, to)` — 走子后己方王是否被将军（送将走子，返回 True 表示非法走子）
+
+二者**都不会修改原棋盘**（内部用临时副本执行），传入非法走子会抛 `CChessError`。
+
 ```python
-board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b - - 0 1')
+# 场景：红车 (3,3) 沿 d 列将军 d9 的黑将，红帅在 a0 (0,0)
+board = ChessBoard('3k5/9/9/9/9/9/3R5/9/9/K8 b - - 0 1')
 
-# 方式 1：走子前检查（推荐）——使用 gives_check 检查走子后是否将军对方
-print(board.gives_check((3, 9), (4, 9)))  # True
+# 走法 1：黑将挡车 d9→d8 —— 红车仍沿 d 列打到 (3,8) 的黑王，送将走子
+print(board.gives_check((3, 9), (3, 8)))           # False
+print(board.leaves_king_in_check((3, 9), (3, 8)))  # True（送将）
 
-# 方式 2：走子后检查走子后是否被将军 —— 需要使用 copy() 避免修改原棋盘
-mv = board.copy().move_iccs('d9e9')
-print(board.gives_check(mv.pos_from, mv.pos_to))  # True
+# 走法 2：黑将逃将 d9→e9 —— 黑将离开红车线，解将成功
+print(board.gives_check((3, 9), (4, 9)))           # False
+print(board.leaves_king_in_check((3, 9), (4, 9)))  # False（合法走子）
 ```
 
-> **注意**：`leaves_king_in_check()` 用于判断执行走子后己方是否被将军（不含在本例中），且走子会修改棋盘状态。如需检查该走子是否将军对方，应使用 `gives_check()`。
+> 单独的 `board.is_checking()`（无参数）判断**当前局面**是否构成将军，含义不变。
 
 ## 被对方将死检测
 ```python
