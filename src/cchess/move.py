@@ -194,18 +194,17 @@ class MoveNotation:
         # 根据数量分配限定词
         if count == 2:
             return "+" if idx == 0 else "."  # 前/后
-        elif count == 3:
+        if count == 3:
             return {0: "+", 1: "-", 2: "."}[idx]  # 前/中/后
-        elif count == 4:
+        if count == 4:
             # 前(idx=0), 二(idx=1), 三(idx=2), 后(idx=3)
             return {0: "+", 1: "b", 2: "c", 3: "."}[idx]
-        else:
-            # count >= 5: 前(idx=0), 后(idx=count-1), 中间用字母
-            if idx == 0:
-                return "+"
-            if idx == count - 1:
-                return "."
-            return chr(ord("a") + idx)  # 字母限定词
+        # count >= 5: 前(idx=0), 后(idx=count-1), 中间用字母
+        if idx == 0:
+            return "+"
+        if idx == count - 1:
+            return "."
+        return chr(ord("a") + idx)  # 字母限定词
 
     @staticmethod
     def from_text(text):
@@ -566,12 +565,12 @@ class Move:
         """返回当前走子的分支（变招）数量。"""
         return len(self.variations_all)
 
-    def make_branchs_tag(self, branch_id, depth):
+    def make_branchs_tag(self, branch_id, depth):  # pylint: disable=unused-argument
         """为走子树递归生成分支编号标记。
 
         当前为桩实现，预留接口供未来扩展。
         """
-        pass
+        ...  # 桩实现占位
 
     def get_variations(self, include_me=False):
         """返回当前走子的所有分支（变招），可选择是否包含自身。"""

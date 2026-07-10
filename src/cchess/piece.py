@@ -156,13 +156,13 @@ def _advisor_valid_pos(fench, pos):
     return pos in _PIECE_CONSTANTS["a"]["positions"][get_fench_color(fench)]
 
 
-def _advisor_valid_move(board, fench, pos_from, pos_to):
+def _advisor_valid_move(board, fench, pos_from, pos_to):  # pylint: disable=unused-argument
     if not _advisor_valid_pos(fench, pos_to):
         return False
     return abs_diff(pos_from, pos_to) == (1, 1)
 
 
-def _advisor_create_moves(board, fench, pos):
+def _advisor_create_moves(board, fench, pos):  # pylint: disable=unused-argument
     x, y = pos
     curr_pos = (x, y)
     moves = []
@@ -199,7 +199,7 @@ def _bishop_valid_move(board, fench, pos_from, pos_to):
     return min_y <= pos_to[1] <= max_y
 
 
-def _bishop_create_moves(board, fench, pos):
+def _bishop_create_moves(board, fench, pos):  # pylint: disable=unused-argument
     x, y = pos
     curr_pos = (x, y)
     moves = []
@@ -218,7 +218,7 @@ def _bishop_text_move_to_pos(pos_from, direction, distance):
 
 
 # --- 马 ---
-def _knight_valid_move(board, fench, pos_from, pos_to):
+def _knight_valid_move(board, fench, pos_from, pos_to):  # pylint: disable=unused-argument
     for (dx, dy), (bx, by) in _KNIGHT_MOVES:
         if pos_from[0] + dx == pos_to[0] and pos_from[1] + dy == pos_to[1]:
             return board.get_fench((pos_from[0] + bx, pos_from[1] + by)) == "."
@@ -254,7 +254,7 @@ def _knight_text_move_to_pos(pos_from, direction, distance):
 
 
 # --- 车 ---
-def _rook_valid_move(board, fench, pos_from, pos_to):
+def _rook_valid_move(board, fench, pos_from, pos_to):  # pylint: disable=unused-argument
     if pos_from[0] != pos_to[0] and pos_from[1] != pos_to[1]:
         return False
     if pos_from[0] != pos_to[0]:
@@ -263,7 +263,7 @@ def _rook_valid_move(board, fench, pos_from, pos_to):
 
 
 # --- 炮 ---
-def _cannon_valid_move(board, fench, pos_from, pos_to):
+def _cannon_valid_move(board, fench, pos_from, pos_to):  # pylint: disable=unused-argument
     if pos_from[0] != pos_to[0] and pos_from[1] != pos_to[1]:
         return False
     if pos_from[0] != pos_to[0]:
@@ -289,7 +289,7 @@ def _crossed_river(fench, pos):
     return pos[1] >= limit if color == SIDE_RED else pos[1] <= limit
 
 
-def _pawn_valid_move(board, fench, pos_from, pos_to):
+def _pawn_valid_move(board, fench, pos_from, pos_to):  # pylint: disable=unused-argument
     step = (pos_to[0] - pos_from[0], pos_to[1] - pos_from[1])
     crossed = _crossed_river(fench, pos_from)
     color = get_fench_color(fench)
@@ -305,6 +305,38 @@ def _pawn_valid_move(board, fench, pos_from, pos_to):
 # 滑走棋子通用逻辑（优化 6：提取通用逻辑）
 # =====================================================
 def _create_sliding_moves(board, fench, pos, directions, is_cannon=False):
+    """滑走棋子（车或炮）的走法生成调度函数。
+
+    根据 is_cannon 参数选择不同的生成路径。
+    """
+    if is_cannon:
+        return _create_cannon_moves(board, fench, pos, directions)
+    return _create_rook_moves(board, fench, pos, directions)
+
+
+def _create_rook_moves(board, fench, pos, directions):
+    """车的走法生成：横向或纵向滑动，被首个棋子阻挡。"""
+    x, y = pos
+    board_arr = board._board
+    curr_pos = (x, y)
+    moves = []
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        while 0 <= nx <= 8 and 0 <= ny <= 9:
+            target = board_arr[ny][nx]
+            if target == ".":
+                moves.append((curr_pos, (nx, ny)))
+            else:
+                if is_enemy_fench(fench, target):
+                    moves.append((curr_pos, (nx, ny)))
+                break
+            nx += dx
+            ny += dy
+    return moves
+
+
+def _create_cannon_moves(board, fench, pos, directions):
+    """炮的走法生成：吃子需隔一个棋子（炮架），普通移动规则同车。"""
     x, y = pos
     board_arr = board._board
     curr_pos = (x, y)
@@ -314,24 +346,15 @@ def _create_sliding_moves(board, fench, pos, directions, is_cannon=False):
         screen_found = False
         while 0 <= nx <= 8 and 0 <= ny <= 9:
             target = board_arr[ny][nx]
-            if not is_cannon:
+            if not screen_found:
                 if target == ".":
                     moves.append((curr_pos, (nx, ny)))
                 else:
-                    if is_enemy_fench(fench, target):
-                        moves.append((curr_pos, (nx, ny)))
-                    break
-            else:
-                if not screen_found:
-                    if target == ".":
-                        moves.append((curr_pos, (nx, ny)))
-                    else:
-                        screen_found = True
-                else:
-                    if target != ".":
-                        if is_enemy_fench(fench, target):
-                            moves.append((curr_pos, (nx, ny)))
-                        break
+                    screen_found = True
+            elif target != ".":
+                if is_enemy_fench(fench, target):
+                    moves.append((curr_pos, (nx, ny)))
+                break
             nx += dx
             ny += dy
     return moves
