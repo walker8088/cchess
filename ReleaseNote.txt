@@ -6,6 +6,11 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_pieces()
   * 移除 ChessPlayer 类 → 使用整数常量 SIDE_RED=1, SIDE_BLACK=2, SIDE_ANY=0
   * 重命名 NO_COLOR → SIDE_ANY（语义更清晰）
+  * 重命名 is_checking_move(from, to) → gives_check(from, to)：
+    消除原命名歧义，"gives check" 更直接表达"该走子给对方将军"
+  * 重命名 is_checked_move(from, to) → leaves_king_in_check(from, to)：
+    消除原命名歧义，"leaves king in check" 明确表达"走子后己方王被攻击"
+  * 备注：board.is_checking()（无参数，判断当前局面）名称保持不变
 
 【性能优化】
   * 关键操作性能提升 3.5-5.1倍（走法生成、棋子遍历等）
@@ -55,7 +60,7 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 修复 read_txt.py 中属性名 move_side 错误
   * 修复 exception.py 中 CChessError 未调用 super().__init__()
   * 修复 move.py 中引用不存在的 sibling_next 属性，导致无限循环
-  * 修复 is_checking_move 和 is_checked_move 中的将军检测逻辑
+  * 修复 gives_check 和 leaves_king_in_check 中的将军检测逻辑
   * 修复吃将时走子方切换问题
   * 修复 Python 3.8 兼容性问题：将 tuple[int, int] 改为 Tuple[int, int]
   * 修复 test_gbk_fallback_encoding 测试失败
@@ -64,7 +69,7 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 修复 io_xqf.py 中的注释代码格式
   * 移除 board.py 中未使用的 Union 导入
   * 修复 README 中 print_board() → print_view() 错误 API
-  * 修正 README 中 is_checked_move 调用顺序问题，改用 is_checking_move
+  * 修正 README 中原 is_checked_move/is_checking_move 的歧义与调用顺序问题，改用 gives_check/leaves_king_in_check
   * 修复 README 标题缺少空格等 markdown 格式问题
   * 修复 README 中默认空棋盘未说明问题：补充 FULL_INIT_FEN 用法
 

@@ -589,7 +589,7 @@ class ChessBoard:
         self._attack_matrix_dirty = prev_attack
         return checking
 
-    def is_checked_move(
+    def leaves_king_in_check(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
     ) -> bool:
         """判断执行给定走子后己方是否处于被将军状态。
@@ -598,7 +598,7 @@ class ChessBoard:
             raise CChessError("Invalid Move")
         return self._check_move_for_general(pos_from, pos_to, check_after_move=True)
 
-    def is_checking_move(
+    def gives_check(
         self, pos_from: Tuple[int, int], pos_to: Tuple[int, int]
     ) -> bool:
         """判断执行该走子后是否对对方形成将军（不切换走子方）。"""
@@ -668,7 +668,7 @@ class ChessBoard:
         for fench, pos in self.get_all_fench_positions(self._move_side):
             for move_it in piece_create_moves(self, fench, pos):
                 if self.is_valid_move(move_it[0], move_it[1]):
-                    if not self.is_checked_move(move_it[0], move_it[1]):
+                    if not self.leaves_king_in_check(move_it[0], move_it[1]):
                         return False
 
         return True

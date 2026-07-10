@@ -108,6 +108,34 @@ from cchess import SIDE_ANY
 color = SIDE_ANY
 ```
 
+#### 3.5 将军检测方法重命名
+
+为消除 `is_checking_move` / `is_checked_move` 的歧义，重命名如下：
+
+**更新前：**
+```python
+# 检查走子后是否将军对方
+if board.is_checking_move(pos_from, pos_to):
+    ...
+
+# 检查走子后己方是否被将军（非法走子会抛 CChessError）
+if board.is_checked_move(pos_from, pos_to):
+    ...
+```
+
+**更新后：**
+```python
+# 检查走子后是否将军对方
+if board.gives_check(pos_from, pos_to):
+    ...
+
+# 检查走子后己方是否被将军（非法走子会抛 CChessError）
+if board.leaves_king_in_check(pos_from, pos_to):
+    ...
+```
+
+注意：无参的 `board.is_checking()`（判断当前局面是否构成将军）名称不变。
+
 ### 4. 处理移除的方法
 
 #### 4.1 unmake_move() 替代方案
@@ -188,6 +216,8 @@ def upgrade_file(filepath):
         (r'NO_COLOR', 'SIDE_ANY'),
         (r'ChessPlayer\.SIDE_RED', 'SIDE_RED'),
         (r'ChessPlayer\.SIDE_BLACK', 'SIDE_BLACK'),
+        (r'\.is_checking_move\(', '.gives_check('),
+        (r'\.is_checked_move\(', '.leaves_king_in_check('),
     ]
     
     for old, new in replacements:

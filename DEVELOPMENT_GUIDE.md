@@ -415,7 +415,7 @@ fix(board): correct move side switching in board.move()
 
 - board.make_move() no longer switches move side (low-level function)
 - board.move() now switches move side after make_move()
-- is_checked_move() manually switches to check for checks
+- leaves_king_in_check() manually switches to check for checks
 - Fixed test expectations in test_board_make_unmake.py
 
 Fixes: #123

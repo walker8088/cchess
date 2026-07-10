@@ -78,7 +78,7 @@ class TestBoard:
 
         assert board.is_checking() is False
         try:
-            board.is_checked_move(
+            board.leaves_king_in_check(
                 (4, 0),
                 (5, 0),
             )
@@ -249,7 +249,7 @@ class TestBoard:
 
         board = ChessBoard("3k5/9/9/9/9/4R4/9/9/9/5K3 w")
         assert board.copy().move_iccs("e4e9").is_king_killed() is False
-        assert board.copy().is_checking_move(*iccs2pos("e4e9")) is True
+        assert board.copy().gives_check(*iccs2pos("e4e9")) is True
         assert board.is_mirror() is False
 
     def test_AA_move(self):

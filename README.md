@@ -72,15 +72,15 @@ print(board.is_checkmate())  # True
 ```python
 board.from_fen('3k5/9/9/9/9/3R5/9/9/9/4K4 b - - 0 1')
 
-# 方式 1：走子前检查（推荐）——使用 is_checking_move 检查走子后是否将军对方
-print(board.is_checking_move((3, 9), (4, 9)))  # True
+# 方式 1：走子前检查（推荐）——使用 gives_check 检查走子后是否将军对方
+print(board.gives_check((3, 9), (4, 9)))  # True
 
 # 方式 2：走子后检查走子后是否被将军 —— 需要使用 copy() 避免修改原棋盘
 mv = board.copy().move_iccs('d9e9')
-print(board.is_checking_move(mv.pos_from, mv.pos_to))  # True
+print(board.gives_check(mv.pos_from, mv.pos_to))  # True
 ```
 
-> **注意**：`is_checked_move()` 用于判断执行走子后己方是否被将军（不含在本例中），且走子会修改棋盘状态。如需检查该走子是否将军对方，应使用 `is_checking_move()`。
+> **注意**：`leaves_king_in_check()` 用于判断执行走子后己方是否被将军（不含在本例中），且走子会修改棋盘状态。如需检查该走子是否将军对方，应使用 `gives_check()`。
 
 ## 被对方将死检测
 ```python

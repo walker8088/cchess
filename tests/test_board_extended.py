@@ -269,17 +269,17 @@ class TestBoardExtended:
         assert isinstance(line, list)
         assert len(line) == 8  # 从1到8，不包括0和9
 
-    def test_is_checking_move(self):
+    def test_gives_check(self):
         # 创建一个简单的将军局面：车和将之间没有阻挡
         # 车在(4,4)，将在(4,9)，车移动到(4,8)可以将军
         board = ChessBoard("4k4/9/9/9/4R4/9/9/9/9/5K3 w")
         # 车移动到将的同一列可以将军
-        is_checking = board.is_checking_move((4, 4), (4, 8))
+        is_checking = board.gives_check((4, 4), (4, 8))
         assert is_checking is True
 
         # 非将军走子
         board2 = ChessBoard(FULL_INIT_FEN)
-        is_checking = board2.is_checking_move((0, 0), (0, 1))
+        is_checking = board2.gives_check((0, 0), (0, 1))
         assert is_checking is False
 
     def test_is_mirror(self):
