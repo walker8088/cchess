@@ -26,9 +26,9 @@
   positions = board.get_fench_positions('K')
   ```
 
-#### 1.2 `get_pieces()` -> `get_all_pieces()`
+#### 1.2 `get_pieces()` -> `get_all_fench_positions()`
 - **旧 API**: `board.get_pieces(color)`
-- **新 API**: `board.get_all_pieces(color)`
+- **新 API**: `board.get_all_fench_positions(color)`
 - **影响**: 所有使用 `get_pieces()` 的代码需要更新
 - **示例**:
   ```python
@@ -36,7 +36,7 @@
   red_pieces = board.get_pieces(SIDE_RED)
   
   # 新代码
-  red_pieces = board.get_all_pieces(SIDE_RED)
+  red_pieces = board.get_all_fench_positions(SIDE_RED)
   ```
 
 ### 2. 方法移除
@@ -213,7 +213,7 @@ from cchess import SIDE_RED, SIDE_BLACK, SIDE_ANY
 ```python
 # 重命名的方法
 board.get_fenchs(fench) -> board.get_fench_positions(fench)
-board.get_pieces(color) -> board.get_all_pieces(color)
+board.get_pieces(color) -> board.get_all_fench_positions(color)
 
 # 移除的方法
 Move.from_text(text, board) -> board.move_text(text)
@@ -296,7 +296,7 @@ class CompatibleChessBoard(ChessBoard):
     
     def get_pieces(self, color=None):
         """兼容旧 API"""
-        return self.get_all_pieces(color)
+        return self.get_all_fench_positions(color)
     
     def move_any(self, pos_from, pos_to):
         """兼容旧 API"""
@@ -384,7 +384,7 @@ except RuntimeError:
 
 1. **方法重命名**：4 个方法
    - `get_fenchs()` → `get_fench_positions()`
-   - `get_pieces()` → `get_all_pieces()`
+   - `get_pieces()` → `get_all_fench_positions()`
    - `is_checking_move()` → `gives_check()`
    - `is_checked_move()` → `leaves_king_in_check()`
 2. **方法移除**：3 个方法 + 1 个类（`Move.from_text`、`unmake_move`、`move_any`、`ChessPlayer`）

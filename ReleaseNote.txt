@@ -3,7 +3,7 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
 【API不兼容变化】
   * Game → Book 重命名（棋谱对象统一命名）
   * 移除 Move.from_text() 静态方法 → 使用 board.move_text() 实例方法
-  * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_pieces()
+  * 重命名 get_fenchs() → get_fench_positions(), get_pieces() → get_all_fench_positions()
   * 移除 ChessPlayer 类 → 使用整数常量 SIDE_RED=1, SIDE_BLACK=2, SIDE_ANY=0
   * 重命名 NO_COLOR → SIDE_ANY（语义更清晰）
   * 重命名 is_checking_move(from, to) → gives_check(from, to)：
@@ -97,7 +97,7 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 模块化重构（board.py 拆分）
 
 性能基准数据：
-  * get_all_pieces(): 0.024 ms/次 (42,259 ops/sec)
+  * get_all_fench_positions(): 0.024 ms/次 (42,259 ops/sec)
   * create_moves(): 0.100 ms/次 (9,952 ops/sec)
   * is_valid_move(): 0.003 ms/次 (389,469 ops/sec)
   * 车走法: 0.034 ms/次 (29,398 ops/sec)

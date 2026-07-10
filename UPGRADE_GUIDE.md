@@ -58,7 +58,7 @@ from cchess import ChessBoard, SIDE_RED
 
 board = ChessBoard()
 positions = board.get_fench_positions('K')
-pieces = board.get_all_pieces(SIDE_RED)
+pieces = board.get_all_fench_positions(SIDE_RED)
 ```
 
 #### 3.2 Move.from_text() 移除
@@ -237,7 +237,7 @@ def upgrade_file(filepath):
     # 替换规则
     replacements = [
         (r'\.get_fenchs\(', '.get_fench_positions('),
-        (r'\.get_pieces\(', '.get_all_pieces('),
+        (r'\.get_pieces\(', '.get_all_fench_positions('),
         (r'Move\.from_text\(', '# Move.from_text() 已移除，请使用 board.move_text()'),
         (r'NO_COLOR', 'SIDE_ANY'),
         (r'ChessPlayer\.SIDE_RED', 'SIDE_RED'),
@@ -293,14 +293,14 @@ class BackwardCompatibleBoard(ChessBoard):
         return self.get_fench_positions(fench)
     
     def get_pieces(self, color=None):
-        """兼容旧 API: get_pieces -> get_all_pieces"""
+        """兼容旧 API: get_pieces -> get_all_fench_positions"""
         import warnings
         warnings.warn(
-            "get_pieces() is deprecated, use get_all_pieces() instead",
+            "get_pieces() is deprecated, use get_all_fench_positions() instead",
             DeprecationWarning,
             stacklevel=2
         )
-        return self.get_all_pieces(color)
+        return self.get_all_fench_positions(color)
     
     def move_any(self, pos_from, pos_to):
         """兼容旧 API: move_any -> move"""
@@ -374,9 +374,9 @@ board = ChessBoard(FULL_INIT_FEN)
 # 测试性能
 start = time.perf_counter()
 for _ in range(10000):
-    list(board.get_all_pieces())
+    list(board.get_all_fench_positions())
 elapsed = time.perf_counter() - start
-print(f'get_all_pieces x10000: {elapsed:.3f}s')
+print(f'get_all_fench_positions x10000: {elapsed:.3f}s')
 
 start = time.perf_counter()
 for _ in range(1000):
@@ -403,7 +403,7 @@ print(f'create_moves x1000: {elapsed:.3f}s')
 
 **解决方案：**
 - 将 `board.get_fenchs(fench)` 改为 `board.get_fench_positions(fench)`
-- 将 `board.get_pieces(color)` 改为 `board.get_all_pieces(color)`
+- 将 `board.get_pieces(color)` 改为 `board.get_all_fench_positions(color)`
 
 ### Q4: 需要撤销走子功能
 

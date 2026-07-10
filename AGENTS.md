@@ -148,7 +148,7 @@ git status
 ### 优化后性能指标
 
 ```
-get_all_pieces() x10000:   0.001s (0.0001ms/次)      # 173倍提升
+get_all_fench_positions() x10000:   0.001s (0.0001ms/次)      # 173倍提升
 create_moves() x1000:      0.000s (0.0000ms/次)      # 13150倍提升
 Rook at center x1000:      0.00489s (0.0049ms/次)    # 5.12倍提升
 Cannon at center x1000:    0.00536s (0.0054ms/次)    # 4.32倍提升
@@ -165,9 +165,9 @@ from cchess import ChessBoard, FULL_INIT_FEN
 board = ChessBoard(FULL_INIT_FEN)
 start = time.perf_counter()
 for _ in range(10000):
-    list(board.get_all_pieces())
+    list(board.get_all_fench_positions())
 elapsed = time.perf_counter() - start
-print(f'get_all_pieces x10000: {elapsed:.3f}s')
+print(f'get_all_fench_positions x10000: {elapsed:.3f}s')
 ```
 
 ## 版本号命名规则
@@ -209,7 +209,7 @@ MAJOR.YEAR.SEQUENCE
 ```
 - Game → Book 重命名
 - ChessPlayer 类移除 → SIDE_RED/SIDE_BLACK/SIDE_ANY 常量
-- get_pieces() → get_all_pieces()
+- get_pieces() → get_all_fench_positions()
 - get_fenchs() → get_fench_positions()
 - Move.from_text() 静态方法 → board.move_text() 实例方法
 - NO_COLOR → SIDE_ANY
