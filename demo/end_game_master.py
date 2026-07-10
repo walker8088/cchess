@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 import time
-from collections import OrderedDict
 from pathlib import Path
 
 import pygame
@@ -28,6 +27,7 @@ from pygame.locals import *
 
 import cchess
 from cchess import Book, ChessBoard, UcciEngine, UciEngine
+from cchess.common import get_fen_pieces, p_count_dict, p_dict
 
 
 class Pos:
@@ -67,44 +67,12 @@ ROOT_PATH = Path(__file__).parent
 RES_PATH = Path(ROOT_PATH, "UI")
 
 # -----------------------------------------------------#
-p_count_dict = {
-    "R1": "车",
-    "R2": "双车",
-    "N1": "马",
-    "N2": "双马",
-    "C1": "炮",
-    "C2": "双炮",
-    "P1": "兵",
-    "P2": "双兵",
-    "P3": "三兵",
-    "P4": "多兵",
-    "P5": "多兵",
-    "A1": "士",
-    "A2": "双士",
-    "B1": "象",
-    "B2": "双象",
-}
-
-p_dict = {
-    "R": "车",
-    "N": "马",
-    "C": "炮",
-    "P": "兵",
-    "A": "士",
-    "B": "象",
-}
+# 棋子名称映射与计数映射由 cchess.common 提供。
+# 本 demo 复用库内标准，避免与库内定义不一致。
 
 
 def get_pieces(fen):
-    pieces = OrderedDict()
-    fen_base = fen.split(" ")[0]
-    for ch in fen_base:
-        if not ch.isalpha():
-            continue
-        if ch not in pieces:
-            pieces[ch] = 0
-        pieces[ch] += 1
-    return pieces
+    return get_fen_pieces(fen)
 
 
 def get_title(fen):
