@@ -50,7 +50,8 @@ def _xqf_decode_pos2(man_pos):
 
 
 # -----------------------------------------------------#
-class XQFKey:
+class XQFKey:  # pylint: disable=too-few-public-methods
+    # 简单数据载体，仅需 __init__ 存储字段。
     """承载 XQF 文件中用于解密走子和注释的密钥字段的简单容器。"""
 
     # pylint: disable=invalid-name
@@ -123,7 +124,10 @@ class XQFBuffDecoder:
 
 
 def _init_decrypt_key(buff_str):
-    """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。"""
+    """根据 XQF 头部的密钥字段计算并返回用于解密数据的 `XQFKey` 对象。
+    变量名遵循 XQF 二进制格式原始字段名（HEAD_*/B*/wKey），与库内命名风格不一致是必要的。
+    """
+    # pylint: disable=invalid-name
 
     keys = XQFKey()
     (
@@ -160,10 +164,10 @@ def _init_decrypt_key(buff_str):
     wKey = HEAD_KeysSum * 256 + HEAD_KeyXY
     keys.KeyRMKSize = ((wKey % 32000) + 767) & 0xFFFF
 
-    B1 = (HEAD_KeysSum & HEAD_KeyMask) | HEAD_KeyOrA
-    B2 = (HEAD_KeyXY & HEAD_KeyMask) | HEAD_KeyOrB
-    B3 = (HEAD_KeyXYf & HEAD_KeyMask) | HEAD_KeyOrC
-    B4 = (HEAD_KeyXYt & HEAD_KeyMask) | HEAD_KeyOrD
+    B1 = (HEAD_KeysSum & HEAD_KeyMask) | HEAD_KeyOrA  # pylint: disable=invalid-name
+    B2 = (HEAD_KeyXY & HEAD_KeyMask) | HEAD_KeyOrB  # pylint: disable=invalid-name
+    B3 = (HEAD_KeyXYf & HEAD_KeyMask) | HEAD_KeyOrC  # pylint: disable=invalid-name
+    B4 = (HEAD_KeyXYt & HEAD_KeyMask) | HEAD_KeyOrD  # pylint: disable=invalid-name
 
     keys.FKeyBytes = (B1, B2, B3, B4)
     keys.F32Keys = bytearray(b"[(C) Copyright Mr. Dong Shiwei.]")
@@ -180,7 +184,9 @@ def _init_chess_board(man_str, version, keys=None):
     如果 `keys` 提供了解密因子则按版本和密钥做位置解密与字节变换，
     否则直接拷贝原始布局。
     返回一个长度为 32 的 bytearray，值为 0xFF 表示该位置无子。
+    局部变量名遵循 XQF 格式原始字段名（tmpMan）。
     """
+    # pylint: disable=invalid-name
     tmpMan = bytearray([0 for x in range(32)])
     man_buff = bytearray(man_str)
 
@@ -205,7 +211,10 @@ def _init_chess_board(man_str, version, keys=None):
 
 # -----------------------------------------------------#
 def _decode_xqf_buff(keys, buff):
-    """使用 `keys` 中的 F32Keys 对缓冲区做逐字节的解密变换并返回解密后的 bytes。"""
+    """使用 `keys` 中的 F32Keys 对缓冲区做逐字节的解密变换并返回解密后的 bytes。
+    变量名遵循 XQF 格式原始字段名（nPos/KeyByte）。
+    """
+    # pylint: disable=invalid-name
     nPos = 0x400
     de_buff = bytearray(buff)
 
@@ -333,7 +342,9 @@ def _read_steps(buff_decoder, version, keys, book, parent_move, board):
 
 
 # -----------------------------------------------------#
-def _parse_xqf_header(contents):
+def _parse_xqf_header(contents):  # pylint: disable=invalid-name
+    # tuple-unpack 中的变量名遵循 XQF 二进制格式原始字段名
+    # （uc/sz 前缀是格式规范本身），与库内命名风格不一致是必要的。
     """解析 XQF 文件头
 
     Args:
@@ -342,6 +353,7 @@ def _parse_xqf_header(contents):
     Returns:
         dict: 解析后的头信息，包含 version, keys, chess_mans, step_base_buff 等
     """
+    # pylint: disable=invalid-name
     (
         magic,
         version,
@@ -432,7 +444,9 @@ def _build_xqf_game_info(
     szTitle,
     ucMatchNameLen,
     szMatchName,
-):
+):  # pylint: disable=invalid-name
+    # 参数名采用 XQF 二进制格式中字段的原始命名（uc/sz 前缀是格式规范本身），
+    # 与库内代码命名风格不一致是必要的。
     """构建 XQF 游戏信息字典
 
     Args:
@@ -573,7 +587,8 @@ def _encode_xqf_pos(pos):
 
 
 # -----------------------------------------------------#
-class XQMove:
+class XQMove:  # pylint: disable=too-few-public-methods
+    # 简单数据载体，仅需 __init__ 存储字段。
     """表示一步棋及其变招。"""
 
     def __init__(

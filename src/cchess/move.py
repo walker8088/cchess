@@ -568,9 +568,9 @@ class Move:
     def make_branchs_tag(self, branch_id, depth):  # pylint: disable=unused-argument
         """为走子树递归生成分支编号标记。
 
-        当前为桩实现，预留接口供未来扩展。
+        当前为桟实现，预留接口供未来扩展。
         """
-        ...  # 桩实现占位
+        ...  # pylint: disable=unnecessary-ellipsis  # 桟实现占位
 
     def get_variations(self, include_me=False):
         """返回当前走子的所有分支（变招），可选择是否包含自身。"""

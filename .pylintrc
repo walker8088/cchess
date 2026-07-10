@@ -40,5 +40,8 @@ max-args=10
 max-line-length=200
 
 [MASTER]
-# 忽略 tests 目录（以及子目录）
-ignore-paths=^(.*/)?tests/.*$
+# 忽略以下目录（非发布代码）：
+# - tests/  - 测试代码，使用其自己的 lint 配置
+# - demo/   - pygame 独立应用，不在 wheel 分发中
+# - bench.py - 性能基准脚本，使用 pathlib/sys.path 独立运行
+ignore-paths=^(.*/)?tests/.*$,^(.*/)?demo/.*$,^bench\.py$

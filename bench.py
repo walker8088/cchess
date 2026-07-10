@@ -1,3 +1,9 @@
+"""性能基准测试脚本。
+
+运行方法：
+    python bench.py
+"""
+
 import sys
 import time
 
@@ -7,12 +13,12 @@ from cchess.common import FULL_INIT_FEN
 
 board = ChessBoard(FULL_INIT_FEN)
 
-# Test 1: get_pieces
+# Test 1: get_all_fench_positions
 start = time.perf_counter()
 for _ in range(10000):
-    list(board.get_all_pieces())
+    list(board.get_all_fench_positions())
 elapsed = time.perf_counter() - start
-print(f"get_pieces x10000: {elapsed:.3f}s")
+print(f"get_all_fench_positions x10000: {elapsed:.3f}s")
 
 # Test 2: create_moves
 start = time.perf_counter()
