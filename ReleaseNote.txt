@@ -10,6 +10,8 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
     消除原命名歧义，"gives check" 更直接表达"该走子给对方将军"
   * 重命名 is_checked_move(from, to) → leaves_king_in_check(from, to)：
     消除原命名歧义，"leaves king in check" 明确表达"走子后己方王被攻击"
+  * CBL 库字典键 'games' → 'books'：Book.read_from_lib() 返回字典中
+    包含棋谱列表的键名与棋谱类名保持一致
   * 备注：board.is_checking()（无参数，判断当前局面）名称保持不变
 
 【性能优化】
