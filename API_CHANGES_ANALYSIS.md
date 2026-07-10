@@ -126,9 +126,68 @@
   board.set_move_side(SIDE_RED)
   ```
 
+### 5. 将军检测方法重命名
+
+#### 5.1 `is_checking_move()` -> `gives_check()`
+- **旧 API**: `board.is_checking_move(pos_from, pos_to)`
+- **新 API**: `board.gives_check(pos_from, pos_to)`
+- **动机**: 原命名 `is_checking_move` 与无参 `is_checking()` 极易混淆（一个动名词后缀与现在时后缀），且语义"是否将军"不够直观
+- **影响**: 所有使用 `is_checking_move()` 的代码需更新
+- **语义对比**:
+  - `gives_check(from, to)` — "走子后**走子方**对**对方**形成将军"
+  - `leaves_king_in_check(from, to)` — "走子后**走子方**己方王被对方将军"
+  - `is_checking()` (无参) — "**当前局面**走子方是否将军对方"（名称不变）
+
+- **示例**:
+  ```python
+  # 旧代码
+  if board.is_checking_move(pos_from, pos_to):
+      ...
+
+  # 新代码
+  if board.gives_check(pos_from, pos_to):
+      ...
+  ```
+
+#### 5.2 `is_checked_move()` -> `leaves_king_in_check()`
+- **旧 API**: `board.is_checked_move(pos_from, pos_to)`
+- **新 API**: `board.leaves_king_in_check(pos_from, pos_to)`
+- **动机**: 原命名 `is_checked_move` 读起来像"该走子是否被将军过"，歧义严重
+- **影响**: 所有使用 `is_checked_move()` 的代码需更新；非法走子会抛 `CChessError`（行为不变）
+- **示例**:
+  ```python
+  # 旧代码
+  if board.is_checked_move(pos_from, pos_to):
+      ...  # 走子后己方被将军
+
+  # 新代码
+  if board.leaves_king_in_check(pos_from, pos_to):
+      ...  # 走子后己方王被攻击（送将走子）
+  ```
+
+### 6. CBL 库字典键名重命名
+
+#### 6.1 `lib['games']` -> `lib['books']`
+- **旧 API**: `Book.read_from_lib(file)` 返回字典，键 `'games'` 包含棋谱列表
+- **新 API**: 键 `'books'` 包含棋谱列表（与 `Book` 类名一致）
+- **动机**: 延续 `Game → Book` 重命名，统一术语
+- **影响**: 所有读取 CBL 库字典键的代码需更新；`'name'` 键保持不变
+- **示例**:
+  ```python
+  lib = Book.read_from_lib("WildHouse.cbl")
+
+  # 旧代码
+  for book in lib['games']:  # KeyError: 'games'
+      ...
+
+  # 新代码
+  for book in lib['books']:
+      ...
+  ```
+
 ## 性能优化相关变化
 
-### 5. 内部优化（不影响 API）
+### 7. 内部优化（不影响 API）
 
 以下优化不直接影响公共 API，但可能影响性能特征：
 
@@ -185,6 +244,26 @@ RED -> SIDE_RED
 BLACK -> SIDE_BLACK
 ```
 
+### 步骤 5: 更新将军检测方法
+
+```python
+# 旧 API → 新 API
+board.is_checking_move(from, to) -> board.gives_check(from, to)
+board.is_checked_move(from, to)  -> board.leaves_king_in_check(from, to)
+```
+
+### 步骤 6: 更新 CBL 库字典键名
+
+```python
+# 旧代码
+for book in lib['games']:
+    ...
+
+# 新代码
+for book in lib['books']:
+    ...
+```
+
 ## 影响范围分析
 
 ### 直接影响
@@ -192,6 +271,8 @@ BLACK -> SIDE_BLACK
 1. **测试代码**：需要更新所有使用旧 API 的测试用例
 2. **示例代码**：文档中的示例需要更新
 3. **依赖项目**：依赖 cchess 库的项目需要适配
+4. **将军检测逻辑**：任何走子合法性判断、搜索引擎代码
+5. **CBL 库处理**：批量棋谱导入/导出工具
 
 ### 间接影响
 
@@ -228,6 +309,19 @@ def move_from_text(move_str, board):
 
 # 临时添加到 Move 类
 Move.from_text = staticmethod(move_from_text)
+
+# 将军检测方法的兼容层
+class BackwardCompatCheckMixin:
+    """ChessBoard 子类：保留旧 is_checking_move / is_checked_move 名字"""
+    def is_checking_move(self, pos_from, pos_to):
+        import warnings
+        warnings.warn("is_checking_move() 已弃用，请使用 gives_check()", DeprecationWarning, stacklevel=2)
+        return self.gives_check(pos_from, pos_to)
+
+    def is_checked_move(self, pos_from, pos_to):
+        import warnings
+        warnings.warn("is_checked_move() 已弃用，请使用 leaves_king_in_check()", DeprecationWarning, stacklevel=2)
+        return self.leaves_king_in_check(pos_from, pos_to)
 ```
 
 ## 测试验证
@@ -288,15 +382,21 @@ except RuntimeError:
 
 从 v1.26.1 到 v2.26.1 的 API 变化主要包括：
 
-1. **方法重命名**：2 个方法
-2. **方法移除**：3 个方法 + 1 个类
+1. **方法重命名**：4 个方法
+   - `get_fenchs()` → `get_fench_positions()`
+   - `get_pieces()` → `get_all_pieces()`
+   - `is_checking_move()` → `gives_check()`
+   - `is_checked_move()` → `leaves_king_in_check()`
+2. **方法移除**：3 个方法 + 1 个类（`Move.from_text`、`unmake_move`、`move_any`、`ChessPlayer`）
 3. **常量重命名**：3 个常量（`NO_COLOR` → `SIDE_ANY`、`RED` → `SIDE_RED`、`BLACK` → `SIDE_BLACK`）
-4. **命名统一**：1 个属性
+4. **字典键重命名**：1 个（`lib['games']` → `lib['books']`）
+5. **属性命名统一**：1 个属性（`move_player` → `move_side`）
 
 这些变化主要是为了：
-- 提高 API 一致性
+- 提高 API 一致性（棋谱术语统一为 Book）
 - 简化设计（移除 ChessPlayer 类）
+- 消除命名歧义（将军检测方法重命名）
 - 为性能优化铺平道路
 - 统一命名约定
 
-迁移工作相对简单，主要涉及方法名和常量名的更新。最大的变化是 `ChessPlayer` 类的移除，需要将颜色处理改为使用整数常量。
+迁移工作相对直接，主要涉及方法名、常量名和字典键名的更新。最大的变化是 `ChessPlayer` 类的移除，需要将颜色处理改为使用整数常量。

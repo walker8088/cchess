@@ -19,6 +19,12 @@ grep -r "ChessPlayer" your_project/
 
 # 搜索已重命名的常量
 grep -r "NO_COLOR" your_project/
+
+# 搜索已重命名的将军检测方法
+grep -r "is_checking_move\|is_checked_move" your_project/
+
+# 搜索 CBL 库字典键名（已重命名为 books）
+grep -rn "books" your_project/  # 配合 read_from_lib 调用排查
 ```
 
 ### 2. 更新依赖版本
@@ -136,6 +142,26 @@ if board.leaves_king_in_check(pos_from, pos_to):
 
 注意：无参的 `board.is_checking()`（判断当前局面是否构成将军）名称不变。
 
+#### 3.6 CBL 库字典键名重命名
+
+`Book.read_from_lib()` 返回的字典中，包含棋谱列表的键从 `'games'` 改为 `'books'`，与棋谱类名保持一致。
+
+**更新前：**
+```python
+lib = Book.read_from_lib("WildHouse.cbl")
+for book in lib['games']:
+    book.print_init_board()
+```
+
+**更新后：**
+```python
+lib = Book.read_from_lib("WildHouse.cbl")
+for book in lib['books']:
+    book.print_init_board()
+```
+
+字典的 `'name'` 键保持不变。
+
 ### 4. 处理移除的方法
 
 #### 4.1 unmake_move() 替代方案
@@ -218,6 +244,7 @@ def upgrade_file(filepath):
         (r'ChessPlayer\.SIDE_BLACK', 'SIDE_BLACK'),
         (r'\.is_checking_move\(', '.gives_check('),
         (r'\.is_checked_move\(', '.leaves_king_in_check('),
+        (r"\[(['\"])games\1\]", r'[\1books\1]'),
     ]
     
     for old, new in replacements:
@@ -455,11 +482,12 @@ asyncio.run(main())
 ## 总结
 
 升级到新版本的主要工作包括：
-1. 更新方法名（2个重命名）
-2. 更新 API 调用方式（Move.from_text -> board.move_text）
-3. 更新颜色处理（ChessPlayer -> 整数常量）
-4. 更新常量名（NO_COLOR -> SIDE_ANY）
-5. **可选**：采用新的 `AsyncEngine` 异步接口（需用 `async/await`）
+1. 更新方法名（4个重命名：`get_fenchs`/`get_pieces`/`is_checking_move`/`is_checked_move`）
+2. 更新 CBL 库字典键名（`'games'` → `'books'`）
+3. 更新 API 调用方式（Move.from_text -> board.move_text）
+4. 更新颜色处理（ChessPlayer -> 整数常量）
+5. 更新常量名（NO_COLOR -> SIDE_ANY）
+6. **可选**：采用新的 `AsyncEngine` 异步接口（需用 `async/await`）
 
 虽然涉及不兼容变化，但迁移工作相对直接，且能获得显著的性能改进。
 
@@ -471,6 +499,8 @@ asyncio.run(main())
 - [ ] `board.get_fench_positions()` / `board.get_all_fench_positions()` 调用成功
 - [ ] `board.move_text("炮二平五")` 返回 `Move` 对象
 - [ ] `board.move_side()` 可正常读取/设置
+- [ ] `board.gives_check()` / `board.leaves_king_in_check()` 调用成功
+- [ ] `lib = Book.read_from_lib(...)` 后 `len(lib['books'])` 正常
 - [ ] `uvx ruff check ./src` 无错误
 - [ ] `python -m pytest tests/ -m "not slow" -x -q` 全部快速测试通过
 - [ ] （可选）`python -m pytest tests/test_engine_async.py -m "slow" -v` 引擎集成测试通过
