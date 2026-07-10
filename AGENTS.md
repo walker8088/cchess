@@ -111,7 +111,7 @@ python -m pytest tests/test_coverage.py -x -q
 
 ### 文档验证
 
-- `verify_readme.py` (项目根) - 15 个测试覆盖 README 代码示例
+- README 文档人工 review（一次性验证脚本已移除）
 
 ### 已知问题
 

@@ -26,7 +26,7 @@
 - [ ] 复杂逻辑有注释说明
 - [ ] API 文档更新（如适用）
 - [ ] ReleaseNote.txt 更新
-- [ ] README 验证通过 (`python verify_readme.py`)
+- [ ] README 代码示例与最新 API 一致
 
 ### 性能
 - [ ] 无性能回归（< 10% 阈值）
@@ -140,10 +140,7 @@ python -m pytest tests/test_engine_async.py::TestAsyncEngineBoundaryConditions -
 ```
 
 ### Q: 如何验证 README 代码示例？
-A: 运行项目根目录的 `verify_readme.py` 脚本：
-```bash
-python verify_readme.py    # 校验 README 中 15 个代码示例
-```
+A: README 示例代码在发布前人工核对。修改 README 时运行对应示例代码确认输出与预期一致。
 
 ### Q: 如何更新文档？
 A: 更新对应的 .md 文件，并确保 docstring 与代码同步。

@@ -438,10 +438,9 @@ asyncio.run(main())
 升级后逐项验证以下内容：
 
 - [ ] `from cchess import SIDE_RED, SIDE_BLACK, SIDE_ANY` 导入成功
-- [ ] `board.get_fench_positions()` / `board.get_all_pieces()` 调用成功
+- [ ] `board.get_fench_positions()` / `board.get_all_fench_positions()` 调用成功
 - [ ] `board.move_text("炮二平五")` 返回 `Move` 对象
-- [ ] `board.move_side` 可正常读写
-- [ ] `python verify_readme.py` 全部 15 个验证通过
+- [ ] `board.move_side()` 可正常读取/设置
 - [ ] `uvx ruff check ./src` 无错误
 - [ ] `python -m pytest tests/ -m "not slow" -x -q` 全部快速测试通过
 - [ ] （可选）`python -m pytest tests/test_engine_async.py -m "slow" -v` 引擎集成测试通过

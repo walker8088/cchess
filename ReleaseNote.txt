@@ -43,9 +43,8 @@ release v2.26.1 (版本2于2026年第1次发布，开发中)
   * 新增详细架构分析文档（ARCHITECTURE_ANALYSIS.md）
   * 新增 pyproject 中 slow 标记：分离需要启动引擎的慢速测试
   * 新增 README 异步引擎调用示例（基本用法、时间限制、局面分析、
-    显式协议、便捷函数、并发调用、错误处理共 7 个 demo）
-  * 新增 verify_readme.py：自动校验 README 代码示例
-  * README 代码示例更新为 Book 用法
+      显式协议、便捷函数、并发调用、错误处理共 7 个 demo）
+    * README 代码示例更新为 Book 用法
 
 【错误修复】
   * 修复中文走法'前/后'限定词逻辑错误

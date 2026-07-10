@@ -140,7 +140,7 @@ def test_move_side_naming():
     if board.move_side() != SIDE_BLACK:
         print(f"❌ set_move_side(SIDE_BLACK) 后 move_side={board.move_side()}")
         return False
-    print(f"✅ board.set_move_side(SIDE_BLACK) 成功")
+    print("✅ board.set_move_side(SIDE_BLACK) 成功")
     return True
 
 

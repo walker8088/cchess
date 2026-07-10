@@ -312,16 +312,6 @@ pytest -m "slow"       # 启动真实引擎 (本地/夜间)
 - **临时文件处理**：使用tempfile模块
 - **回归测试**：check_regression.py确保向后兼容
 
-### 6.3 文档验证
-- **verify_readme.py**：自动校验 README 中 15 个代码示例
-  - 初始化（FULL_INIT_FEN / from_fen）
-  - 棋盘显示（print_view）
-  - 内部/ICCS/中文三种走法
-  - 走法生成（单棋子 / 全局）
-  - 将军/将死/无合法走子检测
-  - 棋谱文件读取（XQF / CBR / CBL）
-  - 引擎 API 存在性
-
 ## 7. 构建与部署架构
 
 ### 7.1 依赖管理
@@ -345,7 +335,7 @@ dev = [
 3. **慢速测试**：`pytest -m "slow"` (本地/夜间, 启动 eleeye)
 4. **全量测试**：`pytest --ignore=tests/test_engine.py` (排除需外部引擎文件的旧测试)
 5. **覆盖率检查**：pytest-cov
-6. **文档验证**：`python verify_readme.py` (校验 README 代码示例)
+6. **文档人工审查**：README 示例与运行时行为核对
 7. **性能基准**：定期运行 `benchmark.py`
 
 ### 7.3 Pytest 标记配置
@@ -404,11 +394,10 @@ README 末尾新增 **7 个 AsyncEngine demo** 章节，覆盖:
 | 并发多引擎 | `asyncio.gather(...)` |
 | 错误处理 | `try/except RuntimeError/TimeoutError`, `finally: quit()` |
 
-### 10.2 verify_readme.py
-- 项目根目录的独立校验脚本
-- 15 个测试覆盖 README 全部代码块
-- 失败时打印 stacktrace, 退出码非 0
-- 可加入 CI: `python verify_readme.py`
+### 10.2 README 文档验证
+
+README 中的示例代码在发布前人工核对。维护者修改
+README 时需同步运行对应示例确认输出。
 
 ## 11. AsyncEngine 稳定性改进
 
