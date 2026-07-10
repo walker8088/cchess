@@ -840,13 +840,12 @@ class ChessBoard:
                 all_positions.sort(key=lambda p: p[1], reverse=True)
                 return self._select_by_qualifier(all_positions, qualifier)
             return []
-        else:
-            positions = norm.get_fench_positions_v_line(fench, column)
-            if not positions:
-                return []
-            if len(positions) > 1 and piece_fench not in {"a", "b"}:
-                return []
-            return positions
+        positions = norm.get_fench_positions_v_line(fench, column)
+        if not positions:
+            return []
+        if len(positions) > 1 and piece_fench not in {"a", "b"}:
+            return []
+        return positions
 
     @staticmethod
     def _select_by_qualifier(positions, qualifier):

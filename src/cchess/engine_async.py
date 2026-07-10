@@ -46,6 +46,8 @@ class AsyncEngine:
         返回:
             bool: 成功返回 True
         """
+        # 协议分支处理天然多嵌套多分支
+        # pylint: disable=too-many-branches,too-many-nested-blocks
         if self._initialized:
             return True
 
@@ -80,10 +82,10 @@ class AsyncEngine:
                             if line == "ucciok":
                                 self._protocol = "ucci"
                                 break
-                            elif line == "uciok":
+                            if line == "uciok":
                                 self._protocol = "uci"
                                 break
-                            elif line.startswith("id"):
+                            if line.startswith("id"):
                                 await self._parse_id(line)
                     elif line == "uciok":
                         self._protocol = "uci"
@@ -96,7 +98,7 @@ class AsyncEngine:
                             )
                             if line == "ucciok":
                                 break
-                            elif line.startswith("id"):
+                            if line.startswith("id"):
                                 await self._parse_id(line)
                 except asyncio.TimeoutError:
                     # UCCI 超时，尝试 UCI
@@ -106,7 +108,7 @@ class AsyncEngine:
                         if line == "uciok":
                             self._protocol = "uci"
                             break
-                        elif line.startswith("option"):
+                        if line.startswith("option"):
                             await self._parse_option(line)
                         elif line.startswith("id"):
                             await self._parse_id(line)
@@ -181,7 +183,7 @@ class AsyncEngine:
                 try:
                     self.process.kill()
                     await self.process.wait()
-                except Exception:
+                except OSError:  # pylint: disable=broad-exception-caught
                     pass
                 self.process = None
             return False
@@ -206,7 +208,7 @@ class AsyncEngine:
                 line = line_bytes.decode().strip()
                 logger.debug("<< %s", line)
                 return line
-            except Exception as e:
+            except (OSError, UnicodeDecodeError) as e:
                 logger.debug("read_line error: %s", e)
                 return ""
         return ""
@@ -292,7 +294,7 @@ class AsyncEngine:
                 await self._send_line("quit")
             else:
                 await self._send_line("stop")
-        except Exception as e:
+        except (OSError, ConnectionError) as e:
             logger.debug("Failed to stop thinking: %s", e)
 
     def _build_go_command(
@@ -485,7 +487,11 @@ class AsyncEngine:
         return result
 
     async def quit(self) -> None:
-        """关闭引擎进程（总是确保进程被关闭）"""
+        """关闭引擎进程（总是确保进程被关闭）
+
+        资源清理路径故意使用 Exception 捕获以确保进程终止。
+        """
+        # pylint: disable=broad-exception-caught
         if self.process:
             try:
                 # 先尝试正常退出
