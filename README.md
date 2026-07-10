@@ -116,7 +116,7 @@ book.print_text_moves()
 ## 读取 cbl 文件, 显示所有棋谱
 ```python
 lib = Book.read_from_lib("WildHouse.cbl")
-for book in lib['games']:
+for book in lib['books']:
     book.print_init_board()
     book.print_text_moves()
 ```

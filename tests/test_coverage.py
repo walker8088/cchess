@@ -944,7 +944,7 @@ class TestReadCBR:
         try:
             result = read_from_cbl(tmp_path, Book)
             assert result is not None
-            assert len(result["games"]) == 0
+            assert len(result["books"]) == 0
         finally:
             os.unlink(tmp_path)
 

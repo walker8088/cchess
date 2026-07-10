@@ -418,7 +418,7 @@ def read_from_cbl_progressing(file_name, book_class):
 
     lib_info = {}
     lib_info["name"] = lib_name
-    lib_info["games"] = []
+    lib_info["books"] = []
 
     buff_start = _get_cbl_data_offset(book_count)
     game_buffer, game_buffer_len, game_buffer_index = _find_and_validate_cbl_records(
@@ -437,7 +437,7 @@ def read_from_cbl_progressing(file_name, book_class):
             book = read_from_cbr_buffer(book_buffer, book_class)
             if book is not None:
                 book.info["index"] = book_index
-                lib_info["games"].append(book)
+                lib_info["books"].append(book)
                 book_index += 1
         except (struct.error, KeyError, IndexError, CChessError) as e:
             raise CChessError(

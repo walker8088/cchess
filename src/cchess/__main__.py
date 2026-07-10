@@ -98,7 +98,7 @@ def main():
         if ext == ".cbl":
             lib = Book.read_from_lib(file_name)
             print(lib["name"])
-            for book in lib["games"]:
+            for book in lib["books"]:
                 print_book(book)
         else:
             try:
